@@ -72,14 +72,21 @@
   :type 'string
   :group 'sidebar)
 
-(defcustom sidebar-character-dir-opened "-" ;"▾"
+(defcustom sidebar-character-dir-opened "↳" ;"-" ;"▾"
   "Character to use before an opened directory."
   :type 'string
   :group 'sidebar)
 
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
+(defface sidebar-dir-face
+  '((t :foreground "color-27"))
+  "Face used with directories."
+  :group 'sidebar)
+
 (defvar sidebar-files '())
 (defvar sidebar-current-path nil)
-(defvar sidebar-window-origin nil)
+;;;(defvar sidebar-window-origin nil)
 (defvar sidebar-closed-directories nil)
 (defvar sidebar-root-project nil)
 (defvar sidebar-git-hashtable nil)
@@ -152,31 +159,61 @@ If it's not a file, return the home directory."
 	(setq depth (+ depth 1))))
     (+ depth 1)))
 
-(defun sidebar-add-git-indicator (filename file)
+(defun sidebar-get-filename-dir-indicator (file)
+  "FILE."
+  (or (and (--dir? file)
+	   (sidebar-dir-arrow (file-name-nondirectory (--getpath file)) (--opened? file)))
+      (file-name-nondirectory (--getpath file))))
+
+(defun sidebar-print-with-git (file)
   "FILENAME FILE."
-  (when (and sidebar-git-hashtable (hash-table-p sidebar-git-hashtable) (> (hash-table-count sidebar-git-hashtable) 0))
-    (let* ((path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
-	   (path-with-correct-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
-					  path-in-project))
-	   (status (gethash path-with-correct-dirname sidebar-git-hashtable)))
-      (if status
-	  (setq filename (concat (propertize "✓ " 'font-lock-face '(:faceground "green")) filename)))
-      filename
-      status
-      ))
-  filename)
+  (let* ((filename (sidebar-get-filename-dir-indicator file))
+	 (depth (sidebar-calc-depth file))
+	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
+	 (path-with-correct-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
+					path-in-project))
+	 (status (gethash path-with-correct-dirname sidebar-git-hashtable)))
+
+    (when (and (> depth 2) status)
+      (setq depth (- depth 2)))
+    (insert (s-repeat depth " "))
+    (when status
+      (insert (propertize "✓ " 'font-lock-face '(:foreground "green"))))
+    (insert (propertize filename 'font-lock-face (or (and (--dir? file) 'sidebar-dir-face)
+						     '(:foreground "grey"))))
+    ;; (insert (propertize filename 'font-lock-face (or (and (--dir? file) '(:foreground "color-27"))
+    ;; 						     '(:foreground "grey"))))
+    ))
+
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
+
+(defun sidebar-print-normal (file)
+  "FILENAME FILE."
+  (let ((filename (sidebar-get-filename-dir-indicator file)))
+    (insert (s-repeat (sidebar-calc-depth file) " ") filename)))
 
 (defun sidebar-print-listfiles (list)
   "LIST DEPTH OPENED-DIRS."
-  (loop-for-each file list
-    (let* ((filename (file-name-nondirectory (--getpath file))))
-      (when (--dir? file)
-	(setq filename (sidebar-dir-arrow filename (--opened? file))))
+  (let ((func-insert (or (and sidebar-git-hashtable 'sidebar-print-with-git)
+			 'sidebar-print-normal)))
+    (loop-for-each file list
       (setf (--getline file) (line-number-at-pos))
-      (insert (s-repeat (sidebar-calc-depth file) " ") (or (and sidebar-git-hashtable (sidebar-add-git-indicator filename file))
-							   filename))
-;;;      (insert (s-repeat (sidebar-calc-depth file) " ") filename)
+      (funcall func-insert file)
       (newline))))
+
+;; (defun sidebar-print-listfiles (list)
+;;   "LIST DEPTH OPENED-DIRS."
+;;   (let ((func-insert (or (and sidebar-git-hashtable 'sidebar-print-with-git)
+;; 			 'sidebar-print-normal)))
+;;     (loop-for-each file list
+;;       (let* ((filename (file-name-nondirectory (--getpath file))))
+;; 	(when (--dir? file)
+;; 	  (setq filename (sidebar-dir-arrow filename (--opened? file))))
+;; 	(setf (--getline file) (line-number-at-pos))
+;; 	(funcall func-insert filename file)
+;; 	(newline)))))
 
 
 
@@ -317,7 +354,8 @@ If it's not a file, return the home directory."
   "Open or create a sidebar for the current frame."
   (interactive)
   (setq default-directory "/home/sebastien/travaux/lightdm-electron-sample/")
-  (setq sidebar-window-origin (get-buffer-window))
+  (set-frame-parameter nil 'sidebar-window-origin (get-buffer-window))
+;;;  (setq sidebar-window-origin (get-buffer-window))
   (setq sidebar-root-project (sidebar-get-root-project))
   (let ((sidebar-exists (sidebar-exists-p))
 	(sidebar-buffer (sidebar-get-buffer))
@@ -334,6 +372,8 @@ If it's not a file, return the home directory."
       (sidebar-print)
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-mode))))
+
+;;get-current-buffer
 
 ;;;    (internal-show-cursor (sidebar-get-window) nil)
 
@@ -390,15 +430,31 @@ If it's not a file, return the home directory."
   (interactive)
   (message "coucou"))
 
-					;(kill-buffer (sidebar-cons-buffer-name))
+;;(kill-buffer (sidebar-cons-buffer-name))
 
 (defun sidebar-disable-current (line)
   "Print current LINE with background colored."
-  (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-	 (str (s-trim-right (s-chop-suffix "" str))))
-    (save-excursion
+  (save-excursion
+    (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
       (delete-region (line-beginning-position) (line-end-position))
-      (insert str))))
+      (if sidebar-git-hashtable
+	  (sidebar-print-with-git file)
+	(sidebar-print-normal file)
+	))))
+
+;; (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+;; 	 (str (s-trim-right (s-chop-suffixes '("" "") str))))
+;;   (save-excursion
+;;     (delete-region (line-beginning-position) (line-end-position))
+;;     (insert str))))
+
+;; (defun sidebar-disable-current (line)
+;;   "Print current LINE with background colored."
+;;   (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+;; 	 (str (s-trim-right (s-chop-suffixes '("" "") str))))
+;;     (save-excursion
+;;       (delete-region (line-beginning-position) (line-end-position))
+;;       (insert str))))
 
 (defun sidebar-show-current (line)
   "Print current LINE with background colored."
@@ -505,7 +561,11 @@ If it's not a file, return the home directory."
 (defun sidebar-open-file (file)
   "Open FILE in the buffer where the sidebar has been called."
   (let ((buffer-file (find-file-noselect (--getpath file))))
-    (set-window-buffer sidebar-window-origin buffer-file)))
+    (set-window-buffer (frame-parameter nil 'sidebar-window-origin) buffer-file)))
+;;;(set-window-buffer sidebar-window-origin buffer-file)))
+
+;;set-frame-parameter
+;;make-variable-frame-local
 
 (defun sidebar-open-line ()
   "."
@@ -734,7 +794,8 @@ CHANGE is unused"
       (message "Git succed")
       (let ((table (sidebar-git-parse-buffer process)))
 	(setq sidebar-git-hashtable table)
-	(sidebar-refresh)))))
+	(sidebar-refresh)))
+    (ignore-errors (kill-buffer (sidebar-get-git-buffer)))))
 ;;;  (sidebar-git-update-sidebar table)))))
 
 (defun sidebar-run-git ()
@@ -748,8 +809,7 @@ CHANGE is unused"
       (erase-buffer))
     (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer) "git" "status" "--porcelain" "--ignored" "-z" "-b" ".")))
       (set-process-query-on-exit-flag process nil)
-      (set-process-sentinel
-       process 'sidebar-git-handle-exit))))
+      (set-process-sentinel process 'sidebar-git-handle-exit))))
 ;;   (lambda (process _event)
 ;;     (when (eq (process-status process) 'exit)
 ;;       (if (/= (process-exit-status process) 0)
@@ -791,7 +851,7 @@ CHANGE is unused"
   (make-local-variable 'sidebar-header-text)
   (make-local-variable 'sidebar-files)
   (make-local-variable 'sidebar-current-path)
-  (make-local-variable 'sidebar-window-origin)
+  ;;  (make-local-variable 'sidebar-window-origin)
   (make-local-variable 'sidebar-closed-directories)
   (make-local-variable 'sidebar-root-project)
   (make-local-variable 'sidebar-git-hashtable)
