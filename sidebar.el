@@ -82,7 +82,13 @@
 (defface sidebar-dir-face
   '((t :foreground "color-27"))
   "Face used with directories."
-  :group 'sidebar)
+  :group 'sidebar-face)
+
+(defface sidebar-powerline-face
+  '((t :background "color-27" ;"#0087af"
+       :foreground "black"))
+  "Face used for the powerline."
+  :group 'sidebar-face)
 
 (defvar sidebar-files '())
 (defvar sidebar-current-path nil)
@@ -185,6 +191,7 @@ If it's not a file, return the home directory."
     ;; 						     '(:foreground "grey"))))
     ))
 
+;;('sidebar-dir-face)
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -436,11 +443,12 @@ If it's not a file, return the home directory."
   "Print current LINE with background colored."
   (save-excursion
     (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
-      (delete-region (line-beginning-position) (line-end-position))
-      (if sidebar-git-hashtable
-	  (sidebar-print-with-git file)
-	(sidebar-print-normal file)
-	))))
+      (when file
+	(delete-region (line-beginning-position) (line-end-position))
+	(if sidebar-git-hashtable
+	    (sidebar-print-with-git file)
+	  (sidebar-print-normal file)
+	  )))))
 
 ;; (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
 ;; 	 (str (s-trim-right (s-chop-suffixes '("" "") str))))
@@ -462,11 +470,8 @@ If it's not a file, return the home directory."
 	 (str (s-pad-right (- (window-width (sidebar-get-window)) 2) " " str)))
     (save-excursion
       (delete-region (line-beginning-position) (line-end-position))
-      (insert (propertize str 'font-lock-face '(:foreground "black":background "#0087af")))
-      (insert (propertize "" 'font-lock-face '(:foreground "#0087af"))))))
-;;(insert (propertize "" 'font-lock-face '(:background nil :foreground "#0087af"))))))
-;; (insert (propertize str 'font-lock-face '(:foreground "#0087af":background "#303030")))
-;; (insert (propertize "" 'font-lock-face '(:background nil :foreground "#303030"))))))
+      (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
+      (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
 
 (defun sidebar-previous-line ()
   "Go the the previous line."
