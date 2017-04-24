@@ -67,13 +67,16 @@
   :type 'integer
   :group 'sidebar)
 
-(defcustom sidebar-character-dir-closed "+" ;"▸"
-  "Character to use before a closed directory."
+(defcustom sidebar-character-dir-closed "📁" ; "📂"; "+" ;"▸" ;"🞊"; "🞄"; "⚬"; "•" ;"⚫" ; "⚛" ; "◦"; "●" ;"▫";"▢" ;"+" ;"▸"
+  "Character to insert before a closed directory."
   :type 'string
   :group 'sidebar)
 
-(defcustom sidebar-character-dir-opened "↳" ;"-" ;"▾"
-  "Character to use before an opened directory."
+;;(eval-buffer)
+;;(sidebar-open)
+
+(defcustom sidebar-character-dir-opened "📂"; "↳" ;"-" ;"▾"
+  "Character to insert before an opened directory."
   :type 'string
   :group 'sidebar)
 
@@ -84,11 +87,44 @@
   "Face used with directories."
   :group 'sidebar-face)
 
+(defface sidebar-ignored-dir-face
+  '((t :foreground "color-18"))
+  "Face used with ignored (on git) directories."
+  :group 'sidebar-face)
+
+(defface sidebar-file-face
+  '((t :foreground "grey"))
+  "Face used with files."
+  :group 'sidebar-face)
+
+(defface sidebar-ignored-file-face
+  '((t :foreground "#3f3f3f"))
+  "Face used with files."
+  :group 'sidebar-face)
+
+(defface sidebar-not-updated-icon-face
+  '((t :foreground "red"))
+  "Face used with icon for files not updated."
+  :group 'sidebar-face)
+
+(defface sidebar-updated-icon-face
+  '((t :foreground "green"))
+  "Face used with icon for files not updated."
+  :group 'sidebar-face)
+
+(defface sidebar-untracked-icon-face
+  '((t :foreground "red"))
+  "Face used with icon for files untracked."
+  :group 'sidebar-face)
+
 (defface sidebar-powerline-face
   '((t :background "color-27" ;"#0087af"
        :foreground "black"))
   "Face used for the powerline."
   :group 'sidebar-face)
+
+;;(eval-buffer)
+;;(sidebar-open)
 
 (defvar sidebar-files '())
 (defvar sidebar-current-path nil)
@@ -171,25 +207,79 @@ If it's not a file, return the home directory."
 	   (sidebar-dir-arrow (file-name-nondirectory (--getpath file)) (--opened? file)))
       (file-name-nondirectory (--getpath file))))
 
+(defun sidebar-ignored? (file-path)
+  "Return non-nil if FILE-PATH is a child of an ignored directory."
+  (catch 'stop-map
+    (maphash (lambda (key value)
+	       (when (equal value 'ignored)
+		 (when (s-starts-with? key file-path)
+		   (throw 'stop-map t))))
+	     sidebar-git-hashtable)))
+
+;; (cond ((s-matches? "^ M$" status) 'not-updated)
+;;       ((s-matches? "^M[ MD]$" status) 'updated)
+;;       ((s-matches? "^A[ MD]$" status) 'added)
+;;       ((s-matches? "^D[ M]$" status) 'deleted)
+;;       ((s-matches? "^D[ M]$" status) 'renamed)
+;;       ((s-matches? "^[MARC] $" status) 'match)
+;;       ((s-matches? "^[ MARC]M$" status) 'changed)
+;;       ((s-matches? "^[ MARC]D$" status) 'deleted)
+;;       ((s-matches? "^\\?\\?$" status) 'untracked)
+;;       ((s-matches? "^!!$" status) 'ignored)
+
+(defun sidebar-get-icon-from-status (status)
+  "STATUS."
+  (if (equal 'ignored status)
+      ""
+    (concat
+     (cond ((equal 'not-updated status) "✗")
+	   ((equal 'updated status) "✓")
+	   ((equal 'untracked status) "⁇")
+	   ((equal 'changed status) "✓")
+	   ((equal 'added status) "+")
+;;;	   ((equal 'deleted status) "-")
+	   ((equal 'renamed status) "✂")
+	   ((equal 'match status) "✓")
+	   (t "✓"))
+     " ")))
+
+(defun sidebar-get-icon-color (status)
+  "STATUS."
+  (cond ((equal 'not-updated status) 'sidebar-not-updated-icon-face)
+	((equal 'updated status) 'sidebar-updated-icon-face)
+	((equal 'untracked status) 'sidebar-untracked-icon-face)
+	((equal 'changed status) '(:foreground "orange"))
+	((equal 'added status) '(:foreground "green"))
+;;;	((equal 'deleted status) '(:foreground "green"))
+	((equal 'renamed status) '(:foreground "orange"))
+	((equal 'match status) '(:foreground "green"))
+	(t '(:foreground "blue"))))
+
+(defun sidebar-get-filename-color (file path status)
+  "FILE PATH STATUS."
+  (cond ((and (equal 'ignored status) (cond ((--dir? file) 'sidebar-ignored-dir-face)
+					    (t 'sidebar-ignored-file-face))))
+	((and (sidebar-ignored? path) (cond ((--dir? file) 'sidebar-ignored-dir-face)
+					    (t 'sidebar-ignored-file-face))))
+	((--dir? file) 'sidebar-dir-face)
+	(t 'sidebar-file-face)))
+
 (defun sidebar-print-with-git (file)
   "FILENAME FILE."
   (let* ((filename (sidebar-get-filename-dir-indicator file))
 	 (depth (sidebar-calc-depth file))
 	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
-	 (path-with-correct-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
-					path-in-project))
-	 (status (gethash path-with-correct-dirname sidebar-git-hashtable)))
-
-    (when (and (> depth 2) status)
+	 (path-fixed-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
+				 path-in-project))
+	 (status (gethash path-fixed-dirname sidebar-git-hashtable)))
+    (when (and status (not (equal 'ignored status)) (not (--dir? file)))
       (setq depth (- depth 2)))
+    ;; (when (and (> depth 2) status (not (equal 'ignored status)))
+    ;;   (setq depth (- depth 2)))
     (insert (s-repeat depth " "))
-    (when status
-      (insert (propertize "✓ " 'font-lock-face '(:foreground "green"))))
-    (insert (propertize filename 'font-lock-face (or (and (--dir? file) 'sidebar-dir-face)
-						     '(:foreground "grey"))))
-    ;; (insert (propertize filename 'font-lock-face (or (and (--dir? file) '(:foreground "color-27"))
-    ;; 						     '(:foreground "grey"))))
-    ))
+    (when (and status (not (--dir? file)))
+      (insert (propertize (sidebar-get-icon-from-status status) 'font-lock-face (sidebar-get-icon-color status))))
+    (insert (propertize filename 'font-lock-face (sidebar-get-filename-color file path-fixed-dirname status)))))
 
 ;;('sidebar-dir-face)
 
@@ -360,7 +450,7 @@ If it's not a file, return the home directory."
 (defun sidebar-open ()
   "Open or create a sidebar for the current frame."
   (interactive)
-  (setq default-directory "/home/sebastien/travaux/lightdm-electron-sample/")
+;;;  (setq default-directory "/home/sebastien/travaux/sample/")
   (set-frame-parameter nil 'sidebar-window-origin (get-buffer-window))
 ;;;  (setq sidebar-window-origin (get-buffer-window))
   (setq sidebar-root-project (sidebar-get-root-project))
@@ -467,7 +557,7 @@ If it's not a file, return the home directory."
 (defun sidebar-show-current (line)
   "Print current LINE with background colored."
   (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-	 (str (s-pad-right (- (window-width (sidebar-get-window)) 2) " " str)))
+	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
     (save-excursion
       (delete-region (line-beginning-position) (line-end-position))
       (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
@@ -526,11 +616,12 @@ If it's not a file, return the home directory."
       (setq sidebar-files (sidebar-old-as-opened new-files old-dir))
       (setq sidebar-current-path (file-name-as-directory new-directory))
       (setq default-directory sidebar-current-path)
+      (setq sidebar-root-project (sidebar-get-root-project))
       (setq sidebar-header-text (abbreviate-file-name new-directory))
       (sidebar-print-listfiles sidebar-files)
       (let* ((old-dir- (--first (string= (--getpath it) old-dir) sidebar-files))
 	     (line-to-put-old-files (--getline old-dir-)))
-	(sidebar-goto-line (+ line-to-put-old-files 1))
+	(sidebar-goto-line (+ line-to-put-old-files 1) t)
 	(sidebar-update-line-number (length old-files) line-to-put-old-files)
 	(sidebar-print-listfiles old-files)
 	(setq sidebar-files (-concat sidebar-files old-files))
@@ -549,6 +640,7 @@ If it's not a file, return the home directory."
     (setq sidebar-files files)
     (setq sidebar-current-path (file-name-as-directory (--getpath file)))
     (setq default-directory sidebar-current-path)
+    (setq sidebar-root-project (sidebar-get-root-project))
     (setq sidebar-header-text (abbreviate-file-name (--getpath file)))
     (sidebar-print-listfiles files)
     (sidebar-goto-line 1)
@@ -631,7 +723,7 @@ If it's not a file, return the home directory."
   (save-excursion
     (beginning-of-line)
     (search-forward sidebar-character-dir-closed (line-end-position))
-    (replace-match (propertize sidebar-character-dir-opened 'font-lock-face '(:background "#0087af" :foreground "black")))))
+    (replace-match (propertize sidebar-character-dir-opened 'font-lock-face 'sidebar-powerline-face))))
 
 ;;(file-name-as-directory "/home/sebastien/travaux/sidebar.el/src")
 ;;(message (--getpath (nth (- (line-number-at-pos) 1) sidebar-files))))
@@ -662,7 +754,8 @@ If it's not a file, return the home directory."
   (save-excursion
     (beginning-of-line)
     (search-forward sidebar-character-dir-opened (line-end-position))
-    (replace-match (propertize sidebar-character-dir-closed 'font-lock-face '(:background "#0087af" :foreground "black")))))
+    (replace-match (propertize sidebar-character-dir-closed 'font-lock-face 'sidebar-powerline-face))))
+;;;(replace-match (propertize sidebar-character-dir-closed 'font-lock-face '(:background "#0087af" :foreground "black")))))
 
 (defun sidebar-expand-or-close-dir ()
   "."
@@ -678,12 +771,15 @@ If it's not a file, return the home directory."
 ;;   "Go to LINE."
 ;;   (forward-line (- line (line-number-at-pos))))
 
-(defun sidebar-goto-line (line)
-  "Go to LINE."
-  (let ((max (count-lines (point-min) (point-max))))
-    (when (> line max)
-      (setq line max))
-    (forward-line (- line (line-number-at-pos)))))
+(defun sidebar-goto-line (line &optional force)
+  "Go to LINE.
+FORCE."
+  (if force
+      (forward-line (- line (line-number-at-pos)))
+    (let ((max (count-lines (point-min) (point-max))))
+      (when (> line max)
+	(setq line max))
+      (forward-line (- line (line-number-at-pos))))))
 
 (defun sidebar-update-from-opened-dirs (list opened)
   "LIST OPENED."
@@ -748,13 +844,13 @@ The format is `## branchname tracking info'"
 (defun sidebar-git-match-status (status)
   "Return the status from the string STATUS according to the man-page git-status."
   (cond ((s-matches? "^ M$" status) 'not-updated)
-	((s-matches? "^M[ MD]$" status) 'updated)
-	((s-matches? "^A[ MD]$" status) 'added)
-	((s-matches? "^D[ M]$" status) 'deleted)
-	((s-matches? "^D[ M]$" status) 'renamed)
 	((s-matches? "^[MARC] $" status) 'match)
 	((s-matches? "^[ MARC]M$" status) 'changed)
-	((s-matches? "^[ MARC]D$" status) 'deleted)
+	((s-matches? "^M[ MD]$" status) 'updated)
+	((s-matches? "^A[ MD]$" status) 'added)
+;;;	((s-matches? "^D[ M]$" status) 'deleted) We don't care about deleted files
+	((s-matches? "^D[ M]$" status) 'renamed)
+;;;	((s-matches? "^[ MARC]D$" status) 'deleted) We don't care about deleted files
 	((s-matches? "^\\?\\?$" status) 'untracked)
 	((s-matches? "^!!$" status) 'ignored)
 	(t 'unknown)))
