@@ -39,6 +39,7 @@
 (require 'projectile)
 (require 'loop)
 (require 's)
+(require 'dash)
 					;(require 'ov)
 
 (eval-after-load 'dash '(dash-enable-font-lock))
@@ -178,10 +179,10 @@ If it's not a file, return the home directory."
   "Return the current line in buffer."
   (string-to-number (format-mode-line "%l")))
 
-(defun sidebar-print-selected (str)
-  "Print STR with powerline."
-  (insert (propertize (s-pad-right (- (window-width (sidebar-get-window)) 2) " " str) 'font-lock-face '(:background "blue")))
-  (insert (propertize "" 'font-lock-face '(:background nil :foreground "blue"))))
+;; (defun sidebar-print-selected (str)
+;;   "Print STR with powerline."
+;;   (insert (propertize (s-pad-right (- (window-width (sidebar-get-window)) 2) " " str) 'font-lock-face '(:background "blue")))
+;;   (insert (propertize "" 'font-lock-face '(:background nil :foreground "blue"))))
 
 (defun sidebar-dir-arrow (dirname opened)
   "DIRNAME OPENED."
@@ -243,29 +244,148 @@ If it's not a file, return the home directory."
 	   (t "✓"))
      " ")))
 
-(defun sidebar-get-icon-color (status)
-  "STATUS."
-  (cond ((equal 'not-updated status) 'sidebar-not-updated-icon-face)
-	((equal 'updated status) 'sidebar-updated-icon-face)
-	((equal 'untracked status) 'sidebar-untracked-icon-face)
-	((equal 'changed status) '(:foreground "orange"))
-	((equal 'added status) '(:foreground "green"))
-;;;	((equal 'deleted status) '(:foreground "green"))
-	((equal 'renamed status) '(:foreground "orange"))
-	((equal 'match status) '(:foreground "green"))
-	(t '(:foreground "blue"))))
+(defun sidebar-get-icon-color (status current-line)
+  "STATUS CURRENT-LINE."
+  (if current-line
+      (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'updated status) `(sidebar-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'untracked status) `(sidebar-untracked-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'changed status) `((:foreground "orange") :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'added status) `((:foreground "green") :background ,(face-background 'sidebar-powerline-face)))
+;;;	    ((equal 'deleted status) `((:foreground "green") :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'renamed status) `((:foreground "orange") :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'match status) `((:foreground "green") :background ,(face-background 'sidebar-powerline-face)))
+	    (t `((:foreground "blue") :background ,(face-background 'sidebar-powerline-face))))
+    (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face))
+	  ((equal 'updated status) `(sidebar-updated-icon-face))
+	  ((equal 'untracked status) `(sidebar-untracked-icon-face))
+	  ((equal 'changed status) `((:foreground "orange")))
+	  ((equal 'added status) `((:foreground "green")))
+;;;	  ((equal 'deleted status) `((:foreground "green")))
+	  ((equal 'renamed status) `((:foreground "orange")))
+	  ((equal 'match status) `((:foreground "green")))
+	  (t `((:foreground "blue"))))))
 
-(defun sidebar-get-filename-color (file path status)
-  "FILE PATH STATUS."
-  (cond ((and (equal 'ignored status) (cond ((--dir? file) 'sidebar-ignored-dir-face)
-					    (t 'sidebar-ignored-file-face))))
-	((and (sidebar-ignored? path) (cond ((--dir? file) 'sidebar-ignored-dir-face)
-					    (t 'sidebar-ignored-file-face))))
-	((--dir? file) 'sidebar-dir-face)
-	(t 'sidebar-file-face)))
 
-(defun sidebar-print-with-git (file)
-  "FILENAME FILE."
+;;   (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	((equal 'updated status) `(sidebar-updated-icon-face ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	((equal 'untracked status) `(sidebar-untracked-icon-face ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	((equal 'changed status) `((:foreground "orange") ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	((equal 'added status) `((:foreground "green") ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; ;;;	((equal 'deleted status) `((:foreground "green") ,(and current-line `'(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	((equal 'renamed status) `((:foreground "orange") ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	((equal 'match status) `((:foreground "green") ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))
+;; 	(t `((:foreground "blue") ,(and current-line `(:background ,(face-background 'sidebar-powerline-face)))))))
+;; (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       ((equal 'updated status) `(sidebar-updated-icon-face ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       ((equal 'untracked status) `(sidebar-untracked-icon-face ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       ((equal 'changed status) `((:foreground "orange") ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       ((equal 'added status) `((:foreground "green") ,(and current-line (face-background 'sidebar-powerline-face))))
+;; ;;;	((equal 'deleted status) `((:foreground "green") ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       ((equal 'renamed status) `((:foreground "orange") ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       ((equal 'match status) `((:foreground "green") ,(and current-line (face-background 'sidebar-powerline-face))))
+;;       (t `((:foreground "blue") ,(and current-line (face-background 'sidebar-powerline-face))))))
+;;(cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face ,(and current-line '(face-background sidebar-powerline-face))))
+;;       ((equal 'updated status) `(sidebar-updated-icon-face ,(and current-line '(face-background sidebar-powerline-face))))
+;;       ((equal 'untracked status) `(sidebar-untracked-icon-face ,(and current-line '(face-background sidebar-powerline-face))))
+;;       ((equal 'changed status) `((:foreground "orange") ,(and current-line '(face-background sidebar-powerline-face))))
+;;       ((equal 'added status) `((:foreground "green") ,(and current-line '(face-background sidebar-powerline-face))))
+;; ;;;	((equal 'deleted status) `((:foreground "green") ,(and current-line '(face-background sidebar-powerline-face))))
+;;       ((equal 'renamed status) `((:foreground "orange") ,(and current-line '(face-background sidebar-powerline-face))))
+;;       ((equal 'match status) `((:foreground "green") ,(and current-line '(face-background sidebar-powerline-face))))
+;;       (t `((:foreground "blue") ,(and current-line '(face-background sidebar-powerline-face))))))
+
+;; (defun sidebar-get-icon-color (status)
+;;   "STATUS."
+;;   (cond ((equal 'not-updated status) 'sidebar-not-updated-icon-face)
+;; 	((equal 'updated status) 'sidebar-updated-icon-face)
+;; 	((equal 'untracked status) 'sidebar-untracked-icon-face)
+;; 	((equal 'changed status) '(:foreground "orange"))
+;; 	((equal 'added status) '(:foreground "green"))
+;; ;;;	((equal 'deleted status) '(:foreground "green"))
+;; 	((equal 'renamed status) '(:foreground "orange"))
+;; 	((equal 'match status) '(:foreground "green"))
+;; 	(t '(:foreground "blue"))))
+
+(defun sidebar-get-filename-color (file path status current-line)
+  "FILE PATH STATUS CURRENT-LINE."
+  (if current-line
+      'sidebar-powerline-face
+    (cond ((and (equal 'ignored status)
+		(cond ((--dir? file) 'sidebar-ignored-dir-face)
+		      (t 'sidebar-ignored-file-face))))
+	  ((and (sidebar-ignored? path)
+		(cond ((--dir? file) 'sidebar-ignored-dir-face)
+		      (t 'sidebar-ignored-file-face))))
+	  ((--dir? file) 'sidebar-dir-face)
+	  (t 'sidebar-file-face))))
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
+(defun sidebar-insert-dir-info-git-make-str (status number current-line)
+  "STATUS NUMBER CURRENT-LINE."
+  (concat (or (and current-line (propertize " " 'font-lock-face 'sidebar-powerline-face))
+	      " ")
+	  (propertize (sidebar-get-icon-from-status status)
+	  	      'font-lock-face
+	  	      (sidebar-get-icon-color status current-line))
+	  (or (and current-line (propertize (number-to-string number) 'font-lock-face 'sidebar-powerline-face))
+	      (number-to-string number)))
+  )
+
+;; (defun sidebar-insert-dir-info-git-make-str (status number current-line)
+;;   "STATUS NUMBER CURRENT-LINE."
+;;   (concat " "
+;; 	  (propertize (sidebar-get-icon-from-status status)
+;; 		      'font-lock-face
+;; 		      (sidebar-get-icon-color status current-line))
+;; 	  (number-to-string number))
+;;   )
+
+(defun sidebar-insert-dir-info-git (file path status current-line)
+  "FILE PATH STATUS CURRENT-LINE."
+  (let ((not-updated 0) (updated 0) (untracked 0) (changed 0) (added 0) (renamed 0) (match 0))
+    (maphash (lambda (key value)
+	       (when (s-starts-with? path key)
+		 (cond ((equal 'not-updated value) (setq not-updated (+ not-updated 1)))
+		       ((equal 'updated value) (setq updated (+ updated 1)))
+		       ((equal 'untracked value) (setq untracked (+ untracked 1)))
+		       ((equal 'changed value) (setq changed (+ changed 1)))
+		       ((equal 'added value) (setq added (+ added 1)))
+;;;		       ((equal 'renamed value) (setq renamed (+ renamed 1)))
+		       ((equal 'match value) (setq match (+ match 1)))
+		       (t nil))))
+	     sidebar-git-hashtable)
+    (when (> not-updated 0)
+      (insert (sidebar-insert-dir-info-git-make-str 'not-updated not-updated current-line)))
+    (when (> updated 0)
+      (insert (sidebar-insert-dir-info-git-make-str 'updated updated current-line)))
+    (when (> untracked 0)
+      (insert (sidebar-insert-dir-info-git-make-str 'untracked untracked current-line)))
+    (when (> changed 0)
+      (insert (sidebar-insert-dir-info-git-make-str 'changed changed current-line)))
+    (when (> added 0)
+      (insert (sidebar-insert-dir-info-git-make-str 'added added current-line)))
+    (when (> match 0)
+      (insert (sidebar-insert-dir-info-git-make-str 'match match current-line)))
+    )
+  )
+
+(defun sidebar-insert (str face)
+  "STR FACE."
+  (if face
+      (insert (propertize str 'font-lock-face face))
+    (insert str)))
+
+(defun sidebar-insert-powerline ()
+  "."
+  (insert (propertize (s-repeat (- (window-width (sidebar-get-window)) (+ (current-column) 3)) " ")
+		      'font-lock-face 'sidebar-powerline-face))
+  (insert (propertize ""
+		      'font-lock-face `(:foreground ,(face-background 'sidebar-powerline-face)))))
+
+(defun sidebar-print-with-git (file &optional current-line)
+  "FILENAME FILE CURRENT-LINE."
   (let* ((filename (sidebar-get-filename-dir-indicator file))
 	 (depth (sidebar-calc-depth file))
 	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
@@ -274,12 +394,38 @@ If it's not a file, return the home directory."
 	 (status (gethash path-fixed-dirname sidebar-git-hashtable)))
     (when (and status (not (equal 'ignored status)) (not (--dir? file)))
       (setq depth (- depth 2)))
-    ;; (when (and (> depth 2) status (not (equal 'ignored status)))
-    ;;   (setq depth (- depth 2)))
-    (insert (s-repeat depth " "))
+    (sidebar-insert (s-repeat depth " ") (and current-line 'sidebar-powerline-face))
     (when (and status (not (--dir? file)))
-      (insert (propertize (sidebar-get-icon-from-status status) 'font-lock-face (sidebar-get-icon-color status))))
-    (insert (propertize filename 'font-lock-face (sidebar-get-filename-color file path-fixed-dirname status)))))
+      (sidebar-insert (sidebar-get-icon-from-status status) (sidebar-get-icon-color status current-line)))
+    (sidebar-insert filename (sidebar-get-filename-color file path-fixed-dirname status current-line))
+    (when (and (--dir? file) (not (--opened? file)))
+      (sidebar-insert-dir-info-git file path-fixed-dirname status current-line))
+    (when current-line
+      (sidebar-insert-powerline))))
+
+;; (defun sidebar-print-with-git (file &optional with-powerline)
+;;   "FILENAME FILE WITH-POWERLINE."
+;;   (let* ((filename (sidebar-get-filename-dir-indicator file))
+;; 	 (depth (sidebar-calc-depth file))
+;; 	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
+;; 	 (path-fixed-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
+;; 				 path-in-project))
+;; 	 (status (gethash path-fixed-dirname sidebar-git-hashtable)))
+;;     (when (and status (not (equal 'ignored status)) (not (--dir? file)))
+;;       (setq depth (- depth 2)))
+;;     (sidebar-insert-line (s-repeat depth " ") t)
+;; ;;;    (insert (s-repeat depth " "))
+;;     (when (and status (not (--dir? file)))
+;; ;;;      (sidebar-insert-line (propertize (sidebar-get-icon-from-status status) 'font-lock-face (sidebar-get-icon-color status)) t))
+;;       (insert (propertize (sidebar-get-icon-from-status status) 'font-lock-face `(,(sidebar-get-icon-color status) 'sidebar-powerline-face))))
+;; ;;;    (insert (propertize (sidebar-get-icon-from-status status) 'font-lock-face (sidebar-get-icon-color status))))
+;;     (insert (propertize filename 'font-lock-face (sidebar-get-filename-color file path-fixed-dirname status)))
+;;     (when (and (--dir? file) (not (--opened? file)))
+;;       (sidebar-insert-dir-info-git file path-fixed-dirname status)
+;;       )))
+
+;; (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
+;; (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
 
 ;;('sidebar-dir-face)
 
@@ -556,12 +702,29 @@ If it's not a file, return the home directory."
 
 (defun sidebar-show-current (line)
   "Print current LINE with background colored."
-  (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
-    (save-excursion
-      (delete-region (line-beginning-position) (line-end-position))
-      (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
-      (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
+  (save-excursion
+    (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
+      (when file
+	(delete-region (line-beginning-position) (line-end-position))
+	(if sidebar-git-hashtable
+	    (sidebar-print-with-git file t)
+	  (sidebar-print-normal file)))
+      (message (--getpath file) sidebar-files))))
+;; (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+;; 	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
+;;   (save-excursion
+;;     (delete-region (line-beginning-position) (line-end-position))
+;;     (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
+;;     (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
+
+;; (defun sidebar-show-current (line)
+;;   "Print current LINE with background colored."
+;;   (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+;; 	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
+;;     (save-excursion
+;;       (delete-region (line-beginning-position) (line-end-position))
+;;       (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
+;;       (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
 
 (defun sidebar-previous-line ()
   "Go the the previous line."
@@ -570,8 +733,8 @@ If it's not a file, return the home directory."
   (if (= (line-number-at-pos) 1)
       (forward-line (- (count-lines (point-min) (point-max)) 1))
     (forward-line -1))
-  (sidebar-show-current nil)
-  (message (--getpath (nth (- (line-number-at-pos) 1) sidebar-files))))
+  (sidebar-show-current nil))
+;;  (message (--getpath (nth (- (line-number-at-pos) 1) sidebar-files))))
 
 (defun sidebar-next-line ()
   "Go the the next line."
@@ -581,8 +744,8 @@ If it's not a file, return the home directory."
   (let ((numbers-of-line (count-lines (point-min) (point-max))))
     (if (> (line-number-at-pos) numbers-of-line)
 	(forward-line (- numbers-of-line))))
-  (sidebar-show-current nil)
-  (message (--getpath (nth (- (line-number-at-pos) 1) sidebar-files))))
+  (sidebar-show-current nil))
+;;  (message (--getpath (nth (- (line-number-at-pos) 1) sidebar-files))))
 
 
 ;; (loop-for-each file list
@@ -722,8 +885,11 @@ If it's not a file, return the home directory."
       (sidebar-sort-files-by-line)))
   (save-excursion
     (beginning-of-line)
-    (search-forward sidebar-character-dir-closed (line-end-position))
-    (replace-match (propertize sidebar-character-dir-opened 'font-lock-face 'sidebar-powerline-face))))
+    (delete-region (line-beginning-position) (line-end-position))
+    (sidebar-print-with-git file t)
+    ))
+    ;; (search-forward sidebar-character-dir-closed (line-end-position))
+    ;; (replace-match (propertize sidebar-character-dir-opened 'font-lock-face 'sidebar-powerline-face))))
 
 ;;(file-name-as-directory "/home/sebastien/travaux/sidebar.el/src")
 ;;(message (--getpath (nth (- (line-number-at-pos) 1) sidebar-files))))
@@ -753,8 +919,11 @@ If it's not a file, return the home directory."
 	(sidebar-delete-line))))
   (save-excursion
     (beginning-of-line)
-    (search-forward sidebar-character-dir-opened (line-end-position))
-    (replace-match (propertize sidebar-character-dir-closed 'font-lock-face 'sidebar-powerline-face))))
+    (delete-region (line-beginning-position) (line-end-position))
+    (sidebar-print-with-git file t)
+    ))
+    ;; (search-forward sidebar-character-dir-opened (line-end-position))
+    ;; (replace-match (propertize sidebar-character-dir-closed 'font-lock-face 'sidebar-powerline-face))))
 ;;;(replace-match (propertize sidebar-character-dir-closed 'font-lock-face '(:background "#0087af" :foreground "black")))))
 
 (defun sidebar-expand-or-close-dir ()
