@@ -175,9 +175,9 @@ If it's not a file, return the home directory."
 	(cons 'line 0)
 	(cons 'opened nil)))
 
-(defun sidebar-get-current-line ()
-  "Return the current line in buffer."
-  (string-to-number (format-mode-line "%l")))
+;; (defun sidebar-get-current-line ()
+;;   "Return the current line in buffer."
+;;   (string-to-number (format-mode-line "%l")))
 
 ;; (defun sidebar-print-selected (str)
 ;;   "Print STR with powerline."
@@ -210,12 +210,13 @@ If it's not a file, return the home directory."
 
 (defun sidebar-ignored? (file-path)
   "Return non-nil if FILE-PATH is a child of an ignored directory."
-  (catch 'stop-map
-    (maphash (lambda (key value)
-	       (when (equal value 'ignored)
-		 (when (s-starts-with? key file-path)
-		   (throw 'stop-map t))))
-	     sidebar-git-hashtable)))
+  (when sidebar-git-hashtable
+    (catch 'stop-map
+      (maphash (lambda (key value)
+		 (when (equal value 'ignored)
+		   (when (s-starts-with? key file-path)
+		     (throw 'stop-map t))))
+	       sidebar-git-hashtable))))
 
 ;; (cond ((s-matches? "^ M$" status) 'not-updated)
 ;;       ((s-matches? "^M[ MD]$" status) 'updated)
@@ -344,31 +345,32 @@ If it's not a file, return the home directory."
 
 (defun sidebar-insert-dir-info-git (file path status current-line)
   "FILE PATH STATUS CURRENT-LINE."
-  (let ((not-updated 0) (updated 0) (untracked 0) (changed 0) (added 0) (renamed 0) (match 0))
-    (maphash (lambda (key value)
-	       (when (s-starts-with? path key)
-		 (cond ((equal 'not-updated value) (setq not-updated (+ not-updated 1)))
-		       ((equal 'updated value) (setq updated (+ updated 1)))
-		       ((equal 'untracked value) (setq untracked (+ untracked 1)))
-		       ((equal 'changed value) (setq changed (+ changed 1)))
-		       ((equal 'added value) (setq added (+ added 1)))
+  (when sidebar-git-hashtable
+    (let ((not-updated 0) (updated 0) (untracked 0) (changed 0) (added 0) (renamed 0) (match 0))
+      (maphash (lambda (key value)
+		 (when (s-starts-with? path key)
+		   (cond ((equal 'not-updated value) (setq not-updated (+ not-updated 1)))
+			 ((equal 'updated value) (setq updated (+ updated 1)))
+			 ((equal 'untracked value) (setq untracked (+ untracked 1)))
+			 ((equal 'changed value) (setq changed (+ changed 1)))
+			 ((equal 'added value) (setq added (+ added 1)))
 ;;;		       ((equal 'renamed value) (setq renamed (+ renamed 1)))
-		       ((equal 'match value) (setq match (+ match 1)))
-		       (t nil))))
-	     sidebar-git-hashtable)
-    (when (> not-updated 0)
-      (insert (sidebar-insert-dir-info-git-make-str 'not-updated not-updated current-line)))
-    (when (> updated 0)
-      (insert (sidebar-insert-dir-info-git-make-str 'updated updated current-line)))
-    (when (> untracked 0)
-      (insert (sidebar-insert-dir-info-git-make-str 'untracked untracked current-line)))
-    (when (> changed 0)
-      (insert (sidebar-insert-dir-info-git-make-str 'changed changed current-line)))
-    (when (> added 0)
-      (insert (sidebar-insert-dir-info-git-make-str 'added added current-line)))
-    (when (> match 0)
-      (insert (sidebar-insert-dir-info-git-make-str 'match match current-line)))
-    )
+			 ((equal 'match value) (setq match (+ match 1)))
+			 (t nil))))
+	       sidebar-git-hashtable)
+      (when (> not-updated 0)
+	(insert (sidebar-insert-dir-info-git-make-str 'not-updated not-updated current-line)))
+      (when (> updated 0)
+	(insert (sidebar-insert-dir-info-git-make-str 'updated updated current-line)))
+      (when (> untracked 0)
+	(insert (sidebar-insert-dir-info-git-make-str 'untracked untracked current-line)))
+      (when (> changed 0)
+	(insert (sidebar-insert-dir-info-git-make-str 'changed changed current-line)))
+      (when (> added 0)
+	(insert (sidebar-insert-dir-info-git-make-str 'added added current-line)))
+      (when (> match 0)
+	(insert (sidebar-insert-dir-info-git-make-str 'match match current-line)))
+      ))
   )
 
 (defun sidebar-insert (str face)
@@ -391,7 +393,7 @@ If it's not a file, return the home directory."
 	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
 	 (path-fixed-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
 				 path-in-project))
-	 (status (gethash path-fixed-dirname sidebar-git-hashtable)))
+	 (status (and sidebar-git-hashtable (gethash path-fixed-dirname sidebar-git-hashtable))))
     (when (and status (not (equal 'ignored status)) (not (--dir? file)))
       (setq depth (- depth 2)))
     (sidebar-insert (s-repeat depth " ") (and current-line 'sidebar-powerline-face))
@@ -402,6 +404,8 @@ If it's not a file, return the home directory."
       (sidebar-insert-dir-info-git file path-fixed-dirname status current-line))
     (when current-line
       (sidebar-insert-powerline))))
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 ;; (defun sidebar-print-with-git (file &optional with-powerline)
 ;;   "FILENAME FILE WITH-POWERLINE."
@@ -439,12 +443,14 @@ If it's not a file, return the home directory."
 
 (defun sidebar-print-listfiles (list)
   "LIST DEPTH OPENED-DIRS."
-  (let ((func-insert (or (and sidebar-git-hashtable 'sidebar-print-with-git)
-			 'sidebar-print-normal)))
+  (let ((func-insert 'sidebar-print-with-git))
+    ;; (let ((func-insert (or (and sidebar-git-hashtable 'sidebar-print-with-git)
+    ;; 			 'sidebar-print-normal)))
     (loop-for-each file list
       (setf (--getline file) (line-number-at-pos))
       (funcall func-insert file)
       (newline))))
+
 
 ;; (defun sidebar-print-listfiles (list)
 ;;   "LIST DEPTH OPENED-DIRS."
@@ -681,10 +687,10 @@ If it's not a file, return the home directory."
     (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
       (when file
 	(delete-region (line-beginning-position) (line-end-position))
-	(if sidebar-git-hashtable
-	    (sidebar-print-with-git file)
-	  (sidebar-print-normal file)
-	  )))))
+	;; (if sidebar-git-hashtable
+	(sidebar-print-with-git file))
+      ;; (sidebar-print-normal file)
+      )))
 
 ;; (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
 ;; 	 (str (s-trim-right (s-chop-suffixes '("" "") str))))
@@ -706,9 +712,9 @@ If it's not a file, return the home directory."
     (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
       (when file
 	(delete-region (line-beginning-position) (line-end-position))
-	(if sidebar-git-hashtable
-	    (sidebar-print-with-git file t)
-	  (sidebar-print-normal file)))
+	;; (if sidebar-git-hashtable
+	(sidebar-print-with-git file t))
+      ;; (sidebar-print-normal file)))
       (message (--getpath file) sidebar-files))))
 ;; (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
 ;; 	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
@@ -971,7 +977,7 @@ FORCE."
       (let ((found (--first (string= (--getpath it) (--getpath dir)) sidebar-files)))
 	(when found
 	  (setf (--opened? found) t)
-	  (sidebar-goto-line (+ (--getline found) 1))
+	  (sidebar-goto-line (+ (--getline found) 1) t)
 	  (let* ((new-files (sidebar-load-dir (--getpath found)))
 		 (new-files (sidebar-update-from-opened-dirs new-files opened-dirs)))
 	    (sidebar-print-listfiles new-files)
@@ -984,16 +990,18 @@ FORCE."
 
 (defun sidebar-refresh-on-save-after-timer ()
   "Function called when a buffer is saved, it refreshes the sidebar."
-  (save-excursion
-    (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
-      (when sidebar-window
-	(set-buffer (sidebar-get-buffer))
-	(sidebar-refresh)))))
+  (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name)))
+	(point nil))
+    (when sidebar-window
+      (with-current-buffer (sidebar-get-buffer)
+	(setq point (point))
+	(sidebar-refresh)))
+    (set-window-point sidebar-window point)))
 
 (defun sidebar-refresh-on-save ()
   "Function called when a buffer is saved, it refreshes the sidebar.
-I'm using a timer because, with my config, flycheck write a file in the
-current directory (I don't know why) and it appears in the Sidebar.
+I'm using a timer because, with my config, flycheck write a temporary
+file in the current directory (I don't know why) and it appears in the Sidebar.
 So I'm just waiting for it to be delete :/"
   (run-with-idle-timer 2 nil 'sidebar-refresh-on-save-after-timer))
 
@@ -1068,7 +1076,7 @@ CHANGE is unused"
     (ignore-errors (kill-buffer (sidebar-get-git-buffer)))))
 ;;;  (sidebar-git-update-sidebar table)))))
 
-(defun sidebar-run-git ()
+(defun sidebar-git-run ()
   "."
   (interactive)
   (when sidebar-root-project
@@ -1102,7 +1110,7 @@ CHANGE is unused"
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-x a") 'sidebar-test)
     (define-key map (kbd "q") 'sidebar-close)
-    (define-key map (kbd "g") 'sidebar-run-git)
+    (define-key map (kbd "g") 'sidebar-git-run)
     (define-key map (kbd "SPC") 'sidebar-expand-or-close-dir)
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
