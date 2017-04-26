@@ -44,6 +44,20 @@
 
 (eval-after-load 'dash '(dash-enable-font-lock))
 
+(defgroup sidebar nil
+  "Customizable file explorer with git integration."
+  :group 'tools
+  :group 'convenience
+  :link '(custom-manual "(sidebar) Top")
+  :link '(info-link "(sidebar) Customizing"))
+
+(defgroup sidebar-faces nil
+  "Faces uses in sidebar."
+  :prefix "sidebar-"
+  :link '(info-link "(sidebar) Frames and Faces")
+  :group 'sidebar
+  :group 'faces)
+
 (defmacro --getpath (file)
   "Return the path from FILE."
   `(alist-get 'path ,file))
@@ -63,76 +77,91 @@
 (defconst sidebar-buffer-name "SIDEBAR"
   "Name of a Sidebar buffer, followed by the frame name.")
 
+(defcustom sidebar-resize-auto-window nil
+  "If activated, the sidebar's window will automatically be resize if the..
+filename on the current line is longer than the window.
+This can be done manually by calling the function `\\[sidebar-resize-window]' or
+by binding a key to it."
+  :type 'boolean
+  :group 'sidebar)
+
 (defcustom sidebar-width 40
-  "Width of `sidebar'."
+  "Default window width of `sidebar'."
   :type 'integer
   :group 'sidebar)
 
-(defcustom sidebar-character-dir-closed "📁" ; "📂"; "+" ;"▸" ;"🞊"; "🞄"; "⚬"; "•" ;"⚫" ; "⚛" ; "◦"; "●" ;"▫";"▢" ;"+" ;"▸"
-  "Character to insert before a closed directory."
-  :type 'string
+(defcustom sidebar-character-dir-closed "📁"
+  "Character to insert before a closed directory.
+Examples: '+' '▸' '🞊' '🞄' '⚬' '•' '⚫' '⚛' '◦' '●' '▫' '▢' '+' '▸'"
+  :type 'character
   :group 'sidebar)
 
 ;;(eval-buffer)
 ;;(sidebar-open)
 
-(defcustom sidebar-character-dir-opened "📂"; "↳" ;"-" ;"▾"
-  "Character to insert before an opened directory."
-  :type 'string
+(defcustom sidebar-character-dir-opened "📂"
+  "Character to insert before an opened directory.
+Examples: '↳' '-' '▾'"
+  :type 'character
   :group 'sidebar)
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+(defface sidebar-file-face
+  '((t :foreground "grey"))
+  "Face used with files."
+  :group 'sidebar-faces)
+
 (defface sidebar-dir-face
   '((t :foreground "color-27"))
   "Face used with directories."
-  :group 'sidebar-face)
+  :group 'sidebar-faces)
+
+(defface sidebar-untracked-dir-face
+  '((t :foreground "#FF8C00"))
+  "Face used with untracked directories."
+  :group 'sidebar-faces)
+
+(defface sidebar-untracked-file-face
+  '((t :foreground "#FF8C00"))
+  "Face used with untracked files."
+  :group 'sidebar-faces)
 
 (defface sidebar-ignored-dir-face
   '((t :foreground "color-18"))
   "Face used with ignored (on git) directories."
-  :group 'sidebar-face)
-
-(defface sidebar-file-face
-  '((t :foreground "grey"))
-  "Face used with files."
-  :group 'sidebar-face)
+  :group 'sidebar-faces)
 
 (defface sidebar-ignored-file-face
   '((t :foreground "#3f3f3f"))
-  "Face used with files."
-  :group 'sidebar-face)
+  "Face used with ignored files."
+  :group 'sidebar-faces)
 
 (defface sidebar-not-updated-icon-face
   '((t :foreground "red"))
   "Face used with icon for files not updated."
-  :group 'sidebar-face)
+  :group 'sidebar-faces)
 
 (defface sidebar-updated-icon-face
   '((t :foreground "green"))
   "Face used with icon for files not updated."
-  :group 'sidebar-face)
-
-(defface sidebar-untracked-icon-face
-  '((t :foreground "red"))
-  "Face used with icon for files untracked."
-  :group 'sidebar-face)
+  :group 'sidebar-faces)
 
 (defface sidebar-powerline-face
-  '((t :background "color-27" ;"#0087af"
+  '((t :background "color-27"
        :foreground "black"))
   "Face used for the powerline."
-  :group 'sidebar-face)
+  :group 'sidebar-faces)
 
 ;;(eval-buffer)
 ;;(sidebar-open)
 
 (defvar sidebar-files '())
 (defvar sidebar-current-path nil)
-;;;(defvar sidebar-window-origin nil)
 (defvar sidebar-closed-directories nil)
 (defvar sidebar-root-project nil)
 (defvar sidebar-git-hashtable nil)
+(defvar sidebar-git-dir nil)
 (defvar sidebar-header-text "Sidebar")
 
 (defun sidebar-get-root-project ()
@@ -195,7 +224,7 @@ If it's not a file, return the home directory."
 (defun sidebar-calc-depth (file)
   "FILE."
   (let* ((path-from-current (s-chop-prefix sidebar-current-path (--getpath file)))
-	 (depth (s-count-matches "/" path-from-current)))
+	 (depth (s-count-matches "/" path-from-current))) ; TODO: Support Windows (replace '/')
     (when (> depth 0)
       (setq depth (* depth 2))
       (unless (--dir? file)
@@ -208,12 +237,22 @@ If it's not a file, return the home directory."
 	   (sidebar-dir-arrow (file-name-nondirectory (--getpath file)) (--opened? file)))
       (file-name-nondirectory (--getpath file))))
 
-(defun sidebar-ignored? (file-path)
+(defun sidebar-in-ignored-dir? (file-path)
   "Return non-nil if FILE-PATH is a child of an ignored directory."
   (when sidebar-git-hashtable
     (catch 'stop-map
       (maphash (lambda (key value)
 		 (when (equal value 'ignored)
+		   (when (s-starts-with? key file-path)
+		     (throw 'stop-map t))))
+	       sidebar-git-hashtable))))
+
+(defun sidebar-in-untracked-dir? (file-path)
+  "Return non-nil if FILE-PATH is a child of an untracked directory."
+  (when sidebar-git-hashtable
+    (catch 'stop-map
+      (maphash (lambda (key value)
+		 (when (equal value 'untracked)
 		   (when (s-starts-with? key file-path)
 		     (throw 'stop-map t))))
 	       sidebar-git-hashtable))))
@@ -231,7 +270,7 @@ If it's not a file, return the home directory."
 
 (defun sidebar-get-icon-from-status (status)
   "STATUS."
-  (if (equal 'ignored status)
+  (if (or (equal 'ignored status) (equal 'untracked status))
       ""
     (concat
      (cond ((equal 'not-updated status) "✗")
@@ -315,11 +354,18 @@ If it's not a file, return the home directory."
     (cond ((and (equal 'ignored status)
 		(cond ((--dir? file) 'sidebar-ignored-dir-face)
 		      (t 'sidebar-ignored-file-face))))
-	  ((and (sidebar-ignored? path)
+	  ((and (sidebar-in-ignored-dir? path)
 		(cond ((--dir? file) 'sidebar-ignored-dir-face)
 		      (t 'sidebar-ignored-file-face))))
+	  ((and (equal 'untracked status)
+		(cond ((--dir? file) '(:foreground "#FF8C00"))
+		      (t '(:foreground "#FF8C00")))))
+	  ((and (sidebar-in-untracked-dir? path)
+		(cond ((--dir? file) '(:foreground "#FF8C00"))
+		      (t '(:foreground "#FF8C00")))))
 	  ((--dir? file) 'sidebar-dir-face)
 	  (t 'sidebar-file-face))))
+
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -351,7 +397,7 @@ If it's not a file, return the home directory."
 		 (when (s-starts-with? path key)
 		   (cond ((equal 'not-updated value) (setq not-updated (+ not-updated 1)))
 			 ((equal 'updated value) (setq updated (+ updated 1)))
-			 ((equal 'untracked value) (setq untracked (+ untracked 1)))
+;;;			 ((equal 'untracked value) (setq untracked (+ untracked 1)))
 			 ((equal 'changed value) (setq changed (+ changed 1)))
 			 ((equal 'added value) (setq added (+ added 1)))
 ;;;		       ((equal 'renamed value) (setq renamed (+ renamed 1)))
@@ -394,7 +440,7 @@ If it's not a file, return the home directory."
 	 (path-fixed-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
 				 path-in-project))
 	 (status (and sidebar-git-hashtable (gethash path-fixed-dirname sidebar-git-hashtable))))
-    (when (and status (not (equal 'ignored status)) (not (--dir? file)))
+    (when (and status (not (equal 'ignored status)) (not (equal 'untracked status)) (not (--dir? file)))
       (setq depth (- depth 2)))
     (sidebar-insert (s-repeat depth " ") (and current-line 'sidebar-powerline-face))
     (when (and status (not (--dir? file)))
@@ -620,7 +666,8 @@ If it's not a file, return the home directory."
       (setq sidebar-files (sidebar-load-dir project-path-root))
       (sidebar-print)
       (sidebar-goto-buffername buffer-name-current)
-      (sidebar-mode))))
+      (sidebar-mode)
+      (sidebar-git-run))))
 
 ;;get-current-buffer
 
@@ -706,31 +753,28 @@ If it's not a file, return the home directory."
 ;;       (delete-region (line-beginning-position) (line-end-position))
 ;;       (insert str))))
 
+(defun sidebar-count-chars-on-line ()
+  "Return the number of character on the current line."
+  (- (line-end-position) (line-beginning-position)))
+
+(defun sidebar-resize-window ()
+  "Resize the sidebar window if the filename on the current line is longer than the window's width."
+  (interactive)
+  (when (> (sidebar-count-chars-on-line) (window-total-width (get-buffer-window (sidebar-cons-buffer-name))))
+    (window-resize (get-buffer-window (sidebar-cons-buffer-name)) (+ 5 (- (sidebar-count-chars-on-line) (window-total-width))) t)))
+
 (defun sidebar-show-current (line)
   "Print current LINE with background colored."
   (save-excursion
     (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
       (when file
+	(when (> (window-total-width (get-buffer-window (sidebar-cons-buffer-name))) sidebar-width)
+	  (window-resize (get-buffer-window (sidebar-cons-buffer-name)) (- sidebar-width (window-total-width)) t))
+	(when sidebar-resize-auto-window
+	  (sidebar-resize-window))
 	(delete-region (line-beginning-position) (line-end-position))
-	;; (if sidebar-git-hashtable
 	(sidebar-print-with-git file t))
-      ;; (sidebar-print-normal file)))
       (message (--getpath file) sidebar-files))))
-;; (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-;; 	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
-;;   (save-excursion
-;;     (delete-region (line-beginning-position) (line-end-position))
-;;     (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
-;;     (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
-
-;; (defun sidebar-show-current (line)
-;;   "Print current LINE with background colored."
-;;   (let* ((str (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-;; 	 (str (s-pad-right (- (window-width (sidebar-get-window)) 3) " " str)))
-;;     (save-excursion
-;;       (delete-region (line-beginning-position) (line-end-position))
-;;       (insert (propertize str 'font-lock-face 'sidebar-powerline-face))
-;;       (insert (propertize "" 'face `(:foreground ,(face-background 'sidebar-powerline-face)))))))
 
 (defun sidebar-previous-line ()
   "Go the the previous line."
@@ -796,7 +840,8 @@ If it's not a file, return the home directory."
 	(setq sidebar-files (-concat sidebar-files old-files))
 	(sidebar-sort-files-by-line)
 	(sidebar-goto-line line-to-put-old-files)
-	(sidebar-show-current nil)))))
+	(sidebar-show-current nil)))
+    (sidebar-git-run)))
 
 (defun sidebar-open-directory (file)
   "FILE."
@@ -813,7 +858,8 @@ If it's not a file, return the home directory."
     (setq sidebar-header-text (abbreviate-file-name (--getpath file)))
     (sidebar-print-listfiles files)
     (sidebar-goto-line 1)
-    (sidebar-show-current nil)))
+    (sidebar-show-current nil))
+  (sidebar-git-run))
 
 (defun sidebar-find-file-from-line (line)
   "LINE."
@@ -839,7 +885,7 @@ If it's not a file, return the home directory."
   (let* ((line (line-number-at-pos))
 	 (file (sidebar-find-file-from-line line)))
     (if (--dir? file)
-	(sidebar-open-directory file) ;TODO
+	(sidebar-open-directory file)
       (sidebar-open-file file))))
 
 ;;(kill-buffer (sidebar-cons-buffer-name))
@@ -991,7 +1037,7 @@ FORCE."
 (defun sidebar-refresh-on-save-after-timer ()
   "Function called when a buffer is saved, it refreshes the sidebar."
   (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name)))
-	(point nil))
+	(point 0))
     (when sidebar-window
       (with-current-buffer (sidebar-get-buffer)
 	(setq point (point))
@@ -1079,7 +1125,8 @@ CHANGE is unused"
 (defun sidebar-git-run ()
   "."
   (interactive)
-  (when sidebar-root-project
+  (when (and sidebar-root-project (not (s-equals? sidebar-root-project sidebar-git-dir)))
+    (setq sidebar-git-dir sidebar-root-project)
     (let ((process (get-buffer-process (sidebar-get-git-buffer))))
       (when (and process (process-live-p process))
 	(kill-process process)))
@@ -1108,6 +1155,7 @@ CHANGE is unused"
   "")
 (unless sidebar-mode-map
   (let ((map (make-sparse-keymap)))
+    (suppress-keymap map t)
     (define-key map (kbd "C-x a") 'sidebar-test)
     (define-key map (kbd "q") 'sidebar-close)
     (define-key map (kbd "g") 'sidebar-git-run)
@@ -1133,6 +1181,7 @@ CHANGE is unused"
   (make-local-variable 'sidebar-closed-directories)
   (make-local-variable 'sidebar-root-project)
   (make-local-variable 'sidebar-git-hashtable)
+  (make-local-variable 'sidebar-git-dir)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   ;;  (internal-show-cursor nil nil)
