@@ -202,13 +202,42 @@ Examples: '↳' '-' '▾'"
   "Face used for the powerline."
   :group 'sidebar-faces)
 
-(defvar sidebar-files nil)
-(defvar sidebar-current-path nil)
-(defvar sidebar-closed-directories nil)
-(defvar sidebar-root-project nil)
-(defvar sidebar-git-hashtable nil)
-(defvar sidebar-git-dir nil)
-(defvar sidebar-header-text "")
+(defvar sidebar-files nil
+  "List where are stored all files printed in the sidebar.
+The format of each element is the one created by `\\[sidebar-file-struct]'.
+It's buffer local.
+The list is sorted the way it's printed on the sidebar.")
+
+(defvar sidebar-current-path nil
+  "Current directory.
+Buffer local.")
+
+(defvar sidebar-closed-directories nil
+  "List of dirs and their file previously opened.
+See `\\[sidebar-expand-dir]' and `\\[sidebar-close-dir]' for more info
+Buffer local.")
+
+(defvar sidebar-root-project nil
+  "Root of the current project.
+Buffer local.")
+
+(defvar sidebar-git-hashtable nil
+  "Hashtable of each file with a git status.
+See `\\[sidebar-git-parse-buffer] for more info'
+Buffer local.")
+
+(defvar sidebar-git-dir nil
+  "Path where the last time git has been running.
+Buffer local.")
+
+(defvar sidebar-header-text ""
+  "Text to insert in the header line.
+Buffer local.")
+
+(defvar sidebar-window-origin nil
+  "Window where sidebar has been called.
+This is used to know where to open the file selected.
+It's a frame parameter (Or Frame local).")
 
 (defun sidebar-get-root-project ()
   "Return the project directory, nil if there is no project."
@@ -216,7 +245,7 @@ Examples: '↳' '-' '▾'"
 
 (defun sidebar-project-root ()
   "Return the project root using projectile.
-If it's not a project, return the file directory.
+If it's not a project, return the file's directory.
 If it's not a file, return the home directory."
   (interactive)
   (or (sidebar-get-root-project)
@@ -250,7 +279,9 @@ object using this structure.
 - 'path is the FILE's path
 - 'dir is non-nil if FILE is a directory
 - 'line is the number line where FILE is printed on the sidebar
-- 'opened is non-nil it it's a directory and is expanded."
+- 'opened is non-nil it it's a directory and is expanded.
+
+Example: (('path . \"/tmp/dir1/dir2\") ('dir . t) ('line . 8) ('opened . nil))"
   (list (cons 'path file)
 	(cons 'dir (file-directory-p file))
 	(cons 'line 0)
@@ -359,8 +390,7 @@ CURRENT-LINE is non-nil if we have to insert the powerline background."
 	  	      'font-lock-face
 	  	      (sidebar-get-icon-color status current-line))
 	  (or (and current-line (propertize (number-to-string number) 'font-lock-face 'sidebar-powerline-face))
-	      (number-to-string number)))
-  )
+	      (number-to-string number))))
 
 (defun sidebar-insert-dir-info-git (file path current-line)
   "Insert informations just after the directory name on the sidebar.
@@ -388,9 +418,7 @@ CURRENT-LINE is non-nil if we have to insert the powerline background."
       (when (> added 0)
 	(insert (sidebar-insert-dir-info-git-make-str 'added added current-line)))
       (when (> match 0)
-	(insert (sidebar-insert-dir-info-git-make-str 'match match current-line)))
-      ))
-  )
+	(insert (sidebar-insert-dir-info-git-make-str 'match match current-line))))))
 
 (defun sidebar-insert (str face)
   "Small function to insert STR with FACE if non-nil."
@@ -547,8 +575,7 @@ This is use when the sidebar is created."
     (let ((file (nth (- (line-number-at-pos) 1) sidebar-files)))
       (when file
 	(delete-region (line-beginning-position) (line-end-position))
-	(sidebar-print-file file))
-      )))
+	(sidebar-print-file file)))))
 
 (defun sidebar-count-chars-on-line ()
   "Return the number of character on the current line."
@@ -737,8 +764,7 @@ Otherwise it load the dir with `\\[sidebar-load-dir]'."
   (save-excursion
     (beginning-of-line)
     (delete-region (line-beginning-position) (line-end-position))
-    (sidebar-print-file file t)
-    ))
+    (sidebar-print-file file t)))
 
 (defun sidebar-delete-line ()
   "Delete the whole line (including \n)."
@@ -769,8 +795,7 @@ the directory is re-opened"
   (save-excursion
     (beginning-of-line)
     (delete-region (line-beginning-position) (line-end-position))
-    (sidebar-print-file file t)
-    ))
+    (sidebar-print-file file t)))
 
 (defun sidebar-expand-or-close-dir ()
   "Expand or close the directory on the current line."
@@ -975,16 +1000,10 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (make-local-variable 'sidebar-git-dir)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
-  ;;  (internal-show-cursor nil nil)
-  ;;  (use-local-map sidebar-mode-map)
-  ;;  (hl-line-mode)
-  ;;  (setq header-line-format '(list "-" sidebar-header-text)
+  ;;  (use-local-map sidebar-mode-map) ; no need
   (setq header-line-format '(list "-" sidebar-header-text)
 	buffer-read-only nil
 	mode-line-format nil))
-;; 	truncate-lines t
-;; 	buffer-read-only nil))
-
 
 (provide 'sidebar)
 
