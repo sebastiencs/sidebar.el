@@ -258,16 +258,25 @@ If it's not a file, return the home directory."
       "~"))
 
 (defun sidebar-cons-buffer-name ()
-  "Construct the buffer name from 'sidebar-buffer-name' and the frame name."
-  (concat "*" sidebar-buffer-name "-" (frame-parameter nil 'name) "*"))
+  "Construct the buffer name from 'sidebar-buffer-name' and the frame name.
+The return value should be unique for each frame.
+On terminals instance, we use the frame parameter `\\[name]'
+On Graphics ones, the name isn't unique for each frame, so we use
+`\\[window-id]' that isn't available on terminals instance."
+  (concat "*" sidebar-buffer-name "-" (or (frame-parameter nil 'window-id)
+					  (frame-parameter nil 'name))"*"))
+;;;(concat "*" sidebar-buffer-name "-" (frame-parameter nil 'name) "*"))
 
 (defun sidebar-get-buffer ()
   "Return the existing/created sidebar buffer for the current frame."
   (get-buffer-create (sidebar-cons-buffer-name)))
 
 (defun sidebar-cons-git-buffer-name ()
-  "Construct the git buffer name from 'sidebar-buffer-name' and the frame name."
-  (concat "*" sidebar-buffer-name "-" (frame-parameter nil 'name) "-GIT*"))
+  "Construct the git buffer name from 'sidebar-buffer-name' and the frame name.
+See `\\[sidebar-cons-buffer-name]' for more info."
+  (concat "*" sidebar-buffer-name "-" (or (frame-parameter nil 'window-id)
+					  (frame-parameter nil 'name))"-GIT*"))
+;;;(concat "*" sidebar-buffer-name "-" (frame-parameter nil 'name) "-GIT*"))
 
 (defun sidebar-get-git-buffer ()
   "Return the existing/created sidebar git buffer for the current frame."
