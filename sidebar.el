@@ -54,7 +54,14 @@
   :link '(info-link "(sidebar) Customizing"))
 
 (defgroup sidebar-faces nil
-  "Faces uses in sidebar."
+  "Faces uses in sidebar on terminals."
+  :prefix "sidebar-"
+  :link '(info-link "(sidebar) Frames and Faces")
+  :group 'sidebar
+  :group 'faces)
+
+(defgroup sidebar-gui-faces nil
+  "Faces uses in sidebar with gui."
   :prefix "sidebar-"
   :link '(info-link "(sidebar) Frames and Faces")
   :group 'sidebar
@@ -207,6 +214,66 @@ Examples: '↳' '-' '▾'"
   "Face used for the powerline."
   :group 'sidebar-faces)
 
+(defface sidebar-file-gui-face
+  '((t :foreground "grey"))
+  "Face used with files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-dir-gui-face
+  '((t :foreground "#005fff"))
+  "Face used with directories."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-untracked-dir-gui-face
+  '((t :foreground "purple"))
+  "Face used with untracked directories."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-untracked-file-gui-face
+  '((t :foreground "purple"))
+  "Face used with untracked files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-ignored-dir-gui-face
+  '((t :foreground "#3f3f3f"))
+  "Face used with ignored (on git) directories."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-ignored-file-gui-face
+  '((t :foreground "#3f3f3f"))
+  "Face used with ignored files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-not-updated-gui-face
+  '((t :foreground "brown"))
+  "Face used for files not updated."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-updated-gui-face
+  '((t :foreground "forest green"))
+  "Face used for updated files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-changed-gui-face
+  '((t :foreground "orange"))
+  "Face used for changed files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-added-gui-face
+  '((t :foreground "green"))
+  "Face used for added files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-renamed-gui-face
+  '((t :foreground "orange"))
+  "Face used for renamed files."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-match-gui-face
+  '((t :foreground "forest green"))
+  "Face used for matched files."
+  :group 'sidebar-gui-faces)
+
 (defvar sidebar-files nil
   "List where are stored all files printed in the sidebar.
 The format of each element is the one created by `\\[sidebar-file-struct]'.
@@ -286,6 +353,10 @@ See `\\[sidebar-cons-buffer-name]' for more info."
   "Check if a sidebar for the frame exists."
   (get-buffer (sidebar-cons-buffer-name)))
 
+(defun sidebar-gui? ()
+  "Return non-nil if we're on a graphic instance."
+  (display-graphic-p))
+
 (defun sidebar-file-struct (file)
   "Return an association list from FILE.
 In this project (sidebar.el) every parameters named 'file' are
@@ -310,20 +381,29 @@ OPENED is non-nil if the directory is opened."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-(defun sidebar-calc-depth (file)
+(defun sidebar-calc-depth (file status)
   "Calcul the depth of FILE from the current directory point of view.
-This is uses to count the number of space to insert before the filename."
+This is uses to count the number of space to insert before the filename.
+STATUS is the status of the FILE."
   (let* ((path-from-current (s-chop-prefix sidebar-current-path (--getpath file)))
 	 (depth (s-count-matches "/" path-from-current))) ; TODO: Support Windows (replace '/')
     (when (> depth 0)
       (setq depth (* depth 2))
       (unless (--dir? file)
 	(setq depth (+ depth 1))))
-    (+ depth 1)))
+    (setq depth (+ depth 1))
+    (when (and (not (sidebar-gui?))
+	       status
+	       (not (equal 'ignored status))
+	       (not (equal 'untracked status))
+	       (not (--dir? file)))
+      (setq depth (- depth 2)))
+    depth))
 
 (defun sidebar-get-filename-dir-indicator (file)
   "If FILE is a directory, return the filename with its icon, otherwise it just return the filename."
   (or (and (--dir? file)
+	   (not (sidebar-gui?))
 	   (sidebar-dir-arrow (file-name-nondirectory (--getpath file)) (--opened? file)))
       (file-name-nondirectory (--getpath file))))
 
@@ -333,7 +413,7 @@ This is uses to count the number of space to insert before the filename."
     (catch 'stop-map
       (maphash (lambda (key value)
 		 (when (equal value status)
-		   (when (s-starts-with? key file-path)
+		   (when (and (s-starts-with? key file-path) (not (string= key file-path)))
 		     (throw 'stop-map t))))
 	       sidebar-git-hashtable))))
 
@@ -352,6 +432,24 @@ This is uses to count the number of space to insert before the filename."
      " ")))
 
 (defun sidebar-get-icon-color (status current-line)
+  "Return the icon face from STATUS, if CURRENT-LINE is non-nil, add the powerline background."
+  (if current-line
+      (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'updated status) `(sidebar-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'changed status) `(sidebar-changed-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'added status) `(sidebar-added-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'renamed status) `(sidebar-renamed-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    ((equal 'match status) `(sidebar-match-icon-face :background ,(face-background 'sidebar-powerline-face)))
+	    (t `(:background ,(face-background 'sidebar-powerline-face))))
+    (cond ((equal 'not-updated status) 'sidebar-not-updated-icon-face)
+	  ((equal 'updated status) 'sidebar-updated-icon-face)
+	  ((equal 'changed status) 'sidebar-changed-icon-face)
+	  ((equal 'added status) 'sidebar-added-icon-face)
+	  ((equal 'renamed status) 'sidebar-renamed-icon-face)
+	  ((equal 'match status) 'sidebar-match-icon-face)
+	  (t nil))))
+
+(defun sidebar-gui-get-icon-color (status current-line)
   "Return the icon face from STATUS, if CURRENT-LINE is non-nil, add the powerline background."
   (if current-line
       (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
@@ -391,6 +489,42 @@ if CURRENT-LINE is non-nil, the function returns `\\[side-powerline-face]'."
 	  ((--dir? file) 'sidebar-dir-face)
 	  (t 'sidebar-file-face))))
 
+(defun sidebar-gui-color-from-status (status &optional default current-line)
+  "STATUS DEFAULT CURRENT-LINE."
+  (if current-line
+      'sidebar-powerline-face
+    (cond
+     ((and (equal 'not-updated status) 'sidebar-not-updated-gui-face))
+     ((and (equal 'updated status) 'sidebar-updated-gui-face))
+     ((and (equal 'changed status) 'sidebar-changed-gui-face))
+     ((and (equal 'added status) 'sidebar-added-gui-face))
+     ((and (equal 'renamed status) 'sidebar-renamed-gui-face))
+     ((and (equal 'match status) 'sidebar-match-gui-face))
+     (t default))))
+
+(defun sidebar-gui-get-color (file path status current-line &optional icon)
+  "Return the face to use for FILE on a graphic instance.
+PATH is the path of the file relative to the project root directory
+STATUS is the status from git
+if CURRENT-LINE is non-nil, the function returns `\\[side-powerline-face]'.
+ICON."
+  (if current-line
+      'sidebar-powerline-face
+    (cond ((and (equal 'ignored status)
+		(cond ((--dir? file) 'sidebar-ignored-dir-gui-face)
+		      (t 'sidebar-ignored-file-gui-face))))
+	  ((and (sidebar-child-of-status? path 'ignored)
+		(cond ((--dir? file) 'sidebar-ignored-dir-gui-face)
+		      (t 'sidebar-ignored-file-gui-face))))
+	  ((and (equal 'untracked status) (not icon)
+		(cond ((--dir? file) 'sidebar-untracked-dir-gui-face)
+ 		      (t 'sidebar-untracked-file-gui-face))))
+	  ((and (sidebar-child-of-status? path 'untracked)
+		(cond ((--dir? file) 'sidebar-untracked-dir-gui-face)
+		      (t 'sidebar-untracked-file-gui-face))))
+	  ((--dir? file) 'sidebar-dir-face)
+	  ((and (not icon) (sidebar-gui-color-from-status status 'sidebar-file-gui-face))))))
+
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defun sidebar-insert-dir-info-git-make-str (status number current-line)
@@ -401,16 +535,59 @@ CURRENT-LINE is non-nil if we have to insert the powerline background."
   (concat (or (and current-line (propertize " " 'font-lock-face 'sidebar-powerline-face))
 	      " ")
 	  (propertize (sidebar-get-icon-from-status status)
-	  	      'font-lock-face
-	  	      (sidebar-get-icon-color status current-line))
+		      'font-lock-face
+		      (sidebar-get-icon-color status current-line))
 	  (or (and current-line (propertize (number-to-string number) 'font-lock-face 'sidebar-powerline-face))
 	      (number-to-string number))))
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
+(defun sidebar-status-subfiles (path)
+  "PATH."
+  (let ((not-updated 0) (updated 0) (untracked 0) (changed 0) (added 0) (renamed 0) (match 0))
+    (when sidebar-git-hashtable
+      (maphash (lambda (key value)
+		 (when (s-starts-with? path key)
+		   (cond ((equal 'not-updated value) (setq not-updated (+ not-updated 1)))
+			 ((equal 'updated value) (setq updated (+ updated 1)))
+			 ((equal 'changed value) (setq changed (+ changed 1)))
+			 ((equal 'added value) (setq added (+ added 1)))
+			 ((equal 'match value) (setq match (+ match 1)))
+			 (t nil))))
+	       sidebar-git-hashtable))
+    `((not-updated . ,not-updated) (updated . ,updated) (untracked . ,untracked)
+      (changed . ,changed) (added . ,added) (renamed . ,renamed) (match . ,match))))
+
+(defun sidebar-gui-insert-status-subfiles (file path status number current-line)
+  "FILE PATH STATUS NUMBER CURRENT-LINE."
+  (sidebar-gui-insert-status file path status current-line)
+  (sidebar-insert " " (and current-line 'sidebar-powerline-face))
+  (sidebar-insert (number-to-string number) (and current-line 'sidebar-powerline-face)))
+
+(defun sidebar-gui-status-subfiles (file path current-line)
+  "FILE PATH CURRENT-LINE."
+  (let* ((status-alist (sidebar-status-subfiles path))
+	 (not-updated (alist-get 'not-updated status-alist))
+	 (updated (alist-get 'updated status-alist))
+	 (changed (alist-get 'changed status-alist))
+	 (added (alist-get 'added status-alist))
+	 (match (alist-get 'match status-alist)))
+    (when (> not-updated 0)
+      (sidebar-gui-insert-status-subfiles file path 'not-updated not-updated current-line))
+    (when (> updated 0)
+      (sidebar-gui-insert-status-subfiles file path 'updated updated current-line))
+    (when (> changed 0)
+      (sidebar-gui-insert-status-subfiles file path 'changed changed current-line))
+    (when (> added 0)
+      (sidebar-gui-insert-status-subfiles file path 'added added current-line))
+    (when (> match 0)
+      (sidebar-gui-insert-status-subfiles file path 'match match current-line))))
 
 (defun sidebar-insert-dir-info-git (file path current-line)
   "Insert informations just after the directory name on the sidebar.
 This function inserts git icons of all files under the directory FILE, just
 after each icon is inserted the number of times the icon (status) is present.
-PATH is the directory path relative to the git project
+PATH is the directory's path relative to the git project
 CURRENT-LINE is non-nil if we have to insert the powerline background."
   (when sidebar-git-hashtable
     (let ((not-updated 0) (updated 0) (untracked 0) (changed 0) (added 0) (renamed 0) (match 0))
@@ -440,12 +617,43 @@ CURRENT-LINE is non-nil if we have to insert the powerline background."
       (insert (propertize str 'font-lock-face face))
     (insert str)))
 
+(defun sidebar-insert-icon (func str face)
+  "FUNC Small function to insert STR with FACE if non-nil."
+  ;;  (insert (funcall func str)))
+  (if face
+      (insert (funcall func str :face face))
+    (insert (funcall func str))))
+
 (defun sidebar-insert-powerline ()
   "Insert the remaining spaces and a '' to make a powerline effect."
   (insert (propertize (s-repeat (- (window-width (sidebar-get-window)) (+ (current-column) 3)) " ")
 		      'font-lock-face 'sidebar-powerline-face))
   (insert (propertize ""
 		      'font-lock-face `(:foreground ,(face-background 'sidebar-powerline-face)))))
+
+(defun sidebar-gui-insert-icon-filename (file filename status path current-line)
+  "FILE FILENAME STATUS PATH CURRENT-LINE."
+  (if (--dir? file)
+      (sidebar-insert-icon 'all-the-icons-faicon (if (--opened? file) "folder-open-o" "folder-o")
+			   (sidebar-gui-get-color file path status current-line))
+    (sidebar-insert-icon 'all-the-icons-icon-for-file filename
+			 (sidebar-gui-get-color file path status current-line t)))
+  (sidebar-insert " " (and current-line 'sidebar-powerline-face))
+  ;;  (sidebar-insert filename (sidebar-get-filename-color file path status current-line))
+  (sidebar-insert filename (sidebar-gui-get-color file path status current-line))
+  )
+
+(defun sidebar-gui-insert-status (file path status current-line)
+  "FILE PATH STATUS CURRENT-LINE."
+  (when status
+    (sidebar-insert " " (and current-line 'sidebar-powerline-face))
+    (let ((face (sidebar-gui-color-from-status status nil current-line)))
+      (cond ((equal 'not-updated status) (sidebar-insert-icon 'all-the-icons-octicon "flame" face))
+	    ((equal 'updated status) (sidebar-insert-icon 'all-the-icons-octicon "git-commit" face))
+	    ((equal 'changed status) (sidebar-insert-icon 'all-the-icons-octicon "beaker" face))
+	    ((equal 'added status) (sidebar-insert-icon 'all-the-icons-octicon "pulse" face))
+	    ((equal 'renamed status) (sidebar-insert-icon 'all-the-icons-octicon "diff-renamed" face))
+	    ((equal 'match status) (sidebar-insert-icon 'all-the-icons-octicon "git-commit" face))))))
 
 (defun sidebar-print-file (file &optional current-line)
   "Insert FILE on the current line.
@@ -462,19 +670,26 @@ Finally, if CURRENT-LINE is non-nil, it insert the powerline.
 
 FILE is a associated list created from `\\[sidebar-file-struct]'."
   (let* ((filename (sidebar-get-filename-dir-indicator file))
-	 (depth (sidebar-calc-depth file))
 	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
-	 (path-fixed-dirname (or (and (--dir? file) (file-name-as-directory path-in-project))
-				 path-in-project))
-	 (status (and sidebar-git-hashtable (gethash path-fixed-dirname sidebar-git-hashtable))))
-    (when (and status (not (equal 'ignored status)) (not (equal 'untracked status)) (not (--dir? file)))
-      (setq depth (- depth 2)))
+	 (path-fixed-dirname (if (--dir? file) (file-name-as-directory path-in-project) path-in-project))
+	 (status (and sidebar-git-hashtable (gethash path-fixed-dirname sidebar-git-hashtable)))
+	 (depth (sidebar-calc-depth file status)))
     (sidebar-insert (s-repeat depth " ") (and current-line 'sidebar-powerline-face))
-    (when (and status (not (--dir? file)))
-      (sidebar-insert (sidebar-get-icon-from-status status) (sidebar-get-icon-color status current-line)))
-    (sidebar-insert filename (sidebar-get-filename-color file path-fixed-dirname status current-line))
-    (when (and (--dir? file) (not (--opened? file)))
-      (sidebar-insert-dir-info-git file path-fixed-dirname current-line))
+
+    (when (sidebar-gui?)
+      (sidebar-gui-insert-icon-filename file filename status path-fixed-dirname current-line)
+      (sidebar-gui-insert-status file path-fixed-dirname status current-line)
+      (when (and (--dir? file) (not (--opened? file)))
+	(sidebar-gui-status-subfiles file path-fixed-dirname current-line)))
+    ;;	(sidebar-insert-dir-info-git file path-fixed-dirname current-line)))
+
+    (unless (sidebar-gui?)
+      (when (and status (not (--dir? file)))
+	(sidebar-insert (sidebar-get-icon-from-status status) (sidebar-get-icon-color status current-line)))
+      (sidebar-insert filename (sidebar-get-filename-color file path-fixed-dirname status current-line))
+      (when (and (--dir? file) (not (--opened? file)))
+	(sidebar-insert-dir-info-git file path-fixed-dirname current-line)))
+
     (when current-line
       (sidebar-insert-powerline))))
 
@@ -484,7 +699,7 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
   "Unused.
 Insert FILE without any decoration."
   (let ((filename (sidebar-get-filename-dir-indicator file)))
-    (insert (s-repeat (sidebar-calc-depth file) " ") filename)))
+    (insert (s-repeat (sidebar-calc-depth file nil) " ") filename)))
 
 (defun sidebar-print-listfiles (list)
   "Insert all files in LIST from the current line.
@@ -1013,7 +1228,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (make-local-variable 'sidebar-root-project)
   (make-local-variable 'sidebar-git-hashtable)
   (make-local-variable 'sidebar-git-dir)
-  (setq cursor-type nil)
+  ;;  (setq cursor-type nil)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   ;;  (use-local-map sidebar-mode-map) ; no need
