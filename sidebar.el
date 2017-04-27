@@ -27,6 +27,7 @@
 
 ;;; Commentary:
 ;;
+;; Todo: remove -face suffix https://www.gnu.org/software/emacs/manual/html_node/elisp/Defining-Faces.html#Defining-Faces
 ;; my project
 ;;
 ;; Features that are required by this library:
@@ -53,7 +54,7 @@
   :link '(custom-manual "(sidebar) Top")
   :link '(info-link "(sidebar) Customizing"))
 
-(defgroup sidebar-faces nil
+(defgroup sidebar-terminal-faces nil
   "Faces uses in sidebar on terminals."
   :prefix "sidebar-"
   :link '(info-link "(sidebar) Frames and Faces")
@@ -148,71 +149,77 @@ Examples: '↳' '-' '▾'"
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-(defface sidebar-file-face
+(defface sidebar-file-terminal-face
   '((t :foreground "grey"))
   "Face used with files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-dir-face
+(defface sidebar-dir-terminal-face
   '((t :foreground "#005fff"))
   "Face used with directories."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-untracked-dir-face
+(defface sidebar-untracked-dir-terminal-face
   '((t :foreground "#FF8C00"))
   "Face used with untracked directories."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-untracked-file-face
+(defface sidebar-untracked-file-terminal-face
   '((t :foreground "#FF8C00"))
   "Face used with untracked files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-ignored-dir-face
+(defface sidebar-ignored-dir-terminal-face
   '((t :foreground "#3f3f3f"))
   "Face used with ignored (on git) directories."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-ignored-file-face
+(defface sidebar-ignored-file-terminal-face
   '((t :foreground "#3f3f3f"))
   "Face used with ignored files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-not-updated-icon-face
+(defface sidebar-not-updated-icon-terminal-face
   '((t :foreground "red"))
   "Face used with icon for files not updated."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-updated-icon-face
+(defface sidebar-updated-icon-terminal-face
   '((t :foreground "green"))
   "Face used with icon for updated files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-changed-icon-face
+(defface sidebar-changed-icon-terminal-face
   '((t :foreground "orange"))
   "Face used with icon for changed files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-added-icon-face
+(defface sidebar-added-icon-terminal-face
   '((t :foreground "green"))
   "Face used with icon for added files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-renamed-icon-face
+(defface sidebar-renamed-icon-terminal-face
   '((t :foreground "orange"))
   "Face used with icon for renamed files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-match-icon-face
+(defface sidebar-match-icon-terminal-face
   '((t :foreground "green"))
   "Face used with icon for matched files."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
 
-(defface sidebar-powerline-face
+(defface sidebar-powerline-terminal-face
   '((t :background "#005fff"
        :foreground "black"))
   "Face used for the powerline."
-  :group 'sidebar-faces)
+  :group 'sidebar-terminal-faces)
+
+(defface sidebar-powerline-gui-face
+  '((t :background "#005fff"
+       :foreground "black"))
+  "Face used for the powerline."
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-file-gui-face
   '((t :foreground "grey"))
@@ -273,6 +280,20 @@ Examples: '↳' '-' '▾'"
   '((t :foreground "forest green"))
   "Face used for matched files."
   :group 'sidebar-gui-faces)
+
+(defface sidebar-powerline-face nil "" :group nil)
+(defface sidebar-file-face nil "" :group nil)
+(defface sidebar-dir-face nil "" :group nil)
+(defface sidebar-untracked-dir-face nil "" :group nil)
+(defface sidebar-untracked-file-face nil "" :group nil)
+(defface sidebar-ignored-dir-face nil "" :group nil)
+(defface sidebar-ignored-file-face nil "" :group nil)
+(defface sidebar-not-updated-face nil "" :group nil)
+(defface sidebar-updated-face nil "" :group nil)
+(defface sidebar-changed-face nil "" :group nil)
+(defface sidebar-added-face nil "" :group nil)
+(defface sidebar-renamed-face nil "" :group nil)
+(defface sidebar-match-face nil "" :group nil)
 
 (defvar sidebar-files nil
   "List where are stored all files printed in the sidebar.
@@ -434,42 +455,42 @@ STATUS is the status of the FILE."
 (defun sidebar-get-icon-color (status current-line)
   "Return the icon face from STATUS, if CURRENT-LINE is non-nil, add the powerline background."
   (if current-line
-      (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
-	    ((equal 'updated status) `(sidebar-updated-icon-face :background ,(face-background 'sidebar-powerline-face)))
-	    ((equal 'changed status) `(sidebar-changed-icon-face :background ,(face-background 'sidebar-powerline-face)))
-	    ((equal 'added status) `(sidebar-added-icon-face :background ,(face-background 'sidebar-powerline-face)))
-	    ((equal 'renamed status) `(sidebar-renamed-icon-face :background ,(face-background 'sidebar-powerline-face)))
-	    ((equal 'match status) `(sidebar-match-icon-face :background ,(face-background 'sidebar-powerline-face)))
-	    (t `(:background ,(face-background 'sidebar-powerline-face))))
-    (cond ((equal 'not-updated status) 'sidebar-not-updated-icon-face)
-	  ((equal 'updated status) 'sidebar-updated-icon-face)
-	  ((equal 'changed status) 'sidebar-changed-icon-face)
-	  ((equal 'added status) 'sidebar-added-icon-face)
-	  ((equal 'renamed status) 'sidebar-renamed-icon-face)
-	  ((equal 'match status) 'sidebar-match-icon-face)
+      (cond ((equal 'not-updated status) `(sidebar-not-updated-icon-terminal-face :background ,(face-background 'sidebar-powerline-terminal-face)))
+	    ((equal 'updated status) `(sidebar-updated-icon-terminal-face :background ,(face-background 'sidebar-powerline-terminal-face)))
+	    ((equal 'changed status) `(sidebar-changed-icon-terminal-face :background ,(face-background 'sidebar-powerline-terminal-face)))
+	    ((equal 'added status) `(sidebar-added-icon-terminal-face :background ,(face-background 'sidebar-powerline-terminal-face)))
+	    ((equal 'renamed status) `(sidebar-renamed-icon-terminal-face :background ,(face-background 'sidebar-powerline-terminal-face)))
+	    ((equal 'match status) `(sidebar-match-icon-terminal-face :background ,(face-background 'sidebar-powerline-terminal-face)))
+	    (t `(:background ,(face-background 'sidebar-powerline-terminal-face))))
+    (cond ((equal 'not-updated status) 'sidebar-not-updated-icon-terminal-face)
+	  ((equal 'updated status) 'sidebar-updated-icon-terminal-face)
+	  ((equal 'changed status) 'sidebar-changed-icon-terminal-face)
+	  ((equal 'added status) 'sidebar-added-icon-terminal-face)
+	  ((equal 'renamed status) 'sidebar-renamed-icon-terminal-face)
+	  ((equal 'match status) 'sidebar-match-icon-terminal-face)
 	  (t nil))))
 
 (defun sidebar-get-filename-color (file path status current-line)
   "Return the face to use for FILE.
 PATH is the path of the file relative to the project root directory
 STATUS is the status from git
-if CURRENT-LINE is non-nil, the function returns `\\[side-powerline-face]'."
+if CURRENT-LINE is non-nil, the function returns `\\[side-powerline-terminal-face]'."
   (if current-line
-      'sidebar-powerline-face
+      'sidebar-powerline-terminal-face
     (cond ((and (equal 'ignored status)
-		(cond ((--dir? file) 'sidebar-ignored-dir-face)
-		      (t 'sidebar-ignored-file-face))))
+		(cond ((--dir? file) 'sidebar-ignored-dir-terminal-face)
+		      (t 'sidebar-ignored-file-terminal-face))))
 	  ((and (sidebar-child-of-status? path 'ignored)
-		(cond ((--dir? file) 'sidebar-ignored-dir-face)
-		      (t 'sidebar-ignored-file-face))))
+		(cond ((--dir? file) 'sidebar-ignored-dir-terminal-face)
+		      (t 'sidebar-ignored-file-terminal-face))))
 	  ((and (equal 'untracked status)
-		(cond ((--dir? file) 'sidebar-untracked-dir-face)
-		      (t 'sidebar-untracked-file-face))))
+		(cond ((--dir? file) 'sidebar-untracked-dir-terminal-face)
+		      (t 'sidebar-untracked-file-terminal-face))))
 	  ((and (sidebar-child-of-status? path 'untracked)
-		(cond ((--dir? file) 'sidebar-untracked-dir-face)
-		      (t 'sidebar-untracked-file-face))))
-	  ((--dir? file) 'sidebar-dir-face)
-	  (t 'sidebar-file-face))))
+		(cond ((--dir? file) 'sidebar-untracked-dir-terminal-face)
+		      (t 'sidebar-untracked-file-terminal-face))))
+	  ((--dir? file) 'sidebar-dir-terminal-face)
+	  (t 'sidebar-file-terminal-face))))
 
 (defun sidebar-gui-color-from-status (status &optional default current-line)
   "STATUS DEFAULT CURRENT-LINE."
@@ -493,17 +514,13 @@ ICON."
   (if current-line
       'sidebar-powerline-face
     (cond ((and (equal 'ignored status)
-		(cond ((--dir? file) 'sidebar-ignored-dir-gui-face)
-		      (t 'sidebar-ignored-file-gui-face))))
+		(if (--dir? file) 'sidebar-ignored-dir-gui-face 'sidebar-ignored-file-gui-face)))
 	  ((and (sidebar-child-of-status? path 'ignored)
-		(cond ((--dir? file) 'sidebar-ignored-dir-gui-face)
-		      (t 'sidebar-ignored-file-gui-face))))
+		(if (--dir? file) 'sidebar-ignored-dir-gui-face 'sidebar-ignored-file-gui-face)))
 	  ((and (equal 'untracked status) (not icon)
-		(cond ((--dir? file) 'sidebar-untracked-dir-gui-face)
- 		      (t 'sidebar-untracked-file-gui-face))))
+		(if (--dir? file) 'sidebar-untracked-dir-gui-face 'sidebar-untracked-file-gui-face)))
 	  ((and (sidebar-child-of-status? path 'untracked)
-		(cond ((--dir? file) 'sidebar-untracked-dir-gui-face)
-		      (t 'sidebar-untracked-file-gui-face))))
+		(if (--dir? file) 'sidebar-untracked-dir-gui-face 'sidebar-untracked-file-gui-face)))
 	  ((--dir? file) 'sidebar-dir-face)
 	  ((and (not icon) (sidebar-gui-color-from-status status 'sidebar-file-gui-face))))))
 
@@ -516,9 +533,9 @@ NUMBER is the number to insert
 CURRENT-LINE is non-nil if we have to insert the powerline background.
 FILE unused.
 PATH unused."
-  (insert (if current-line (propertize " " 'font-lock-face 'sidebar-powerline-face) " "))
+  (insert (if current-line (propertize " " 'font-lock-face 'sidebar-powerline-terminal-face) " "))
   (insert (propertize (sidebar-get-icon-from-status status) 'font-lock-face (sidebar-get-icon-color status current-line)))
-  (insert (if current-line (propertize (number-to-string number) 'font-lock-face 'sidebar-powerline-face) (number-to-string number))))
+  (insert (if current-line (propertize (number-to-string number) 'font-lock-face 'sidebar-powerline-terminal-face) (number-to-string number))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -1168,6 +1185,36 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 
 \\{sidebar-mode-map}"
   ::group sidebar
+
+  (if (sidebar-gui?)
+      (progn
+	(copy-face 'sidebar-powerline-gui-face 'sidebar-powerline-face)
+	(copy-face 'sidebar-file-gui-face 'sidebar-file-face)
+	(copy-face 'sidebar-dir-gui-face 'sidebar-dir-face)
+	(copy-face 'sidebar-untracked-dir-gui-face 'sidebar-untracked-dir-face)
+	(copy-face 'sidebar-untracked-file-gui-face 'sidebar-untracked-file-face)
+	(copy-face 'sidebar-ignored-dir-gui-face 'sidebar-ignored-dir-face)
+	(copy-face 'sidebar-ignored-file-gui-face 'sidebar-ignored-file-face)
+	(copy-face 'sidebar-not-updated-gui-face 'sidebar-not-updated-face)
+	(copy-face 'sidebar-updated-gui-face 'sidebar-updated-face)
+	(copy-face 'sidebar-changed-gui-face 'sidebar-changed-face)
+	(copy-face 'sidebar-added-gui-face 'sidebar-added-face)
+	(copy-face 'sidebar-renamed-gui-face 'sidebar-renamed-face)
+	(copy-face 'sidebar-match-gui-face 'sidebar-match-face))
+    (copy-face 'sidebar-powerline-terminal-face 'sidebar-powerline-face)
+    (copy-face 'sidebar-file-terminal-face 'sidebar-file-face)
+    (copy-face 'sidebar-dir-terminal-face 'sidebar-dir-face)
+    (copy-face 'sidebar-untracked-dir-terminal-face 'sidebar-untracked-dir-face)
+    (copy-face 'sidebar-untracked-file-terminal-face 'sidebar-untracked-file-face)
+    (copy-face 'sidebar-ignored-dir-terminal-face 'sidebar-ignored-dir-face)
+    (copy-face 'sidebar-ignored-file-terminal-face 'sidebar-ignored-file-face)
+    (copy-face 'sidebar-not-updated-terminal-face 'sidebar-not-updated-face)
+    (copy-face 'sidebar-updated-terminal-face 'sidebar-updated-face)
+    (copy-face 'sidebar-changed-terminal-face 'sidebar-changed-face)
+    (copy-face 'sidebar-added-terminal-face 'sidebar-added-face)
+    (copy-face 'sidebar-renamed-terminal-face 'sidebar-renamed-face)
+    (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
+
   (make-local-variable 'sidebar-header-text)
   (make-local-variable 'sidebar-files)
   (make-local-variable 'sidebar-current-path)
