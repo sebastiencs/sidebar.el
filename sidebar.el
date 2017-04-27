@@ -87,6 +87,11 @@ by binding a key to it."
   :type 'boolean
   :group 'sidebar)
 
+(defcustom sidebar-message-current nil
+  "If activated, print the full path of the current file in the echo area."
+  :type 'boolean
+  :group 'sidebar)
+
 (defcustom sidebar-width 40
   "Default window width of `sidebar'."
   :type 'integer
@@ -142,7 +147,7 @@ Examples: '↳' '-' '▾'"
   :group 'sidebar-faces)
 
 (defface sidebar-dir-face
-  '((t :foreground "color-27"))
+  '((t :foreground "#005fff"))
   "Face used with directories."
   :group 'sidebar-faces)
 
@@ -157,7 +162,7 @@ Examples: '↳' '-' '▾'"
   :group 'sidebar-faces)
 
 (defface sidebar-ignored-dir-face
-  '((t :foreground "color-18"))
+  '((t :foreground "#3f3f3f"))
   "Face used with ignored (on git) directories."
   :group 'sidebar-faces)
 
@@ -197,7 +202,7 @@ Examples: '↳' '-' '▾'"
   :group 'sidebar-faces)
 
 (defface sidebar-powerline-face
-  '((t :background "color-27"
+  '((t :background "#005fff"
        :foreground "black"))
   "Face used for the powerline."
   :group 'sidebar-faces)
@@ -599,7 +604,8 @@ Resize the window if necessary (customizable)."
 	  (sidebar-resize-window))
 	(delete-region (line-beginning-position) (line-end-position))
 	(sidebar-print-file file t))
-      (message (--getpath file) sidebar-files))))
+      (when sidebar-message-current
+	(message (--getpath file) sidebar-files)))))
 
 (defun sidebar-previous-line ()
   "Go the the previous line.
@@ -998,6 +1004,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (make-local-variable 'sidebar-root-project)
   (make-local-variable 'sidebar-git-hashtable)
   (make-local-variable 'sidebar-git-dir)
+  (setq cursor-type nil)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   ;;  (use-local-map sidebar-mode-map) ; no need
