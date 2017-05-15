@@ -44,6 +44,8 @@
 (require 'loop)
 (require 's)
 (require 'dash)
+(require 'icons-in-terminal)
+(require 'sidebar-filemapping)
 
 (eval-after-load 'dash '(dash-enable-font-lock))
 
@@ -711,43 +713,50 @@ PATH unused."
       (insert (propertize str 'font-lock-face face))
     (insert str)))
 
-(defun sidebar-insert-icon (func str face)
-  "FUNC Small function to insert STR with FACE if non-nil."
-  (if face
-      (insert (funcall func str :face face))
-    (insert (funcall func str))))
+(defun sidebar-insert-icon (icon face)
+  "Insert ICON with FACE if non-nil."
+  (insert (icons-in-terminal icon :face face :height 1.2)))
+
+(defun sidebar-insert-fileicon (filename face)
+  "FILENAME FACE."
+  (let* ((icon-and-color (sidebar-filemapping-lookup filename))
+	 (icon (plist-get icon-and-color :icon))
+	 (color (plist-get icon-and-color :color)))
+    (if face
+	(insert (icons-in-terminal icon :face face :height 1.1))
+      (insert (icons-in-terminal icon :foreground color :height 1.1)))))
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defun sidebar-insert-powerline ()
   "Insert the remaining spaces and a '' to make a powerline effect."
   (insert (propertize (s-repeat (- (window-width (sidebar-get-window)) (+ (current-column) 3)) " ")
 		      'font-lock-face 'sidebar-powerline-face))
-  (insert (propertize ""
-		      'font-lock-face `(:foreground ,(face-background 'sidebar-powerline-face)))))
+  (insert (icons-in-terminal 'powerline_left_hard_divider :foreground (face-background 'sidebar-powerline-face))))
 
 (defun sidebar-gui-insert-icon-filename (file filename status path current-line)
   "FILE FILENAME STATUS PATH CURRENT-LINE."
   (if (--dir? file)
-      (sidebar-insert-icon 'all-the-icons-faicon (if (--opened? file) "folder-open-o" "folder-o")
+      (sidebar-insert-icon (if (--opened? file) 'fa_folder_open_o 'fa_folder_o)
 			   (sidebar-get-color file path status current-line))
-    (sidebar-insert-icon 'all-the-icons-icon-for-file filename
-			 (sidebar-get-color file path status current-line t)))
+    (sidebar-insert-fileicon filename
+			     (sidebar-get-color file path status current-line t)))
   (sidebar-insert " " (and current-line 'sidebar-powerline-face))
-  ;;  (sidebar-insert filename (sidebar-get-filename-color file path status current-line))
   (sidebar-insert filename (sidebar-get-color file path status current-line nil (not sidebar-filename-colored))))
 
 (defun sidebar-gui-insert-status (file path status current-line &optional dir)
   "FILE PATH STATUS CURRENT-LINE DIR."
   (when (or sidebar-status-on-file dir)
-    (let ((func (lambda (f name face)
+    (let ((func (lambda (name face)
 		  (sidebar-insert " " (and current-line 'sidebar-powerline-face))
-		  (funcall 'sidebar-insert-icon f name face)))
+		  (funcall 'sidebar-insert-icon name face)))
 	  (face (sidebar-color-from-status status nil current-line)))
-      (cond ((equal 'not-updated status) (funcall func 'all-the-icons-octicon "flame" face))
-	    ((equal 'updated status) (funcall func 'all-the-icons-octicon "git-commit" face))
-	    ((equal 'changed status) (funcall func 'all-the-icons-octicon "beaker" face))
-	    ((equal 'added status) (funcall func 'all-the-icons-octicon "pulse" face))
-	    ((equal 'renamed status) (funcall func 'all-the-icons-octicon "diff-renamed" face))
-	    ((equal 'match status) (funcall func 'all-the-icons-octicon "git-commit" face))))))
+      (cond ((equal 'not-updated status) (funcall func 'oct_flame face))
+	    ((equal 'updated status) (funcall func 'oct_git_commit face))
+	    ((equal 'changed status) (funcall func 'oct_beaker face))
+	    ((equal 'added status) (funcall func 'oct_pulse face))
+	    ((equal 'renamed status) (funcall func 'oct_git_renamed face))
+	    ((equal 'match status) (funcall func 'oct_git_commit face))))))
 
 (defun sidebar-print-file (file &optional current-line)
   "Insert FILE on the current line.
@@ -1154,26 +1163,27 @@ Print them.
 For each directory in the list previously saved, it reload the dir
 with `\\[sidebar-load-dir]' and print them on the sidebar at the right place."
   (interactive)
-  (let ((opened-dirs (--filter (--opened? it) sidebar-files))
-	(current-line (line-number-at-pos)))
-    (setq sidebar-files (sidebar-update-from-opened-dirs (sidebar-load-dir sidebar-current-path) opened-dirs))
-    (erase-buffer)
-    (sidebar-print-listfiles sidebar-files)
-    (sidebar-sort-files-by-line)
-    (loop-for-each dir opened-dirs
-      (let ((found (--first (string= (--getpath it) (--getpath dir)) sidebar-files)))
-	(when found
-	  (setf (--opened? found) t)
-	  (sidebar-goto-line (+ (--getline found) 1) t)
-	  (let* ((new-files (sidebar-load-dir (--getpath found)))
-		 (new-files (sidebar-update-from-opened-dirs new-files opened-dirs)))
-	    (sidebar-print-listfiles new-files)
-	    (sidebar-update-line-number (length new-files) (--getline found))
-	    (setq sidebar-files (-concat sidebar-files new-files))
-	    (sidebar-sort-files-by-line)))))
-    (sidebar-goto-line current-line)
-    (sidebar-show-current))
-  (message "Sidebar refreshed"))
+  (with-current-buffer (sidebar-get-buffer)
+    (let ((opened-dirs (--filter (--opened? it) sidebar-files))
+	  (current-line (line-number-at-pos)))
+      (setq sidebar-files (sidebar-update-from-opened-dirs (sidebar-load-dir sidebar-current-path) opened-dirs))
+      (erase-buffer)
+      (sidebar-print-listfiles sidebar-files)
+      (sidebar-sort-files-by-line)
+      (loop-for-each dir opened-dirs
+	(let ((found (--first (string= (--getpath it) (--getpath dir)) sidebar-files)))
+	  (when found
+	    (setf (--opened? found) t)
+	    (sidebar-goto-line (+ (--getline found) 1) t)
+	    (let* ((new-files (sidebar-load-dir (--getpath found)))
+		   (new-files (sidebar-update-from-opened-dirs new-files opened-dirs)))
+	      (sidebar-print-listfiles new-files)
+	      (sidebar-update-line-number (length new-files) (--getline found))
+	      (setq sidebar-files (-concat sidebar-files new-files))
+	      (sidebar-sort-files-by-line)))))
+      (sidebar-goto-line current-line)
+      (sidebar-show-current))
+    (message "Sidebar refreshed")))
 
 (defun sidebar-refresh-on-save-after-timer ()
   "Function called when a buffer is saved, it refreshes the sidebar."
