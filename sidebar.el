@@ -236,6 +236,7 @@ Default: nil."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+
 (defface sidebar-file-terminal-face
   '((t :foreground "grey"))
   "Face used with files."
@@ -300,6 +301,18 @@ Default: nil."
   '((t :background "#005fff"
        :foreground "black"))
   "Face used for the powerline."
+  :group 'sidebar-terminal-faces)
+
+(defface sidebar-mode-line-terminal-face
+  '((t :foreground "white"
+       :background "#222222"))
+  "Face used with the mode line."
+  :group 'sidebar-terminal-faces)
+
+(defface sidebar-header-line-terminal-face
+  '((t :foreground "white"
+       :background "#222222"))
+  "Face used with the header line."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-powerline-gui-face
@@ -368,12 +381,24 @@ Default: nil."
   "Face used for matched files."
   :group 'sidebar-gui-faces)
 
+(defface sidebar-mode-line-gui-face
+  '((t :foreground "white"
+       :background "#1A237E"))
+  "Face used with the mode line."
+  :group 'sidebar-gui-faces)
+
+(defface sidebar-header-line-gui-face
+  '((t :foreground "white"
+       :background "#1A237E"))
+  "Face used with the header line."
+  :group 'sidebar-terminal-faces)
 
 (defvar sidebar-status-on-directory nil)
 (defvar sidebar-filename-colored nil)
 (defvar sidebar-status-on-file nil)
 (defvar sidebar-pre-hook-line-number nil)
 (defvar sidebar-saved-line-number nil)
+(defvar sidebar-git-branches nil)
 
 (defface sidebar-powerline-face nil "" :group nil)
 (defface sidebar-file-face nil "" :group nil)
@@ -388,6 +413,8 @@ Default: nil."
 (defface sidebar-added-face nil "" :group nil)
 (defface sidebar-renamed-face nil "" :group nil)
 (defface sidebar-match-face nil "" :group nil)
+(defface sidebar-header-line-face nil "" :group nil)
+(defface sidebar-mode-line-face nil "" :group nil)
 
 (defvar sidebar-files nil
   "List where are stored all files printed in the sidebar.
@@ -1122,7 +1149,8 @@ So I'm just waiting for it to be delete :/"
 The format is `## branchname tracking info'"
   (let* ((str (substring line 3 nil))
 	 (str (s-split "\\.\\.\\." str t)))
-    (car str)))
+    (with-current-buffer (sidebar-get-buffer)
+      (setq sidebar-git-branches str))))
 
 (defun sidebar-git-match-status (status)
   "Return the status from the string STATUS according to the man-page git-status."
@@ -1209,16 +1237,68 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (interactive)
   (sidebar-git-run t))
 
+(defcustom sidebar-header-line-height 1.5
+  "(GUI) Height of the header line."
+  :type 'float
+  :group 'sidebar)
+
 (defun sidebar-set-header ()
   "."
-  (let ((project-name (sidebar-get-root-project)))
-    (if project-name
-	(setq project-name (file-name-nondirectory (directory-file-name project-name)))
+  (let* ((project (sidebar-get-root-project))
+	 (project-name (or project (abbreviate-file-name sidebar-current-path))))
+    (when project
+      (setq project-name (file-name-nondirectory (directory-file-name project-name))))
+    (concat
+     (propertize " " 'face 'sidebar-header-line-face)
+     (if project
+	 (icons-in-terminal 'oct_repo :face 'sidebar-header-line-face :raise -0.07 :height 1.3)
+       (icons-in-terminal 'oct_file_directory :face 'sidebar-header-line-face :raise -0.0 :height 1.3))
+     (propertize
+      (concat " "
+	      project-name
+	      (s-repeat (- (window-width (sidebar-get-window)) (+ (length project-name) 4)) " "))
+      'face 'sidebar-header-line-face
+      'display '(raise 0.2))
+     (icons-in-terminal 'myicons_0008 :foreground (face-background 'sidebar-header-line-face) :height sidebar-header-line-height))))
 
-      (setq sidebar-header-text (abbreviate-file-name sidebar-current-path)))
-    ))
+(defcustom sidebar-mode-line-height 1.5
+  "(GUI) Height of the mode line."
+  :type 'float
+  :group 'sidebar)
 
-(sidebar-set-header)
+(defun sidebar-set-modeline ()
+  "."
+  (let ((project (sidebar-get-root-project)))
+    (if (and project sidebar-git-branches)
+	(let* ((branch
+		(concat
+		 (propertize " " 'face 'sidebar-mode-line-face)
+		 (icons-in-terminal 'oct_git_branch :face 'sidebar-mode-line-face :raise -0.1 :height 1.3)
+		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-mode-line-face))
+		 (propertize (car sidebar-git-branches) 'face 'sidebar-mode-line-face 'display '(raise 0.1))
+		 (propertize " " 'face 'sidebar-mode-line-face)
+		 (icons-in-terminal 'myicons_0008 :foreground (face-background 'sidebar-mode-line-face)
+				    :raise -0.1 :height sidebar-mode-line-height)))
+	       (str-branch-distant (s-split " \\[\\|\\]" (car (cdr sidebar-git-branches))))
+	       (branch-remote
+		(concat
+		 (icons-in-terminal 'myicons_0007 :foreground (face-background 'sidebar-mode-line-face) :height sidebar-mode-line-height)
+		 (propertize " " 'face 'sidebar-mode-line-face)
+		 (propertize (car str-branch-distant) 'face 'sidebar-mode-line-face 'display '(raise 0.1))
+		 (propertize " " 'face 'sidebar-mode-line-face)
+		 (icons-in-terminal 'oct_git_branch :face 'sidebar-mode-line-face :raise -0.1 :height 1.3)
+		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-mode-line-face))))
+	       (len-branch (length branch))
+	       (len-branch-remote (length branch-remote))
+	       (sidebar-width (window-width (sidebar-get-window)))
+	       (space-to-add (- sidebar-width (+ len-branch len-branch-remote))))
+	  (when (sidebar-gui?)
+	    (setq space-to-add (- space-to-add 3)))
+	  (if (> space-to-add 0)
+	      (concat branch (s-repeat space-to-add " ") branch-remote)
+	    ;; (concat branch (s-repeat space-to-add " ") branch-remote)
+	    (concat branch branch-remote)))
+      "")))
 
 (defun sidebar-pre-command()
   (setq sidebar-pre-hook-line-number (line-number-at-pos)))
@@ -1264,6 +1344,12 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+(defface sidebar-header-face
+  '(())
+  ;;  '((t :background "yellow"))
+  "Face used with files."
+  :group 'sidebar-terminal-faces)
+
 (define-derived-mode sidebar-mode nil "Sidebar"
   "Major mode for Sidebar.
 
@@ -1287,6 +1373,8 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 	(copy-face 'sidebar-changed-gui-face 'sidebar-changed-face)
 	(copy-face 'sidebar-added-gui-face 'sidebar-added-face)
 	(copy-face 'sidebar-renamed-gui-face 'sidebar-renamed-face)
+	(copy-face 'sidebar-header-line-gui-face 'sidebar-header-line-face)
+	(copy-face 'sidebar-mode-line-gui-face 'sidebar-mode-line-face)
 	(copy-face 'sidebar-match-gui-face 'sidebar-match-face))
     (setq sidebar-status-on-directory sidebar-terminal-status-on-directory)
     (setq sidebar-filename-colored sidebar-terminal-filename-colored)
@@ -1303,11 +1391,15 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
     (copy-face 'sidebar-changed-terminal-face 'sidebar-changed-face)
     (copy-face 'sidebar-added-terminal-face 'sidebar-added-face)
     (copy-face 'sidebar-renamed-terminal-face 'sidebar-renamed-face)
+    (copy-face 'sidebar-header-line-terminal-face 'sidebar-header-line-face)
+    (copy-face 'sidebar-mode-line-terminal-face 'sidebar-mode-line-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
   (make-local-variable 'post-command-hook)
   (make-local-variable 'pre-command-hook)
   (make-local-variable 'sidebar-pre-hook-line-number)
+  (make-local-variable 'sidebar-saved-line-number)
+  (make-local-variable 'sidebar-git-branches)
   (make-local-variable 'sidebar-header-text)
   (make-local-variable 'sidebar-files)
   (make-local-variable 'sidebar-current-path)
@@ -1320,10 +1412,18 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
-  ;;  (use-local-map sidebar-mode-map) ; no need
-  (setq header-line-format '(list "-" sidebar-header-text)
+  (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
+  (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
+  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
+  (setq header-line-format nil
 	buffer-read-only nil
-	mode-line-format nil))
+	mode-line-format nil)
+  (setq mode-line-format (list '(:eval (sidebar-set-modeline))))
+  (setq header-line-format (list '(:eval (sidebar-set-header))))
+  )
+
+;; (eval-buffer)
+;;(sidebar-open)
 
 (provide 'sidebar)
 
