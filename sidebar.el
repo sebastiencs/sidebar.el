@@ -372,6 +372,8 @@ Default: nil."
 (defvar sidebar-status-on-directory nil)
 (defvar sidebar-filename-colored nil)
 (defvar sidebar-status-on-file nil)
+(defvar sidebar-pre-hook-line-number nil)
+(defvar sidebar-saved-line-number nil)
 
 (defface sidebar-powerline-face nil "" :group nil)
 (defface sidebar-file-face nil "" :group nil)
@@ -635,7 +637,9 @@ FILE PATH"
 
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil."
-  (insert (icons-in-terminal icon :face face :height 1.2)))
+  (if face
+      (insert (icons-in-terminal icon :face face :height 1.2))
+    (insert (icons-in-terminal icon :height 1.2))))
 
 (defun sidebar-insert-fileicon (filename face)
   "FILENAME FACE."
@@ -644,7 +648,9 @@ FILE PATH"
 	 (color (plist-get icon-and-color :color)))
     (if face
 	(insert (icons-in-terminal icon :face face :height 1.1))
-      (insert (icons-in-terminal icon :foreground color :height 1.1)))))
+      (if color
+	  (insert (icons-in-terminal icon :foreground color :height 1.1))
+	(insert (icons-in-terminal icon :height 1.1))))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -1168,13 +1174,10 @@ CHANGE is unused"
     (if (/= (process-exit-status process) 0)
 	(sidebar-refresh)
       (let ((table (sidebar-git-parse-buffer))
-	    (point 0)
 	    (sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
 	(with-current-buffer (sidebar-get-buffer)
 	  (setq sidebar-git-hashtable table)
-	  (setq point (point))
-	  (sidebar-refresh))
-	(set-window-point sidebar-window point))
+	  (sidebar-refresh)))
       (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
 
 (defun sidebar-git-run (&optional force)
@@ -1184,6 +1187,8 @@ The process is run only once per project.
 Once done, it refresh the sidebar.
 if FORCE is non-nil, force to run the process."
   (interactive)
+  (with-current-buffer (sidebar-get-buffer)
+    (setq sidebar-saved-line-number (line-number-at-pos)))
   (if (or force
 	  (and sidebar-root-project (not (s-equals? sidebar-root-project sidebar-git-dir))))
       (progn
@@ -1203,6 +1208,41 @@ if FORCE is non-nil, force to run the process."
 See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (interactive)
   (sidebar-git-run t))
+
+(defun sidebar-set-header ()
+  "."
+  (let ((project-name (sidebar-get-root-project)))
+    (if project-name
+	(setq project-name (file-name-nondirectory (directory-file-name project-name)))
+
+      (setq sidebar-header-text (abbreviate-file-name sidebar-current-path)))
+    ))
+
+(sidebar-set-header)
+
+(defun sidebar-pre-command()
+  (setq sidebar-pre-hook-line-number (line-number-at-pos)))
+
+(defun sidebar-post-command()
+  (if sidebar-saved-line-number
+      (progn (when sidebar-pre-hook-line-number
+	       (sidebar-goto-line sidebar-pre-hook-line-number)
+	       (sidebar-disable-current))
+	     (sidebar-goto-line sidebar-saved-line-number)
+	     (sidebar-show-current)
+	     (setq sidebar-saved-line-number nil))
+    (when (and sidebar-pre-hook-line-number
+	       (/= sidebar-pre-hook-line-number (line-number-at-pos))
+	       (not (eq this-command 'sidebar-next-line))
+	       (not (eq this-command 'sidebar-previous-line))
+	       (not (eq this-command 'sidebar-up-directory))
+	       (not (eq this-command 'sidebar-open-line)))
+      (let ((new-line (line-number-at-pos)))
+	(sidebar-goto-line sidebar-pre-hook-line-number)
+	(sidebar-disable-current)
+	(sidebar-goto-line new-line)
+	(sidebar-show-current))
+      (message (concat "line changed to: " (number-to-string (line-number-at-pos)))))))
 
 (defvar sidebar-mode-map nil
   "Keymap use with sidebar-mode.")
@@ -1265,6 +1305,9 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
     (copy-face 'sidebar-renamed-terminal-face 'sidebar-renamed-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
+  (make-local-variable 'post-command-hook)
+  (make-local-variable 'pre-command-hook)
+  (make-local-variable 'sidebar-pre-hook-line-number)
   (make-local-variable 'sidebar-header-text)
   (make-local-variable 'sidebar-files)
   (make-local-variable 'sidebar-current-path)
@@ -1273,6 +1316,8 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (make-local-variable 'sidebar-git-hashtable)
   (make-local-variable 'sidebar-git-dir)
   (setq cursor-type nil)
+  (add-hook 'post-command-hook 'sidebar-post-command)
+  (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   ;;  (use-local-map sidebar-mode-map) ; no need
