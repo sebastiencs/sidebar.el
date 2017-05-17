@@ -399,6 +399,7 @@ Default: nil."
 (defvar sidebar-pre-hook-line-number nil)
 (defvar sidebar-saved-line-number nil)
 (defvar sidebar-git-branches nil)
+(defvar sidebar-icon-inserted-on-line 0)
 
 (defface sidebar-powerline-face nil "" :group nil)
 (defface sidebar-file-face nil "" :group nil)
@@ -666,7 +667,8 @@ FILE PATH"
   "Insert ICON with FACE if non-nil."
   (if face
       (insert (icons-in-terminal icon :face face :height 1.2))
-    (insert (icons-in-terminal icon :height 1.2))))
+    (insert (icons-in-terminal icon :height 1.2)))
+  (setq sidebar-icon-inserted-on-line (+ sidebar-icon-inserted-on-line 1)))
 
 (defun sidebar-insert-fileicon (filename face)
   "FILENAME FACE."
@@ -683,8 +685,11 @@ FILE PATH"
 
 (defun sidebar-insert-powerline ()
   "Insert the remaining spaces and a '' to make a powerline effect."
-  (insert (propertize (s-repeat (- (window-width (sidebar-get-window)) (+ (current-column) 3)) " ")
-		      'font-lock-face 'sidebar-powerline-face))
+  (let ((space-to-add (- (window-width (sidebar-get-window)) (+ (current-column) 1))))
+    (if (sidebar-gui?)
+	(setq space-to-add (- space-to-add sidebar-icon-inserted-on-line))
+      (setq space-to-add (- space-to-add 1)))
+    (insert (propertize (s-repeat space-to-add " ") 'font-lock-face 'sidebar-powerline-face)))
   (insert (icons-in-terminal 'powerline_left_hard_divider :foreground (face-background 'sidebar-powerline-face))))
 
 (defun sidebar-gui-insert-icon-filename (file filename status path current-line)
@@ -693,7 +698,8 @@ FILE PATH"
       (sidebar-insert-icon (if (--opened? file) 'fa_folder_open_o 'fa_folder_o)
 			   (sidebar-get-color file path status current-line))
     (sidebar-insert-fileicon filename
-			     (sidebar-get-color file path status current-line t)))
+			     (sidebar-get-color file path status current-line t))
+    (setq sidebar-icon-inserted-on-line (+ sidebar-icon-inserted-on-line 1)))
   (sidebar-insert " " (and current-line 'sidebar-powerline-face))
   (sidebar-insert filename (sidebar-get-color file path status current-line nil (not sidebar-filename-colored))))
 
@@ -729,7 +735,8 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
 	 (path-in-project (s-chop-prefix sidebar-root-project (--getpath file)))
 	 (path-fixed-dirname (if (--dir? file) (file-name-as-directory path-in-project) path-in-project))
 	 (status (and sidebar-git-hashtable (gethash path-fixed-dirname sidebar-git-hashtable)))
-	 (depth (sidebar-calc-depth file status)))
+	 (depth (sidebar-calc-depth file status))
+	 (sidebar-icon-inserted-on-line 0))
     (sidebar-insert (s-repeat depth " ") (and current-line 'sidebar-powerline-face))
     (sidebar-gui-insert-icon-filename file filename status path-fixed-dirname current-line)
     (sidebar-gui-insert-status file path-fixed-dirname status current-line)
@@ -1457,6 +1464,7 @@ This function just select another window before the frame is created."
   (make-local-variable 'sidebar-root-project)
   (make-local-variable 'sidebar-git-hashtable)
   (make-local-variable 'sidebar-git-dir)
+  (make-local-variable 'sidebar-icon-inserted-on-line)
   (setq cursor-type nil)
   (add-hook 'post-command-hook 'sidebar-post-command)
   (add-hook 'pre-command-hook 'sidebar-pre-command)
