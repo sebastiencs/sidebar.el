@@ -1342,7 +1342,6 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (setq sidebar-pre-hook-line-number (line-number-at-pos)))
 
 (defun sidebar-post-command()
-  (message "last-command: %s" this-command) ;; TODO check that we're in the same frame
   (if sidebar-saved-line-number
       (progn (when sidebar-pre-hook-line-number
 	       (sidebar-goto-line sidebar-pre-hook-line-number)
@@ -1355,14 +1354,25 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 	       (not (eq this-command 'sidebar-next-line))
 	       (not (eq this-command 'sidebar-previous-line))
 	       (not (eq this-command 'sidebar-up-directory))
-	       (not (eq this-command 'sidebar-open-line))
-	       (not (eq this-command 'handle-switch-frame)))
+	       (not (eq this-command 'sidebar-open-line)))
       (let ((new-line (line-number-at-pos)))
 	(sidebar-goto-line sidebar-pre-hook-line-number)
 	(sidebar-disable-current)
 	(sidebar-goto-line new-line)
 	(sidebar-show-current))
       (message (concat "line changed to: " (number-to-string (line-number-at-pos)))))))
+
+(defun sidebar-before-make-frame-hook ()
+  "This hook run when another frame is created.
+When another frame is created, if the current window selected is the
+sidebar, it opens a sidebar in the new frame.  I don't know why.
+This function just select another window before the frame is created."
+  (let ((selected-window (frame-selected-window))
+	(windows-in-frame (window-list))
+	(sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
+    (when (equal selected-window sidebar-window)
+      (let ((other-window (--first (not (equal sidebar-window it)) windows-in-frame)))
+	(set-frame-selected-window nil other-window)))))
 
 (defvar sidebar-mode-map nil
   "Keymap use with sidebar-mode.")
@@ -1452,6 +1462,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
+  (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
   (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
   (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
   (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
