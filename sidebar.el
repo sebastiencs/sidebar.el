@@ -757,7 +757,7 @@ keep track of which file is on which line."
 
 (defun sidebar-print ()
   "Prints Sidebar."
-  (setq sidebar-header-text (abbreviate-file-name sidebar-current-path))
+;;;  (setq sidebar-header-text (abbreviate-file-name sidebar-current-path))
   (sidebar-print-listfiles sidebar-files)
   (sidebar-sort-files-by-line))
 
@@ -810,6 +810,38 @@ This is use when the sidebar is created."
       (sidebar-goto-line 1)
       (sidebar-show-current))))
 
+(defun sidebar-expand-path (project-path-root file-path)
+  "PROJECT-PATH-ROOT FILE-PATH."
+  (let* ((rel-path-to-file (s-chop-prefix (directory-file-name project-path-root) file-path))
+	 (rel-path-to-file (s-chop-suffix (file-name-nondirectory rel-path-to-file) rel-path-to-file))
+	 (rel-path-to-file (directory-file-name rel-path-to-file))
+	 (dirs-to-open (split-path rel-path-to-file)))
+    (when dirs-to-open
+      (let ((base project-path-root))
+	(-map 'sidebar-file-struct
+	      (--map (setq base (concat (file-name-as-directory base) it))
+		     dirs-to-open))))))
+
+;; (file-name-nondirectory "/home/seb/seb/")
+;; (directory-file-name "/home/seb/seb/")
+
+;; (sidebar-expand-path "/home/sebastien/" "/home/sebastien/travaux/machin/truc/file.c")
+;; (sidebar-expand-path "/home/sebastien/" "/home/sebastien/file.c")
+
+;; (split-path "travaux/machin")
+
+(defun split-path (path)
+  "PATH."
+  (split-path-helper path ()))
+
+(defun split-path-helper (path accum)
+  "PATH ACCUM."
+  (let ((dir  (directory-file-name (file-name-directory path)))
+        (name (file-name-nondirectory path)))
+    (if (equal dir path)
+        accum
+      (split-path-helper dir (cons name accum)))))
+
 (defun sidebar-open ()
   "Open or create a sidebar for the current frame."
   (interactive)
@@ -827,7 +859,8 @@ This is use when the sidebar is created."
     (unless sidebar-exists
       (setq sidebar-current-path project-path-root)
       (setq sidebar-files (sidebar-load-dir project-path-root))
-      (sidebar-print)
+;;;      (sidebar-print)
+      (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-mode)
       (sidebar-git-run))))
@@ -1099,8 +1132,8 @@ if FORCE is non-nil, there is no check."
 	(setf (--opened? found) t))))
   list)
 
-(defun sidebar-refresh ()
-  "Update the list of files in the Sidebar.
+(defun sidebar-refresh (&optional to-expand)
+  "Update the list of files in the Sidebar TO-EXPAND.
 
 The function saves all the directories opened (expanded) in the current sidebar.
 Then it load the files of the current directory with `\\[sidebar-load-dir]'
@@ -1109,7 +1142,7 @@ For each directory in the list previously saved, it reload the dir
 with `\\[sidebar-load-dir]' and print them on the sidebar at the right place."
   (interactive)
   (with-current-buffer (sidebar-get-buffer)
-    (let ((opened-dirs (--filter (--opened? it) sidebar-files))
+    (let ((opened-dirs (or to-expand (--filter (--opened? it) sidebar-files)))
 	  (current-line (line-number-at-pos)))
       (setq sidebar-files (sidebar-update-from-opened-dirs (sidebar-load-dir sidebar-current-path) opened-dirs))
       (erase-buffer)
@@ -1309,6 +1342,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (setq sidebar-pre-hook-line-number (line-number-at-pos)))
 
 (defun sidebar-post-command()
+  (message "last-command: %s" this-command) ;; TODO check that we're in the same frame
   (if sidebar-saved-line-number
       (progn (when sidebar-pre-hook-line-number
 	       (sidebar-goto-line sidebar-pre-hook-line-number)
@@ -1321,7 +1355,8 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 	       (not (eq this-command 'sidebar-next-line))
 	       (not (eq this-command 'sidebar-previous-line))
 	       (not (eq this-command 'sidebar-up-directory))
-	       (not (eq this-command 'sidebar-open-line)))
+	       (not (eq this-command 'sidebar-open-line))
+	       (not (eq this-command 'handle-switch-frame)))
       (let ((new-line (line-number-at-pos)))
 	(sidebar-goto-line sidebar-pre-hook-line-number)
 	(sidebar-disable-current)
