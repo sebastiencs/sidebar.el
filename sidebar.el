@@ -788,8 +788,11 @@ with `\\[sidebar-file-struct]'"
     (unless sidebar-window
       (let ((sidebar-buffer (sidebar-get-buffer)))
 	(setq sidebar-window (display-buffer sidebar-buffer (display-buffer-in-side-window sidebar-buffer '((side . left)))))
-	(when (> (window-total-width sidebar-window) sidebar-width)
-	  (window-resize sidebar-window (- sidebar-width (window-total-width sidebar-window)) t))))
+	(let ((current-width (window-total-width sidebar-window)))
+	  (if (> current-width sidebar-width)
+	      (window-resize sidebar-window (- sidebar-width current-width) t)
+	    (when (< current-width sidebar-width)
+	      (window-resize sidebar-window (- current-width sidebar-width) t))))))
     sidebar-window))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
