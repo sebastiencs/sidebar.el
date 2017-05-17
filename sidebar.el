@@ -483,8 +483,8 @@ On Graphics ones, the name isn't unique for each frame, so we use
 (defun sidebar-cons-git-buffer-name ()
   "Construct the git buffer name from 'sidebar-buffer-name' and the frame name.
 See `\\[sidebar-cons-buffer-name]' for more info."
-  (concat " *" sidebar-buffer-name "-" (or (frame-parameter nil 'window-id)
-					   (frame-parameter nil 'name))"-GIT*"))
+  (concat "*" sidebar-buffer-name "-" (or (frame-parameter nil 'window-id)
+					  (frame-parameter nil 'name))"-GIT*"))
 ;;;(concat "*" sidebar-buffer-name "-" (frame-parameter nil 'name) "-GIT*"))
 
 (defun sidebar-get-git-buffer ()
@@ -786,7 +786,10 @@ with `\\[sidebar-file-struct]'"
   "Return the created/existing window displaying the sidebar buffer."
   (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
     (unless sidebar-window
-      (setq sidebar-window (split-window (selected-window) (- (frame-width) sidebar-width) 'left nil)))
+      (let ((sidebar-buffer (sidebar-get-buffer)))
+	(setq sidebar-window (display-buffer sidebar-buffer (display-buffer-in-side-window sidebar-buffer '((side . left)))))
+	(when (> (window-total-width sidebar-window) sidebar-width)
+	  (window-resize sidebar-window (- sidebar-width (window-total-width sidebar-window)) t))))
     sidebar-window))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
@@ -1205,8 +1208,8 @@ CHANGE is unused"
 	    (sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
 	(with-current-buffer (sidebar-get-buffer)
 	  (setq sidebar-git-hashtable table)
-	  (sidebar-refresh)))
-      (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
+	  (sidebar-refresh))))
+    (ignore-errors (kill-buffer (sidebar-get-git-buffer)))))
 
 (defun sidebar-git-run (&optional force)
   "Run git status in the current directory.
@@ -1258,7 +1261,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 	      project-name
 	      (s-repeat (- (window-width (sidebar-get-window)) (+ (length project-name) 4)) " "))
       'face 'sidebar-header-line-face
-      'display '(raise 0.2))
+      'display '(raise 0.12))
      (icons-in-terminal 'myicons_0008 :foreground (face-background 'sidebar-header-line-face) :height sidebar-header-line-height))))
 
 (defcustom sidebar-mode-line-height 1.5
@@ -1293,10 +1296,9 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 	       (sidebar-width (window-width (sidebar-get-window)))
 	       (space-to-add (- sidebar-width (+ len-branch len-branch-remote))))
 	  (when (sidebar-gui?)
-	    (setq space-to-add (- space-to-add 3)))
+	    (setq space-to-add (- space-to-add 2)))
 	  (if (> space-to-add 0)
 	      (concat branch (s-repeat space-to-add " ") branch-remote)
-	    ;; (concat branch (s-repeat space-to-add " ") branch-remote)
 	    (concat branch branch-remote)))
       "")))
 
