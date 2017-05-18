@@ -925,27 +925,6 @@ Resize the window if necessary (customizable)."
       (when sidebar-message-current
 	(message (--getpath file) sidebar-files)))))
 
-(defun sidebar-previous-line ()
-  "Go the the previous line.
-If we're at the top, go to the last line."
-  (interactive)
-  (sidebar-disable-current)
-  (if (= (line-number-at-pos) 1)
-      (forward-line (- (count-lines (point-min) (point-max)) 1))
-    (forward-line -1))
-  (sidebar-show-current))
-
-(defun sidebar-next-line ()
-  "Go the the next line.
-If we're at the bottom, got to the first"
-  (interactive)
-  (sidebar-disable-current)
-  (forward-line)
-  (let ((numbers-of-line (count-lines (point-min) (point-max))))
-    (if (> (line-number-at-pos) numbers-of-line)
-	(forward-line (- numbers-of-line))))
-  (sidebar-show-current))
-
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defun sidebar-update-to-opened (list path-old)
@@ -1406,10 +1385,6 @@ This function just select another window before the frame is created."
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
     (define-key map (kbd "h") 'sidebar-refresh-cmd)
-    (define-key map (kbd "<up>") 'sidebar-previous-line)
-    (define-key map (kbd "C-p") 'sidebar-previous-line)
-    (define-key map (kbd "<down>") 'sidebar-next-line)
-    (define-key map (kbd "C-n") 'sidebar-next-line)
     (setq sidebar-mode-map map)))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
