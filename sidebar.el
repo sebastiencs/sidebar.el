@@ -927,6 +927,139 @@ Resize the window if necessary (customizable)."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+(defun sidebar-create-directory ()
+  "Create a directory and its parents if non existing."
+  (interactive)
+  (let* ((file-at-line (sidebar-find-file-from-line))
+	 (path-at-line (file-name-directory (--getpath file-at-line)))
+	 (new-dir (read-string "[sidebar] Create directory: " path-at-line)))
+    (if (file-exists-p new-dir)
+	(error "[sidebar] Cannot create directory %s, it already exists" new-dir)
+      (condition-case err
+	  (progn
+	    (make-directory new-dir t)
+	    (message "[sidebar] directory created")
+	    (sidebar-git-run t))
+	(error "[sidebar] Error: %s" (error-message-string err))))))
+
+(defun sidebar-create-file ()
+  "Create a new file.
+The file should be in an existing directory.
+To create directories, see \\[sidebar-create-directory]"
+  (interactive)
+  (let* ((file-at-line (sidebar-find-file-from-line))
+	 (path-at-line (file-name-directory (or (--getpath file-at-line) sidebar-current-path)))
+	 (new-file (read-string "[sidebar] Create file: " path-at-line)))
+    (if (file-exists-p new-file)
+	(error "[sidebar] Cannot create file %s, it already exists" new-file)
+      (if (not (file-writable-p new-file))
+	  (error "[sidebar] Cannot create file %s, directory not writable" new-file)
+	(let ((sidebar-window (frame-parameter nil 'sidebar-window-origin)))
+	  (when sidebar-window
+	    (select-window (frame-parameter nil 'sidebar-window-origin))
+	    (find-file new-file)
+	    (save-buffer)
+	    (message "[sidebar] File %s created" new-file)
+	    (sidebar-refresh)))))))
+
+(defun sidebar-delete-selected ()
+  "Delete the file/directory on the selected line.
+If it's a directory, it removes recursively its subfiles."
+  (interactive)
+  (let* ((file-at-line (sidebar-find-file-from-line))
+	 (str-prompt (format "[sidebar] Delete the %s %s ? ('yes' or anything else): "
+			     (if (--dir? file-at-line) "directory" "file")
+			     (--getpath file-at-line)))
+	 (confirm (read-string str-prompt)))
+    (when (s-equals? "yes" confirm)
+      (if (--dir? file-at-line)
+	  (delete-directory (--getpath file-at-line) t)
+	(delete-file (--getpath file-at-line)))
+      (sidebar-refresh))))
+
+(defun sidebar-rename-buffer-name (buffers name new-name)
+  "BUFFERS NAME NEW-NAME."
+  (while buffers
+    (when (equal (buffer-file-name (car buffers)) name)
+      (when (y-or-n-p (format "Rename the buffer %s ? " (buffer-name (car buffers))))
+	(with-current-buffer (car buffers)
+	  (set-visited-file-name new-name t t)
+	  (save-buffer))))
+    (setq buffers (cdr buffers))))
+
+(defun sidebar-rename-selected ()
+  "Rename the selected file/directory.
+If there are buffers visiting this file, you'll be ask to rename them too."
+  (interactive)
+  (let* ((file-at-line (sidebar-find-file-from-line))
+	 (directory (file-name-directory (--getpath file-at-line)))
+	 (filename-at-line (file-name-nondirectory (--getpath file-at-line)))
+	 (new-name (read-string (format "[sidebar] Rename %s to: " filename-at-line))))
+    (if (file-exists-p new-name)
+	(error "[sidebar] Cannot rename to %s, it already exists" new-name)
+      (rename-file (--getpath file-at-line) (concat directory new-name))
+      (sidebar-rename-buffer-name (buffer-list) (--getpath file-at-line) new-name)
+      (sidebar-refresh))))
+
+(defvar sidebar-file-to-copy
+  '(:file nil :method 'copy)
+  "Variable that holds the file to copy.
+Methods are copy or cut.")
+
+(defun sidebar-copy-selected ()
+  "Copy the selected file/directory.
+Paste it with `sidebar-paste'."
+  (interactive)
+  (let ((file-at-line (sidebar-find-file-from-line)))
+    (plist-put sidebar-file-to-copy :file file-at-line)
+    (plist-put sidebar-file-to-copy :method 'copy)))
+
+(defun sidebar-cut-selected ()
+  "Cut the selected file/directory.
+Paste it with `sidebar-paste'."
+  (interactive)
+  (let ((file-at-line (sidebar-find-file-from-line)))
+    (if (not (file-writable-p (--getpath file-at-line)))
+	(error "[sidebar] Cannot cut file, it's non writable")
+      (plist-put sidebar-file-to-copy :file file-at-line)
+      (plist-put sidebar-file-to-copy :method 'cut))))
+
+(defun sidebar-paste ()
+  "Paste the file/directory previously copied/cut.
+The file will be paste to the path of the current selected file.
+If the selected line is a directory, it will paste the file outside it.
+To paste the file inside the directory, it has to be open (expand).
+
+If the file is cut, you'll be ask to rename the buffers visiting it."
+  (interactive)
+  (let* ((file-at-line (sidebar-find-file-from-line))
+	 (directory (if (--opened? file-at-line) (file-name-as-directory (--getpath file-at-line))
+		      (file-name-directory (--getpath file-at-line))))
+	 (method (plist-get sidebar-file-to-copy :method))
+	 (file (plist-get sidebar-file-to-copy :file))
+	 (new-file (concat directory (file-name-nondirectory (--getpath file))))
+	 (str-prompt (format "%s %s to %s ? "
+			     (if (equal method 'copy) "Copy" "Cut")
+			     (file-name-nondirectory (--getpath file))
+			     directory)))
+    (when (y-or-n-p str-prompt)
+      (cond ((file-exists-p new-file)
+	     (error "[sidebar] Cannot paste file.  Already exists"))
+	    ((not (file-writable-p directory))
+	     (error "[sidebar] Cannot create file, directory not writable"))
+	    (t (condition-case err
+		   (progn
+		     (if (--dir? file)
+			 (copy-directory (--getpath file) directory t t nil)
+		       (copy-file (--getpath file) directory nil t t t))
+		     (when (equal method 'cut)
+		       (if (--dir? file)
+			   (delete-directory (--getpath file) t)
+			 (delete-file (--getpath file))
+			 (sidebar-rename-buffer-name (buffer-list) (--getpath file) new-file)))
+		     (sidebar-refresh))
+		 (error "Error while copying file: " (error-message-string err))))))))
+
 (defun sidebar-update-to-opened (list path-old)
   "Return LIST with PATH-OLD's 'opened value to t."
   (let ((file (--first (string= (--getpath it) path-old) list)))
@@ -1005,10 +1138,12 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-dir]'
     (sidebar-show-current))
   (sidebar-git-run))
 
-(defun sidebar-find-file-from-line (line)
+(defun sidebar-find-file-from-line (&optional line)
   "Return the file on the LINE.
 Because sidebar-files is always sorted, it's easy to get it"
-  (nth (- line 1) sidebar-files))
+  (if line
+      (nth (- line 1) sidebar-files)
+    (nth (- (line-number-at-pos) 1) sidebar-files)))
 
 (defun sidebar-open-file (file)
   "Open FILE in the buffer where `\\[sidebar-open]' has been called."
@@ -1020,8 +1155,7 @@ Because sidebar-files is always sorted, it's easy to get it"
 If it's a directory, open it in the sidebar.
 If it's a file, open it on the window where `\\[sidebar-open]' has been called"
   (interactive)
-  (let* ((line (line-number-at-pos))
-	 (file (sidebar-find-file-from-line line)))
+  (let* ((file (sidebar-find-file-from-line)))
     (if (--dir? file)
 	(sidebar-open-directory file)
       (sidebar-open-file file))))
@@ -1103,8 +1237,8 @@ the directory is re-opened"
 (defun sidebar-expand-or-close-dir ()
   "Expand or close the directory on the current line."
   (interactive)
-  (let* ((line (line-number-at-pos))
-	 (file (sidebar-find-file-from-line line)))
+  (let ((line (line-number-at-pos))
+	(file (sidebar-find-file-from-line)))
     (when (--dir? file)
       (if (--opened? file)
 	  (sidebar-close-dir file line)
@@ -1340,7 +1474,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (setq sidebar-pre-hook-line-number (line-number-at-pos)))
 
 (defun sidebar-post-command()
-  (message "last command: %s" this-command)
+;;;  (message "last command: %s" this-command)
   (if sidebar-saved-line-number
       (progn (when sidebar-pre-hook-line-number
 	       (sidebar-goto-line sidebar-pre-hook-line-number)
@@ -1385,6 +1519,10 @@ This function just select another window before the frame is created."
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
     (define-key map (kbd "h") 'sidebar-refresh-cmd)
+    (define-key map (kbd "n") 'sidebar-create-file)
+    (define-key map (kbd "C-n") 'sidebar-create-directory)
+    (define-key map (kbd "C-d") 'sidebar-delete-selected)
+    (define-key map (kbd "R") 'sidebar-rename-selected)
     (setq sidebar-mode-map map)))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
@@ -1453,6 +1591,7 @@ This function just select another window before the frame is created."
   (make-local-variable 'sidebar-git-hashtable)
   (make-local-variable 'sidebar-git-dir)
   (make-local-variable 'sidebar-icon-inserted-on-line)
+  (make-local-variable 'sidebar-file-to-copy)
   (setq cursor-type nil)
   (add-hook 'post-command-hook 'sidebar-post-command)
   (add-hook 'pre-command-hook 'sidebar-pre-command)
