@@ -316,8 +316,9 @@ Default: nil."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-powerline-gui-face
-  '((t :background "#005fff"
-       :foreground "black"))
+;;;  '((t :background "#005fff"
+  '((t :background "#1A237E"
+       :foreground "white"))
   "Face used for the powerline."
   :group 'sidebar-gui-faces)
 
@@ -453,6 +454,13 @@ Buffer local.")
   "Window where sidebar has been called.
 This is used to know where to open the file selected.
 It's a frame parameter (Or Frame local).")
+
+(defvar sidebar-button-keymap
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] 'sidebar-open-line)
+    (define-key map [mouse-2] 'sidebar-open-line)
+    map)
+  "Keymap for file button.")
 
 (defun sidebar-get-root-project ()
   "Return the project directory, nil if there is no project."
@@ -663,6 +671,10 @@ FILE PATH"
       (insert (propertize str 'font-lock-face face))
     (insert str)))
 
+(defun sidebar-insert-filename (str face)
+  "Small function to insert STR with FACE if non-nil."
+  (insert (propertize str 'font-lock-face face 'mouse-face face 'keymap sidebar-button-keymap)))
+
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil."
   (if face
@@ -701,7 +713,7 @@ FILE PATH"
 			     (sidebar-get-color file path status current-line t))
     (setq sidebar-icon-inserted-on-line (+ sidebar-icon-inserted-on-line 1)))
   (sidebar-insert " " (and current-line 'sidebar-powerline-face))
-  (sidebar-insert filename (sidebar-get-color file path status current-line nil (not sidebar-filename-colored))))
+  (sidebar-insert-filename filename (sidebar-get-color file path status current-line nil (not sidebar-filename-colored))))
 
 (defun sidebar-gui-insert-status (file path status current-line &optional dir)
   "FILE PATH STATUS CURRENT-LINE DIR."
@@ -1349,6 +1361,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
   (setq sidebar-pre-hook-line-number (line-number-at-pos)))
 
 (defun sidebar-post-command()
+  (message "last command: %s" this-command)
   (if sidebar-saved-line-number
       (progn (when sidebar-pre-hook-line-number
 	       (sidebar-goto-line sidebar-pre-hook-line-number)
