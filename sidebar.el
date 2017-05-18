@@ -532,9 +532,7 @@ STATUS is the status of the FILE."
   (let* ((path-from-current (s-chop-prefix sidebar-current-path (--getpath file)))
 	 (depth (s-count-matches "/" path-from-current))) ; TODO: Support Windows (replace '/')
     (when (> depth 0)
-      (setq depth (* depth 2))
-      (unless (--dir? file)
-	(setq depth (+ depth 1))))
+      (setq depth (* depth 2)))
     (setq depth (+ depth 1))
     depth))
 
@@ -678,8 +676,8 @@ FILE PATH"
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil."
   (if face
-      (insert (icons-in-terminal icon :face face :height 1.2))
-    (insert (icons-in-terminal icon :height 1.2)))
+      (insert (icons-in-terminal icon :face face :height 1.15))
+    (insert (icons-in-terminal icon :height 1.15)))
   (setq sidebar-icon-inserted-on-line (+ sidebar-icon-inserted-on-line 1)))
 
 (defun sidebar-insert-fileicon (filename face)
@@ -1484,8 +1482,6 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 	     (setq sidebar-saved-line-number nil))
     (when (and sidebar-pre-hook-line-number
 	       (/= sidebar-pre-hook-line-number (line-number-at-pos))
-	       (not (eq this-command 'sidebar-next-line))
-	       (not (eq this-command 'sidebar-previous-line))
 	       (not (eq this-command 'sidebar-up-directory))
 	       (not (eq this-command 'sidebar-open-line)))
       (let ((new-line (line-number-at-pos)))
