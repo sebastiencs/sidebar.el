@@ -805,6 +805,7 @@ with `\\[sidebar-file-struct]'"
     (unless sidebar-window
       (let ((sidebar-buffer (sidebar-get-buffer)))
 	(setq sidebar-window (display-buffer sidebar-buffer (display-buffer-in-side-window sidebar-buffer '((side . left)))))
+	(set-window-dedicated-p sidebar-window t)
 	(let ((current-width (window-total-width sidebar-window)))
 	  (if (> current-width sidebar-width)
 	      (window-resize sidebar-window (- sidebar-width current-width) t)
