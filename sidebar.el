@@ -46,6 +46,8 @@
 (require 'dash)
 (require 'icons-in-terminal)
 (require 'sidebar-filemapping)
+(require 'sidebar-select)
+(require 'sidebar-utils)
 
 (eval-after-load 'dash '(dash-enable-font-lock))
 
@@ -56,27 +58,19 @@
   :link '(custom-manual "(sidebar) Top")
   :link '(info-link "(sidebar) Customizing"))
 
-(defgroup sidebar-terminal-faces nil
+(defgroup sidebar-terminal-face nil
   "Faces uses in sidebar on terminals."
   :prefix "sidebar-"
   :link '(info-link "(sidebar) Frames and Faces")
   :group 'sidebar
   :group 'faces)
 
-(defgroup sidebar-gui-faces nil
+(defgroup sidebar-gui-face nil
   "Faces uses in sidebar with gui."
   :prefix "sidebar-"
   :link '(info-link "(sidebar) Frames and Faces")
   :group 'sidebar
   :group 'faces)
-
-(defmacro --get-in-frame (var)
-  "Get VAR in the current frame."
-  `(frame-parameter nil ,var))
-
-(defmacro --set-in-frame (var val)
-  "Set VAR to VAL in the current frame."
-  `(set-frame-parameter nil ,var ,val))
 
 (defmacro --getpath (file)
   "Return the path from FILE."
@@ -97,7 +91,7 @@
 (defcustom sidebar-resize-auto-window nil
   "If activated, the sidebar's window will automatically be resize if the..
 filename on the current line is longer than the window.
-This can be done manually by calling the function `\\[sidebar-resize-window]' or
+This can be done manually by calling the function `sidebar-resize-window' or
 by binding a key to it."
   :type 'boolean
   :group 'sidebar)
@@ -479,24 +473,6 @@ If it's not a file, return the home directory."
       (when buffer-file-name (file-name-directory buffer-file-name))
       "~"))
 
-(defun sidebar-cons-buffer-name ()
-  "Construct the buffer name from 'SIDEBAR' and the frame name.
-The return value should be unique for each frame.
-On terminals instance, we use the frame parameter `name'
-On Graphics ones, the name isn't unique for each frame, so we use
-`window-id' that isn't available on terminals instance."
-  (let ((name (--get-in-frame 'sidebar-buffer-name)))
-    (if name
-	name
-      (setq name (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
-					 (frame-parameter nil 'name))"*"))
-      (--set-in-frame 'sidebar-buffer-name name)
-      name)))
-
-(defun sidebar-get-buffer ()
-  "Return the existing/created sidebar buffer for the current frame."
-  (get-buffer-create (sidebar-cons-buffer-name)))
-
 (defun sidebar-cons-git-buffer-name ()
   "Construct the git buffer name from 'SIDEBAR' and the frame name.
 See `\\[sidebar-cons-buffer-name]' for more info."
@@ -511,10 +487,6 @@ See `\\[sidebar-cons-buffer-name]' for more info."
 (defun sidebar-exists? ()
   "Check if a sidebar for the frame exists."
   (get-buffer (sidebar-cons-buffer-name)))
-
-(defun sidebar-gui? ()
-  "Return non-nil if we're on a graphic instance."
-  (display-graphic-p))
 
 (defun sidebar-file-struct (file)
   "Return an association list from FILE.
@@ -808,20 +780,6 @@ with `\\[sidebar-file-struct]'"
 	 (files-sorted (--sort (string< it other) (--filter (not (file-directory-p it)) files-and-dirs))))
     (-map 'sidebar-file-struct (-concat dirs-sorted files-sorted))))
 
-(defun sidebar-get-window ()
-  "Return the created/existing window displaying the sidebar buffer."
-  (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
-    (unless sidebar-window
-      (let ((sidebar-buffer (sidebar-get-buffer)))
-	(setq sidebar-window (display-buffer sidebar-buffer (display-buffer-in-side-window sidebar-buffer '((side . left)))))
-	(set-window-dedicated-p sidebar-window t)
-	(let ((current-width (window-total-width sidebar-window)))
-	  (if (> current-width sidebar-width)
-	      (window-resize sidebar-window (- sidebar-width current-width) t)
-	    (when (< current-width sidebar-width)
-	      (window-resize sidebar-window (- current-width sidebar-width) t))))))
-    sidebar-window))
-
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defun sidebar-goto-buffername (buffer-name)
@@ -927,7 +885,7 @@ Resize the window if necessary (customizable)."
   (save-excursion
     (let ((file (nth (- (line-number-at-pos) 1) (--get-in-frame 'sidebar-files))))
       (when file
-	(when (> (window-total-width (get-buffer-window (sidebar-cons-buffer-name))) sidebar-width)
+	(when (/= (window-total-width (get-buffer-window (sidebar-cons-buffer-name))) sidebar-width)
 	  (window-resize (get-buffer-window (sidebar-cons-buffer-name)) (- sidebar-width (window-total-width)) t))
 	(when sidebar-resize-auto-window
 	  (sidebar-resize-window))
@@ -1147,6 +1105,36 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-dir]'
     (sidebar-show-current))
   (sidebar-git-run))
 
+(defun sidebar-open-file-in-window (window buffer-file)
+  "WINDOW BUFFER-FILE."
+  (set-window-buffer window buffer-file))
+
+(defun sidebar-list-windows-others-frame (frames)
+  "FRAMES."
+  (let ((windows nil))
+    (loop-for-each frame frames
+      (when (and (not (equal frame (window-frame)))
+		 (not (s-equals? "initial_terminal" (terminal-name frame)))
+		 (frame-visible-p frame))
+	(setq windows (append windows (-remove 'window-dedicated-p (window-list frame))))))
+    windows))
+
+(defun sidebar-open-in-window ()
+  "Open a file in a selected window.
+Only the windows non dedicated are shown."
+  (interactive)
+  (let* ((file (sidebar-find-file-from-line))
+	 (windows-in-frame (-remove 'window-dedicated-p (window-list)))
+	 (list-frames (frame-list))
+	 (windows-in-others-frame (sidebar-list-windows-others-frame list-frames)))
+    (if (--dir? file)
+	(sidebar-open-directory file)
+      (sidebar-make-buffer-choice (list windows-in-frame windows-in-others-frame)
+				  " Select a window "
+				  " Others frames "
+				  'sidebar-open-file-in-window
+				  (find-file-noselect (--getpath file))))))
+
 (defun sidebar-find-file-from-line (&optional line)
   "Return the file on the LINE.
 Because sidebar-files is always sorted, it's easy to get it"
@@ -1156,8 +1144,11 @@ Because sidebar-files is always sorted, it's easy to get it"
 
 (defun sidebar-open-file (file)
   "Open FILE in the buffer where `\\[sidebar-open]' has been called."
-  (let ((buffer-file (find-file-noselect (--getpath file))))
-    (set-window-buffer (--get-in-frame 'sidebar-window-origin) buffer-file)))
+  (let ((buffer-file (find-file-noselect (--getpath file)))
+	(window (--get-in-frame 'sidebar-window-origin)))
+    (if (window-live-p window)
+	(set-window-buffer window buffer-file)
+      (--set-in-frame 'sidebar-window-origin (sidebar-open-file-in-window buffer-file)))))
 
 (defun sidebar-open-line ()
   "Open file or directory of the current line.
@@ -1450,7 +1441,7 @@ See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
 (defun sidebar-set-modeline ()
   "."
   (let ((project (--get-in-frame 'sidebar-root-project)))
-    (if (and project (--get-in-frame 'sidebar-git-branches))
+    (if (and project (--get-in-frame 'sidebar-git-branches) (not (--get-in-frame 'sidebar-select-active)))
 	(let* ((branch
 		(concat
 		 (propertize " " 'face 'sidebar-mode-line-face)
@@ -1529,6 +1520,7 @@ This function just select another window before the frame is created."
     (define-key map (kbd "SPC") 'sidebar-expand-or-close-dir)
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
+    (define-key map (kbd "M-RET") 'sidebar-open-in-window)
     (define-key map (kbd "h") 'sidebar-refresh-cmd)
     (define-key map (kbd "n") 'sidebar-create-file)
     (define-key map (kbd "C-n") 'sidebar-create-directory)
@@ -1603,6 +1595,10 @@ This function just select another window before the frame is created."
   (make-local-variable 'sidebar-icon-inserted-on-line)
   (make-local-variable 'sidebar-file-to-copy)
   (setq cursor-type nil)
+  (add-to-list 'display-buffer-alist '(" SIDEBAR-SELECT" display-buffer-in-side-window (side . left) (slot . 1)))
+  ;; (push '("SIDEBAR-CHOICE" display-buffer-in-side-window (side . left) (slot . -1))
+  ;; 	display-buffer-alist)
+  ;; (display-buffer (get-buffer-create "buff2"))
   (add-hook 'post-command-hook 'sidebar-post-command)
   (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
