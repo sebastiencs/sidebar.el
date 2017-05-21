@@ -490,6 +490,7 @@ See `\\[sidebar-cons-buffer-name]' for more info."
 
 (defun sidebar-file-struct (file)
   "Return an association list from FILE.
+The parameter FILE is a path.
 In this project (sidebar.el) every parameters named 'file' are
 object using this structure.
 - 'path is the FILE's path
@@ -834,7 +835,6 @@ This is use when the sidebar is created."
   (interactive)
   (--set-in-frame 'sidebar-window-origin (get-buffer-window))
 ;;;  (set-frame-parameter nil 'sidebar-window-origin (get-buffer-window))
-  (--set-in-frame 'sidebar-root-project (sidebar-get-root-project))
   (let ((sidebar-exists (sidebar-exists?))
 	(sidebar-buffer (sidebar-get-buffer))
 	(sidebar-window (sidebar-get-window))
@@ -845,6 +845,8 @@ This is use when the sidebar is created."
     (select-window sidebar-window)
     (internal-show-cursor (sidebar-get-window) nil)
     (unless sidebar-exists
+      (--set-in-frame 'sidebar-root-project (sidebar-get-root-project))
+      (--set-in-frame 'sidebar-history (list project-path-root))
       (--set-in-frame 'sidebar-current-path project-path-root)
       (--set-in-frame 'sidebar-files (sidebar-load-dir project-path-root))
 ;;;      (sidebar-print)
@@ -1063,10 +1065,12 @@ Sort the list by line number
   (let* ((new-directory (file-name-directory (directory-file-name (--get-in-frame 'sidebar-current-path))))
 	 (new-files (sidebar-load-dir new-directory))
 	 (old-files (--get-in-frame 'sidebar-files))
+	 (history (--get-in-frame 'sidebar-history))
 	 (old-dir (directory-file-name (--get-in-frame 'sidebar-current-path))))
     (if (string= old-dir new-directory)
 	(message "Sidebar: You're at the top")
       (erase-buffer)
+      (--set-in-frame 'sidebar-history (add-to-list 'history new-directory nil 's-equals?))
       (--set-in-frame 'sidebar-files (sidebar-update-to-opened new-files old-dir))
       (--set-in-frame 'sidebar-current-path (file-name-as-directory new-directory))
       (setq default-directory (--get-in-frame 'sidebar-current-path))
@@ -1090,7 +1094,8 @@ If FILE is opened (expanded), we filter the list of files to get only the ones
 in the new directory.
 If FILE it not opened, we load the dir with `\\[sidebar-load-dir]'
 ."
-  (let ((files nil))
+  (let ((files nil)
+	(history (--get-in-frame 'sidebar-history)))
     (if (--opened? file)
 	(let ((dirname (file-name-as-directory (--getpath file))))
 	  (setq files (--filter (s-starts-with? dirname (--getpath it)) (--get-in-frame 'sidebar-files))))
@@ -1099,6 +1104,7 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-dir]'
     (--set-in-frame 'sidebar-files files)
     (--set-in-frame 'sidebar-current-path (file-name-as-directory (--getpath file)))
     (setq default-directory (--get-in-frame 'sidebar-current-path))
+    (--set-in-frame 'sidebar-history (add-to-list 'history default-directory nil 's-equals?))
     (--set-in-frame 'sidebar-root-project (sidebar-get-root-project))
     (sidebar-print-listfiles files)
     (sidebar-goto-line 1)
@@ -1129,11 +1135,15 @@ Only the windows non dedicated are shown."
 	 (windows-in-others-frame (sidebar-list-windows-others-frame list-frames)))
     (if (--dir? file)
 	(sidebar-open-directory file)
-      (sidebar-make-buffer-choice (list windows-in-frame windows-in-others-frame)
+      (sidebar-select-make-buffer (list windows-in-frame windows-in-others-frame)
 				  " Select a window "
 				  " Others frames "
+				  (lambda (x) (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" x))))
+				  sidebar-select-icon-before-window
 				  'sidebar-open-file-in-window
 				  (find-file-noselect (--getpath file))))))
+
+;;;    (let ((string (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" window)))))
 
 (defun sidebar-find-file-from-line (&optional line)
   "Return the file on the LINE.
@@ -1143,12 +1153,13 @@ Because sidebar-files is always sorted, it's easy to get it"
     (nth (- (line-number-at-pos) 1) (--get-in-frame 'sidebar-files))))
 
 (defun sidebar-open-file (file)
-  "Open FILE in the buffer where `\\[sidebar-open]' has been called."
+  "Open FILE in the buffer where `\\[sidebar-open]' has been called.
+If the window doesn't exists anymore, the function calls `sidebar-open-in-window'."
   (let ((buffer-file (find-file-noselect (--getpath file)))
 	(window (--get-in-frame 'sidebar-window-origin)))
     (if (window-live-p window)
 	(set-window-buffer window buffer-file)
-      (--set-in-frame 'sidebar-window-origin (sidebar-open-file-in-window buffer-file)))))
+      (--set-in-frame 'sidebar-window-origin (sidebar-open-in-window)))))
 
 (defun sidebar-open-line ()
   "Open file or directory of the current line.
@@ -1509,6 +1520,23 @@ This function just select another window before the frame is created."
       (let ((other-window (--first (not (equal sidebar-window it)) windows-in-frame)))
 	(set-frame-selected-window nil other-window)))))
 
+(defun sidebar-history-open (dir)
+  "DIR."
+  (select-window (sidebar-get-window))
+  (sidebar-open-directory (sidebar-file-struct dir)))
+
+(defun sidebar-history ()
+  "Show the last opened directories with the ability to open one of them."
+  (interactive)
+  (sidebar-select-make-buffer (list (--get-in-frame 'sidebar-history) nil)
+			      " Last directories "
+			      ""
+			      (lambda (x) (abbreviate-file-name x))
+			      sidebar-select-icon-before-directory
+			      'sidebar-history-open
+			      nil)
+  )
+
 (defvar sidebar-mode-map nil
   "Keymap use with sidebar-mode.")
 (unless sidebar-mode-map
@@ -1522,6 +1550,7 @@ This function just select another window before the frame is created."
     (define-key map (kbd "RET") 'sidebar-open-line)
     (define-key map (kbd "M-RET") 'sidebar-open-in-window)
     (define-key map (kbd "h") 'sidebar-refresh-cmd)
+    (define-key map (kbd "C-h") 'sidebar-history)
     (define-key map (kbd "n") 'sidebar-create-file)
     (define-key map (kbd "C-n") 'sidebar-create-directory)
     (define-key map (kbd "C-d") 'sidebar-delete-selected)

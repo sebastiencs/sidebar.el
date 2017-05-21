@@ -68,13 +68,13 @@
        :background "#1A237E"
        :overline "#1A237E"))
   "Face used for the headers."
-  :group 'sidebar-select-terminal-face)
+  :group 'sidebar-select-gui-face)
 
 (defface sidebar-select-line-terminal-face
   '((t :foreground "white"
        :background "#005fff"))
   "Face used for the current line."
-  :group 'sidebar-select-gui-face)
+  :group 'sidebar-select-terminal-face)
 
 (defface sidebar-select-header-terminal-face
   '((t :foreground "white"
@@ -106,6 +106,14 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 
 (defcustom sidebar-select-icon-before-window 'oct_device_desktop
   "Icon to use before the window name.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar-select)
+
+(defcustom sidebar-select-icon-before-directory 'oct_file_directory
+  "Icon to use before the directory name.
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
@@ -154,30 +162,30 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
      (propertize (s-repeat space-at-the-end " ") 'face `(:overline ,(face-background 'sidebar-select-header-face))))
     ))
 
-(defun sidebar-select-insert-buffername (name)
-  "NAME."
+(defun sidebar-select-insert-buffername (name icon)
+  "NAME ICON."
   (insert
    (s-truncate (- sidebar-select-window-width 1)
 	       (concat
 		" "
-		(icons-in-terminal sidebar-select-icon-before-window)
+		(icons-in-terminal icon)
 		" "
 		name)))
   (newline))
 
-(defun sidebar-select-insert-list (list)
-  "LIST."
+(defun sidebar-select-insert-list (list func-on-string icon)
+  "LIST FUNC-ON-STRING ICON."
   (newline)
   (loop-for-each window list
-    (let ((string (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" window)))))
+    (let ((string (funcall func-on-string window)))
       (setq sidebar-select-mapping
 	    (append
 	     sidebar-select-mapping
 	     (list `(:line ,(line-number-at-pos) :window ,window))))
-      (sidebar-select-insert-buffername string))))
+      (sidebar-select-insert-buffername string icon))))
 
-(defun sidebar-make-buffer-choice (list header1 header2 callback &rest args)
-  "LIST HEADER1 HEADER2 CALLBACK ARGS."
+(defun sidebar-select-make-buffer (list header1 header2 func-on-string icon callback &rest args)
+  "LIST HEADER1 HEADER2 FUNC-ON-STRING ICON CALLBACK ARGS."
   (select-window
    (display-buffer (get-buffer-create sidebar-select-buffer-name)))
   (with-current-buffer sidebar-select-buffer-name
@@ -190,13 +198,13 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
     (set (make-local-variable 'sidebar-select-args) args)
     (setq header-line-format (list '(:eval (sidebar-select-set-header sidebar-select-header 10 0.0 2.0))))
     (set (make-local-variable 'sidebar-select-line-other) nil)
-    (sidebar-select-insert-list (car list))
+    (sidebar-select-insert-list (car list) func-on-string icon)
     (when (car (cdr list))
       (newline)
       (insert (sidebar-select-set-header header2 9 0.12 1.7))
       (newline)
       (set (make-local-variable 'sidebar-select-line-other) (line-number-at-pos))
-      (sidebar-select-insert-list (car (cdr list))))
+      (sidebar-select-insert-list (car (cdr list)) func-on-string icon))
     (set (make-local-variable 'sidebar-select-windows-count) (+ (length (car list)) (length (car (cdr list)))))
     (if (>= (+ sidebar-select-windows-count 7) sidebar-select-height-min)
 	(shrink-window-if-larger-than-buffer)
@@ -226,7 +234,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (interactive)
   (let* ((current-line (line-number-at-pos))
 	 (next (+ current-line 1)))
-    (cond ((= next (+ sidebar-select-windows-count (if sidebar-select-line-other 5 0)))
+    (cond ((= next (+ sidebar-select-windows-count (if sidebar-select-line-other 5 2)))
 	   (sidebar-goto-line 2))
 	  ((and sidebar-select-line-other
 		(= next (- sidebar-select-line-other 2)))
@@ -238,7 +246,9 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (interactive)
   (let ((window (--first (equal (line-number-at-pos) (plist-get it :line)) sidebar-select-mapping)))
     (when window
-      (apply sidebar-select-callback (plist-get window :window) sidebar-select-args)
+      (if (car sidebar-select-args)
+	  (apply sidebar-select-callback (plist-get window :window) sidebar-select-args)
+	(funcall sidebar-select-callback (plist-get window :window)))
       (sidebar-select-cancel))))
 
 (defun sidebar-select-cancel ()
