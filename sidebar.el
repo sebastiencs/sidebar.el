@@ -830,6 +830,14 @@ This is use when the sidebar is created."
         accum
       (split-path-helper dir (cons name accum)))))
 
+(defun sidebar-check-setup ()
+  "Check if the font icons-in-terminal is installed.
+TODO: Check with terminals too (now it checks only with GUI), `font-info'
+returns an error on terminals."
+  (when (and (sidebar-gui?) (not (font-info "icons-in-terminal")))
+    (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+    (error "The font icons-in-terminal is not installed: see https://github.com/sebastiencs/sidebar.el")))
+
 (defun sidebar-open ()
   "Open or create a sidebar for the current frame."
   (interactive)
@@ -845,6 +853,7 @@ This is use when the sidebar is created."
     (select-window sidebar-window)
     (internal-show-cursor (sidebar-get-window) nil)
     (unless sidebar-exists
+      (sidebar-check-setup)
       (--set-in-frame 'sidebar-root-project (sidebar-get-root-project))
       (--set-in-frame 'sidebar-history (list project-path-root))
       (--set-in-frame 'sidebar-current-path project-path-root)
@@ -916,7 +925,7 @@ Resize the window if necessary (customizable)."
 (defun sidebar-create-file ()
   "Create a new file.
 The file should be in an existing directory.
-To create directories, see \\[sidebar-create-directory]"
+To create directories, see `sidebar-create-directory'"
   (interactive)
   (let* ((file-at-line (sidebar-find-file-from-line))
 	 (path-at-line (file-name-directory (or (--getpath file-at-line) (--get-in-frame 'sidebar-current-path))))
@@ -934,7 +943,7 @@ To create directories, see \\[sidebar-create-directory]"
 	    (sidebar-refresh)))))))
 
 (defun sidebar-delete-selected ()
-  "Delete the file/directory on the selected line.
+  "Delete the file/directory on the current line.
 If it's a directory, it removes recursively its subfiles."
   (interactive)
   (let* ((file-at-line (sidebar-find-file-from-line))
@@ -959,7 +968,7 @@ If it's a directory, it removes recursively its subfiles."
     (setq buffers (cdr buffers))))
 
 (defun sidebar-rename-selected ()
-  "Rename the selected file/directory.
+  "Rename the file/directory on the current line.
 If there are buffers visiting this file, you'll be ask to rename them too."
   (interactive)
   (let* ((file-at-line (sidebar-find-file-from-line))
@@ -978,16 +987,16 @@ If there are buffers visiting this file, you'll be ask to rename them too."
 Methods are copy or cut.")
 
 (defun sidebar-copy-selected ()
-  "Copy the selected file/directory.
-Paste it with `sidebar-paste'."
+  "Copy the file/directory on the current line.
+To paste it, use `sidebar-paste'."
   (interactive)
   (let ((file-at-line (sidebar-find-file-from-line)))
     (plist-put sidebar-file-to-copy :file file-at-line)
     (plist-put sidebar-file-to-copy :method 'copy)))
 
 (defun sidebar-cut-selected ()
-  "Cut the selected file/directory.
-Paste it with `sidebar-paste'."
+  "Cut the file/directory on the current line.
+to paste it, use `sidebar-paste'."
   (interactive)
   (let ((file-at-line (sidebar-find-file-from-line)))
     (if (not (file-writable-p (--getpath file-at-line)))
@@ -997,8 +1006,8 @@ Paste it with `sidebar-paste'."
 
 (defun sidebar-paste ()
   "Paste the file/directory previously copied/cut.
-The file will be paste to the path of the current selected file.
-If the selected line is a directory, it will paste the file outside it.
+The file will be paste to the path of the file on the current line.
+If the file on the current line is a directory, it pastes the file outside it.
 To paste the file inside the directory, it has to be open (expand).
 
 If the file is cut, you'll be ask to rename the buffers visiting it."
@@ -1396,7 +1405,6 @@ The output is parsed to print information of each file in the sidebar.
 The process is run only once per project.
 Once done, it refresh the sidebar.
 if FORCE is non-nil, force to run the process."
-  (interactive)
   (with-current-buffer (sidebar-get-buffer)
     (--set-in-frame 'sidebar-saved-line-number (line-number-at-pos)))
   (if (or force
@@ -1415,8 +1423,8 @@ if FORCE is non-nil, force to run the process."
     (sidebar-refresh)))
 
 (defun sidebar-refresh-cmd ()
-  "Refresh the sidebar.
-See `\\[sidebar-git-run]' and `\\[sidebar-refresh]'"
+  "Refresh the sidebar content.
+See `sidebar-git-run' and `sidebar-refresh'"
   (interactive)
   (sidebar-git-run t))
 
@@ -1534,17 +1542,19 @@ This function just select another window before the frame is created."
 			      (lambda (x) (abbreviate-file-name x))
 			      sidebar-select-icon-before-directory
 			      'sidebar-history-open
-			      nil)
-  )
+			      nil))
+
+(defun sidebar-help ()
+  "Function to display an help for sidebar."
+  (interactive)
+  (describe-mode))
 
 (defvar sidebar-mode-map nil
   "Keymap use with sidebar-mode.")
 (unless sidebar-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
-    (define-key map (kbd "C-x a") 'sidebar-test)
     (define-key map (kbd "q") 'sidebar-close)
-    (define-key map (kbd "g") 'sidebar-git-run)
     (define-key map (kbd "SPC") 'sidebar-expand-or-close-dir)
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
@@ -1554,7 +1564,11 @@ This function just select another window before the frame is created."
     (define-key map (kbd "n") 'sidebar-create-file)
     (define-key map (kbd "C-n") 'sidebar-create-directory)
     (define-key map (kbd "C-d") 'sidebar-delete-selected)
+    (define-key map (kbd "C-c") 'sidebar-copy-selected)
+    (define-key map (kbd "C-C") 'sidebar-cut-selected)
+    (define-key map (kbd "C-v") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
+    (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-mode-map map)))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
