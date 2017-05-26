@@ -992,7 +992,9 @@ To paste it, use `sidebar-paste'."
   (interactive)
   (let ((file-at-line (sidebar-find-file-from-line)))
     (plist-put sidebar-file-to-copy :file file-at-line)
-    (plist-put sidebar-file-to-copy :method 'copy)))
+    (plist-put sidebar-file-to-copy :method 'copy)
+    (message "%s to copy: '%s'" (if (--dir? file-at-line) "Directory" "File")
+	     (file-name-nondirectory (--getpath file-at-line)))))
 
 (defun sidebar-cut-selected ()
   "Cut the file/directory on the current line.
@@ -1002,7 +1004,9 @@ to paste it, use `sidebar-paste'."
     (if (not (file-writable-p (--getpath file-at-line)))
 	(error "[sidebar] Cannot cut file, it's non writable")
       (plist-put sidebar-file-to-copy :file file-at-line)
-      (plist-put sidebar-file-to-copy :method 'cut))))
+      (plist-put sidebar-file-to-copy :method 'cut)
+      (message "%s to cut: '%s'" (if (--dir? file-at-line) "Directory" "File")
+	       (file-name-nondirectory (--getpath file-at-line))))))
 
 (defun sidebar-paste ()
   "Paste the file/directory previously copied/cut.
@@ -1550,7 +1554,7 @@ This function just select another window before the frame is created."
   (describe-mode))
 
 (defvar sidebar-mode-map nil
-  "Keymap use with sidebar-mode.")
+  "Keymap uses with sidebar-mode.")
 (unless sidebar-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
@@ -1564,9 +1568,9 @@ This function just select another window before the frame is created."
     (define-key map (kbd "n") 'sidebar-create-file)
     (define-key map (kbd "C-n") 'sidebar-create-directory)
     (define-key map (kbd "C-d") 'sidebar-delete-selected)
-    (define-key map (kbd "C-c") 'sidebar-copy-selected)
-    (define-key map (kbd "C-C") 'sidebar-cut-selected)
-    (define-key map (kbd "C-v") 'sidebar-paste)
+    (define-key map (kbd "M-w") 'sidebar-copy-selected)
+    (define-key map (kbd "C-w") 'sidebar-cut-selected)
+    (define-key map (kbd "C-y") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
     (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-mode-map map)))
