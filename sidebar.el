@@ -1440,9 +1440,12 @@ See `sidebar-git-run' and `sidebar-refresh'"
 (defun sidebar-set-header ()
   "."
   (let* ((project (--get-in-frame 'sidebar-root-project))
-	 (project-name (or project (abbreviate-file-name (--get-in-frame 'sidebar-current-path)))))
+	 (current-path (--get-in-frame 'sidebar-current-path))
+	 (project-name (or project (abbreviate-file-name current-path))))
     (when project
-      (setq project-name (file-name-nondirectory (directory-file-name project-name))))
+      (setq project-name (s-chop-suffix "/"
+					(s-chop-prefix (file-name-directory (directory-file-name project-name))
+						       current-path))))
     (concat
      (propertize " " 'face 'sidebar-header-line-face)
      (if project
