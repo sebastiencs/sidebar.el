@@ -90,66 +90,155 @@ by binding a key to it."
   :type 'integer
   :group 'sidebar)
 
-(defcustom sidebar-character-dir-closed "📁"
-  "Character to insert before a closed directory.
-Examples: '+' '▸' '🞊' '🞄' '⚬' '•' '⚫' '⚛' '◦' '●' '▫' '▢' '+' '▸'"
-  :type 'character
+(defcustom sidebar-icon-dir-closed 'fa_folder_o
+  "Icon to use before a closed directory.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-dir-opened "📂"
-  "Character to insert before an opened directory.
-Examples: '↳' '-' '▾'"
-  :type 'character
+(defcustom sidebar-icon-dir-opened 'fa_folder_open_o
+  "Icon to use before an opened directory.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-git-not-updated "✗"
-  "Character to use with a not-updated file (with git)."
-  :type 'character
+(defcustom sidebar-icon-git-not-updated 'oct_flame
+  "Icon to use with a non updated file (with git).
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-git-updated "✓"
-  "Character to use with an updated file (with git)."
-  :type 'character
+(defcustom sidebar-icon-git-updated 'oct_git_commit
+  "Icon to use with an updated file (with git).
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-git-changed "✓"
-  "Character to use with file that has changed since index (with git)."
-  :type 'character
+(defcustom sidebar-icon-git-changed 'oct_beaker
+  "Icon to use with file that has changed since index (with git).
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-git-added "+"
-  "Character to use with an added file (with git)."
-  :type 'character
+(defcustom sidebar-icon-git-added 'oct_pulse
+  "Icon to use with an added file (with git).
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-git-renamed "✂"
-  "Character to use with a renamed file (with git)."
-  :type 'character
+(defcustom sidebar-icon-git-renamed 'oct_git_renamed
+  "Icon to use with a renamed file (with git).
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-character-git-match "✓"
-  "Character to use with a file that matches the index (with git)."
-  :type 'character
+(defcustom sidebar-icon-git-match 'oct_git_commit
+  "Icon to use with a file that matches the index (with git).
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
 ;;;"Insert the remaining spaces and a '' to make a powerline effect."
 
-(defcustom sidebar-character-powerline ""
-  "Character to insert at the end of the current line.
-
-Default: \"\"."
-  :type 'character
+(defcustom sidebar-icon-powerline 'powerline_left_hard_divider
+  "Icon to insert at the end of the current line.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-terminal-status-on-file t
-  "TERMINAL.  Insert icon on the filename according to its git status.
+(defcustom sidebar-icon-header-end 'myicons_0008
+  "Icon to insert at the end of the header line.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-icon-header-project 'oct_repo
+  "Icon to insert before a project name.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-icon-header-directory 'oct_file_directory
+  "Icon to insert before a directory name.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-icon-branch-end 'myicons_0008
+  "Icon to insert at the end of the current branch.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-icon-branch 'oct_git_branch
+  "Icon to insert before the name of the current branch.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-icon-remotebranch-start 'myicons_0007
+  "Icon to insert before the remote branch.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-icon-remotebranch 'oct_git_branch
+  "Icon to insert after the name of the remote branch.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar)
+
+(defcustom sidebar-mode-line-height 1.5
+  "(GUI) Height of the mode line."
+  :type 'float
+  :group 'sidebar)
+
+(defcustom sidebar-header-line-height 1.5
+  "(GUI) Height of the header line."
+  :type 'float
+  :group 'sidebar)
+
+(defcustom sidebar-status-on-file t
+  "Insert icon after the filename according to its git status.
 
 Default: t."
   :type 'boolean
   :group 'sidebar)
 
-(defcustom sidebar-terminal-status-on-directory 'on-closed
-  "TERMINAL.  Control when to place icon of git status on directories.
+(defcustom sidebar-status-on-directory 'on-closed
+  "Control when to place icon of git status on directories.
 
 The icons represent the git status of all the subfiles of the directory.
 Each icon is followed by a number: The number of times the status is present.
@@ -171,46 +260,8 @@ Default: `on-closed'."
                  (const :tag "Always" 'always))
   :group 'sidebar)
 
-(defcustom sidebar-terminal-filename-colored nil
-  "TERMINAL.  The filename will be colored according to its git status.
-Untracked and ignored files will always be colored.
-
-Default: nil."
-  :type 'boolean
-  :group 'sidebar)
-
-(defcustom sidebar-gui-status-on-file t
-  "GUI.  Insert icon on the filename according to its git status.
-
-Default: t."
-  :type 'boolean
-  :group 'sidebar)
-
-(defcustom sidebar-gui-status-on-directory 'on-closed
-  "GUI.  Control when to place icon of git status on directories.
-
-The icons represent the git status of all the subfiles of the directory.
-Each icon is followed by a number: The number of times the status is present.
-
-The following values are possible:
-
-- `never' Never insert icon after directories;
-
-- `on-closed' Insert icons on closed directories only.
-
-- `on-opened' Insert icons on opened directories only.
-
-' `always' Always insert icon.
-
-Default: `on-closed'."
-  :type '(choice (const :tag "Never" never)
-                 (const :tag "On closed directories only" on-closed)
-                 (const :tag "On opened directories only" on-opened)
-                 (const :tag "Always" 'always))
-  :group 'sidebar)
-
-(defcustom sidebar-gui-filename-colored nil
-  "GUI.  The filename will be colored according to its git status.
+(defcustom sidebar-filename-colored nil
+  "The filename will be colored according to its git status.
 Untracked and ignored files will always be colored.
 
 Default: nil."
@@ -219,16 +270,10 @@ Default: nil."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-(defvar sidebar-status-on-directory nil)
-(defvar sidebar-filename-colored nil)
-(defvar sidebar-status-on-file nil)
-(defvar sidebar-pre-hook-line-number nil)
-(defvar sidebar-saved-line-number nil)
-(defvar sidebar-git-branches nil)
 (defvar sidebar-icon-inserted-on-line 0)
 
 (defvar sidebar-buffer-name nil
-  "Name of the buffer for the current frame.")
+  "Name of the sidebar buffer for the current frame.")
 
 (defvar sidebar-button-keymap
   (let ((map (make-sparse-keymap)))
@@ -309,12 +354,12 @@ STATUS is the status of the FILE."
 ;;   (if (or (equal 'ignored status) (equal 'untracked status))
 ;;       ""
 ;;     (concat
-;;      (cond ((equal 'not-updated status) sidebar-character-git-not-updated)
-;; 	   ((equal 'updated status) sidebar-character-git-updated)
-;; 	   ((equal 'changed status) sidebar-character-git-changed)
-;; 	   ((equal 'added status) sidebar-character-git-added)
-;; 	   ((equal 'renamed status) sidebar-character-git-renamed)
-;; 	   ((equal 'match status) sidebar-character-git-match)
+;;      (cond ((equal 'not-updated status) sidebar-icon-git-not-updated)
+;; 	   ((equal 'updated status) sidebar-icon-git-updated)
+;; 	   ((equal 'changed status) sidebar-icon-git-changed)
+;; 	   ((equal 'added status) sidebar-icon-git-added)
+;; 	   ((equal 'renamed status) sidebar-icon-git-renamed)
+;; 	   ((equal 'match status) sidebar-icon-git-match)
 ;; 	   (t ""))
 ;;      " ")))
 
@@ -458,12 +503,12 @@ FILE PATH"
 	(setq space-to-add (- space-to-add sidebar-icon-inserted-on-line))
       (setq space-to-add (- space-to-add 1)))
     (insert (propertize (s-repeat space-to-add " ") 'font-lock-face 'sidebar-powerline-face)))
-  (insert (icons-in-terminal 'powerline_left_hard_divider :foreground (face-background 'sidebar-powerline-face))))
+  (insert (icons-in-terminal sidebar-icon-powerline :foreground (face-background 'sidebar-powerline-face))))
 
 (defun sidebar-gui-insert-icon-filename (file filename status path current-line)
   "FILE FILENAME STATUS PATH CURRENT-LINE."
   (if (--dir? file)
-      (sidebar-insert-icon (if (--opened? file) 'fa_folder_open_o 'fa_folder_o)
+      (sidebar-insert-icon (if (--opened? file) sidebar-icon-dir-opened sidebar-icon-dir-closed)
 			   (sidebar-get-color file path status current-line))
     (sidebar-insert-fileicon filename
 			     (sidebar-get-color file path status current-line t))
@@ -478,12 +523,12 @@ FILE PATH"
 		  (sidebar-insert " " (and current-line 'sidebar-powerline-face))
 		  (funcall 'sidebar-insert-icon name face)))
 	  (face (sidebar-color-from-status status nil current-line)))
-      (cond ((equal 'not-updated status) (funcall func 'oct_flame face))
-	    ((equal 'updated status) (funcall func 'oct_git_commit face))
-	    ((equal 'changed status) (funcall func 'oct_beaker face))
-	    ((equal 'added status) (funcall func 'oct_pulse face))
-	    ((equal 'renamed status) (funcall func 'oct_git_renamed face))
-	    ((equal 'match status) (funcall func 'oct_git_commit face))))))
+      (cond ((equal 'not-updated status) (funcall func sidebar-icon-git-not-updated face))
+	    ((equal 'updated status) (funcall func sidebar-icon-git-updated face))
+	    ((equal 'changed status) (funcall func sidebar-icon-git-changed face))
+	    ((equal 'added status) (funcall func sidebar-icon-git-added face))
+	    ((equal 'renamed status) (funcall func sidebar-icon-git-renamed face))
+	    ((equal 'match status) (funcall func sidebar-icon-git-match face))))))
 
 (defun sidebar-print-file (file &optional current-line)
   "Insert FILE on the current line.
@@ -1209,11 +1254,6 @@ See `sidebar-git-run' and `sidebar-refresh'"
   (interactive)
   (sidebar-git-run t))
 
-(defcustom sidebar-header-line-height 1.5
-  "(GUI) Height of the header line."
-  :type 'float
-  :group 'sidebar)
-
 (defun sidebar-set-header ()
   "."
   (let* ((project (--get-in-frame 'sidebar-root-project))
@@ -1226,20 +1266,15 @@ See `sidebar-git-run' and `sidebar-refresh'"
     (concat
      (propertize " " 'face 'sidebar-header-line-face)
      (if project
-	 (icons-in-terminal 'oct_repo :face 'sidebar-header-line-face :raise -0.07 :height 1.3)
-       (icons-in-terminal 'oct_file_directory :face 'sidebar-header-line-face :raise -0.0 :height 1.3))
+	 (icons-in-terminal sidebar-icon-header-project :face 'sidebar-icon-header-project-face :raise -0.07 :height 1.3)
+       (icons-in-terminal sidebar-icon-header-directory :face 'sidebar-icon-header-directory-face :raise -0.0 :height 1.3))
      (propertize
       (concat " "
 	      project-name
 	      (s-repeat (- (window-width (sidebar-get-window)) (+ (length project-name) 4)) " "))
       'face 'sidebar-header-line-face
       'display '(raise 0.12))
-     (icons-in-terminal 'myicons_0008 :foreground (face-background 'sidebar-header-line-face) :height sidebar-header-line-height))))
-
-(defcustom sidebar-mode-line-height 1.5
-  "(GUI) Height of the mode line."
-  :type 'float
-  :group 'sidebar)
+     (icons-in-terminal sidebar-icon-header-end :foreground (face-background 'sidebar-header-line-face) :height sidebar-header-line-height))))
 
 (defun sidebar-set-modeline ()
   "."
@@ -1247,22 +1282,22 @@ See `sidebar-git-run' and `sidebar-refresh'"
     (if (and project (--get-in-frame 'sidebar-git-branches) (not (--get-in-frame 'sidebar-select-active)))
 	(let* ((branch
 		(concat
-		 (propertize " " 'face 'sidebar-mode-line-face)
-		 (icons-in-terminal 'oct_git_branch :face 'sidebar-mode-line-face :raise -0.1 :height 1.3)
-		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-mode-line-face))
-		 (propertize (car (--get-in-frame 'sidebar-git-branches)) 'face 'sidebar-mode-line-face 'display '(raise 0.1))
-		 (propertize " " 'face 'sidebar-mode-line-face)
-		 (icons-in-terminal 'myicons_0008 :foreground (face-background 'sidebar-mode-line-face)
+		 (propertize " " 'face 'sidebar-branch-face)
+		 (icons-in-terminal sidebar-icon-branch :face 'sidebar-icon-branch-face :raise -0.1 :height 1.3)
+		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-branch-face))
+		 (propertize (car (--get-in-frame 'sidebar-git-branches)) 'face 'sidebar-branch-face 'display '(raise 0.1))
+		 (propertize " " 'face 'sidebar-branch-face)
+		 (icons-in-terminal sidebar-icon-branch-end :foreground (face-background 'sidebar-branch-face)
 				    :raise -0.1 :height sidebar-mode-line-height)))
 	       (str-branch-distant (s-split " \\[\\|\\]" (car (cdr (--get-in-frame 'sidebar-git-branches)))))
 	       (branch-remote
 		(concat
-		 (icons-in-terminal 'myicons_0007 :foreground (face-background 'sidebar-mode-line-face) :height sidebar-mode-line-height)
-		 (propertize " " 'face 'sidebar-mode-line-face)
-		 (propertize (car str-branch-distant) 'face 'sidebar-mode-line-face 'display '(raise 0.1))
-		 (propertize " " 'face 'sidebar-mode-line-face)
-		 (icons-in-terminal 'oct_git_branch :face 'sidebar-mode-line-face :raise -0.1 :height 1.3)
-		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-mode-line-face))))
+		 (icons-in-terminal sidebar-icon-remotebranch-start :foreground (face-background 'sidebar-remotebranch-face) :height sidebar-mode-line-height)
+		 (propertize " " 'face 'sidebar-remotebranch-face)
+		 (propertize (car str-branch-distant) 'face 'sidebar-remotebranch-face 'display '(raise 0.1))
+		 (propertize " " 'face 'sidebar-remotebranch-face)
+		 (icons-in-terminal sidebar-icon-remotebranch :face 'sidebar-icon-remotebranch-face :raise -0.1 :height 1.3)
+		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-remotebranch-face))))
 	       (len-branch (length branch))
 	       (len-branch-remote (length branch-remote))
 	       (sidebar-width (window-width (sidebar-get-window)))
@@ -1278,7 +1313,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
   (--set-in-frame 'sidebar-pre-hook-line-number (line-number-at-pos)))
 
 (defun sidebar-post-command()
-;;;  (message "last command: %s" this-command)
+  ;; (message "last command: %s" this-command)
   (let ((line-pre-hook (--get-in-frame 'sidebar-pre-hook-line-number))
 	(saved-line (--get-in-frame 'sidebar-saved-line-number))
 	(line-at-pos (line-number-at-pos)))
@@ -1371,9 +1406,9 @@ This function just select another window before the frame is created."
 
   (if (sidebar-gui?)
       (progn
-	(setq sidebar-status-on-directory sidebar-gui-status-on-directory)
-	(setq sidebar-filename-colored sidebar-gui-filename-colored)
-	(setq sidebar-status-on-file sidebar-gui-status-on-file)
+	;; (setq sidebar-status-on-directory sidebar-gui-status-on-directory)
+	;; (setq sidebar-filename-colored sidebar-gui-filename-colored)
+	;; (setq sidebar-status-on-file sidebar-gui-status-on-file)
 	(copy-face 'sidebar-powerline-gui-face 'sidebar-powerline-face)
 	(copy-face 'sidebar-file-gui-face 'sidebar-file-face)
 	(copy-face 'sidebar-dir-gui-face 'sidebar-dir-face)
@@ -1387,11 +1422,16 @@ This function just select another window before the frame is created."
 	(copy-face 'sidebar-added-gui-face 'sidebar-added-face)
 	(copy-face 'sidebar-renamed-gui-face 'sidebar-renamed-face)
 	(copy-face 'sidebar-header-line-gui-face 'sidebar-header-line-face)
-	(copy-face 'sidebar-mode-line-gui-face 'sidebar-mode-line-face)
+	(copy-face 'sidebar-branch-gui-face 'sidebar-branch-face)
+	(copy-face 'sidebar-remotebranch-gui-face 'sidebar-remotebranch-face)
+	(copy-face 'sidebar-icon-branch-gui-face 'sidebar-icon-branch-face)
+	(copy-face 'sidebar-icon-remotebranch-gui-face 'sidebar-icon-remotebranch-face)
+	(copy-face 'sidebar-icon-header-project-gui-face 'sidebar-icon-header-project-face)
+	(copy-face 'sidebar-icon-header-directory-gui-face 'sidebar-icon-header-directory-face)
 	(copy-face 'sidebar-match-gui-face 'sidebar-match-face))
-    (setq sidebar-status-on-directory sidebar-terminal-status-on-directory)
-    (setq sidebar-filename-colored sidebar-terminal-filename-colored)
-    (setq sidebar-status-on-file sidebar-terminal-status-on-file)
+    ;; (setq sidebar-status-on-directory sidebar-terminal-status-on-directory)
+    ;; (setq sidebar-filename-colored sidebar-terminal-filename-colored)
+    ;; (setq sidebar-status-on-file sidebar-terminal-status-on-file)
     (copy-face 'sidebar-powerline-terminal-face 'sidebar-powerline-face)
     (copy-face 'sidebar-file-terminal-face 'sidebar-file-face)
     (copy-face 'sidebar-dir-terminal-face 'sidebar-dir-face)
@@ -1405,20 +1445,25 @@ This function just select another window before the frame is created."
     (copy-face 'sidebar-added-terminal-face 'sidebar-added-face)
     (copy-face 'sidebar-renamed-terminal-face 'sidebar-renamed-face)
     (copy-face 'sidebar-header-line-terminal-face 'sidebar-header-line-face)
-    (copy-face 'sidebar-mode-line-terminal-face 'sidebar-mode-line-face)
+    (copy-face 'sidebar-branch-terminal-face 'sidebar-branch-face)
+    (copy-face 'sidebar-remotebranch-terminal-face 'sidebar-remotebranch-face)
+    (copy-face 'sidebar-icon-branch-terminal-face 'sidebar-icon-branch-face)
+    (copy-face 'sidebar-icon-remotebranch-terminal-face 'sidebar-icon-remotebranch-face)
+    (copy-face 'sidebar-icon-header-project-terminal-face 'sidebar-icon-header-project-face)
+    (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
   (make-local-variable 'post-command-hook)
   (make-local-variable 'pre-command-hook)
-  (make-local-variable 'sidebar-pre-hook-line-number)
-  (make-local-variable 'sidebar-saved-line-number)
-  (make-local-variable 'sidebar-git-branches)
-  (make-local-variable 'sidebar-files)
-  (make-local-variable 'sidebar-current-path)
-  (make-local-variable 'sidebar-closed-directories)
-  (make-local-variable 'sidebar-root-project)
-  (make-local-variable 'sidebar-git-hashtable)
-  (make-local-variable 'sidebar-git-dir)
+  ;; (make-local-variable 'sidebar-pre-hook-line-number)
+  ;; (make-local-variable 'sidebar-saved-line-number)
+  ;; (make-local-variable 'sidebar-git-branches)
+  ;; (make-local-variable 'sidebar-files)
+  ;; (make-local-variable 'sidebar-current-path)
+  ;; (make-local-variable 'sidebar-closed-directories)
+  ;; (make-local-variable 'sidebar-root-project)
+  ;; (make-local-variable 'sidebar-git-hashtable)
+  ;; (make-local-variable 'sidebar-git-dir)
   (make-local-variable 'sidebar-icon-inserted-on-line)
   (make-local-variable 'sidebar-file-to-copy)
   (setq cursor-type nil)

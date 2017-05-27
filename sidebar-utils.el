@@ -72,6 +72,8 @@ On Graphics ones, the name isn't unique for each frame, so we use
       (--set-in-frame 'sidebar-buffer-name name)
       name)))
 
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
 (defun sidebar-get-window ()
   "Return the created/existing window displaying the sidebar buffer."
   (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
