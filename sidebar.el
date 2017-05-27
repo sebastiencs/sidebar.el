@@ -706,22 +706,26 @@ returns an error on terminals."
   "Return the number of character on the current line."
   (- (line-end-position) (line-beginning-position)))
 
-(defun sidebar-resize-window ()
-  "Resize the sidebar window if the filename on the current line is longer than the window's width."
+(defun sidebar-resize-window (&optional sidebar-window)
+  "Resize the sidebar window if the filename on the current line is longer...
+than the window's width.
+SIDEBAR-WINDOW is sidebar's window."
   (interactive)
-  (when (> (sidebar-count-chars-on-line) (window-total-width (get-buffer-window (sidebar-cons-buffer-name))))
-    (window-resize (get-buffer-window (sidebar-cons-buffer-name)) (+ 5 (- (sidebar-count-chars-on-line) (window-total-width))) t)))
+  (let ((window (or sidebar-window (get-buffer-window (sidebar-cons-buffer-name)))))
+    (when (> (sidebar-count-chars-on-line) (window-total-width window))
+      (window-resize window (+ 5 (- (sidebar-count-chars-on-line) (window-total-width))) t))))
 
 (defun sidebar-show-current ()
   "Delete everything on current line and reprint file with powerline.
 Resize the window if necessary (customizable)."
   (save-excursion
-    (let ((file (nth (- (line-number-at-pos) 1) (--get-in-frame 'sidebar-files))))
+    (let ((file (nth (- (line-number-at-pos) 1) (--get-in-frame 'sidebar-files)))
+	  (sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
       (when file
-	(when (/= (window-total-width (get-buffer-window (sidebar-cons-buffer-name))) sidebar-width)
-	  (window-resize (get-buffer-window (sidebar-cons-buffer-name)) (- sidebar-width (window-total-width)) t))
+	(when (/= (window-total-width sidebar-window) sidebar-width)
+	  (window-resize sidebar-window (- sidebar-width (window-total-width)) t))
 	(when sidebar-resize-auto-window
-	  (sidebar-resize-window))
+	  (sidebar-resize-window sidebar-window))
 	(delete-region (line-beginning-position) (line-end-position))
 	(sidebar-print-file file t))
       (when sidebar-message-current
@@ -1289,7 +1293,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
 		 (propertize " " 'face 'sidebar-branch-face)
 		 (icons-in-terminal sidebar-icon-branch-end :foreground (face-background 'sidebar-branch-face)
 				    :raise -0.1 :height sidebar-mode-line-height)))
-	       (str-branch-distant (s-split " \\[\\|\\]" (car (cdr (--get-in-frame 'sidebar-git-branches)))))
+	       (str-branch-distant (s-split " \\[\\|\\]" (cadr (--get-in-frame 'sidebar-git-branches))))
 	       (branch-remote
 		(concat
 		 (icons-in-terminal sidebar-icon-remotebranch-start :foreground (face-background 'sidebar-remotebranch-face) :height sidebar-mode-line-height)
@@ -1368,6 +1372,15 @@ This function just select another window before the frame is created."
   (interactive)
   (describe-mode))
 
+(defun sidebar-config-change-hook ()
+  "If some other window change sidebar's width, this function resize it."
+  (when (and (not (equal this-command 'sidebar-resize-window))
+	     (/= (window-total-width (sidebar-get-window)) sidebar-width))
+    (save-excursion
+      (window-resize (get-buffer-window (sidebar-cons-buffer-name))
+		     (- sidebar-width (window-total-width (sidebar-get-window)))
+		     t))))
+
 (defvar sidebar-mode-map nil
   "Keymap uses with sidebar-mode.")
 (unless sidebar-mode-map
@@ -1387,6 +1400,7 @@ This function just select another window before the frame is created."
     (define-key map (kbd "C-w") 'sidebar-cut-selected)
     (define-key map (kbd "C-y") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
+    (define-key map (kbd "<right>") 'sidebar-resize-window)
     (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-mode-map map)))
 
@@ -1453,8 +1467,6 @@ This function just select another window before the frame is created."
     (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
-  (make-local-variable 'post-command-hook)
-  (make-local-variable 'pre-command-hook)
   ;; (make-local-variable 'sidebar-pre-hook-line-number)
   ;; (make-local-variable 'sidebar-saved-line-number)
   ;; (make-local-variable 'sidebar-git-branches)
@@ -1471,11 +1483,15 @@ This function just select another window before the frame is created."
   ;; (push '("SIDEBAR-CHOICE" display-buffer-in-side-window (side . left) (slot . -1))
   ;; 	display-buffer-alist)
   ;; (display-buffer (get-buffer-create "buff2"))
+
+  (make-local-variable 'post-command-hook)
+  (make-local-variable 'pre-command-hook)
   (add-hook 'post-command-hook 'sidebar-post-command)
   (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
+  (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
   (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
   (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
   (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
