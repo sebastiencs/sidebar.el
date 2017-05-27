@@ -27,16 +27,13 @@
 
 ;;; Commentary:
 ;;
-;; Todo: remove -face suffix https://www.gnu.org/software/emacs/manual/html_node/elisp/Defining-Faces.html#Defining-Faces
-;; my project
-;;
-;; Features that are required by this library:
+;; Librairies that are required by this project:
 ;;
 ;;  `projectile'
 ;;  `loop'
 ;;  `s'
 ;;  `dash'
-;;
+;;  `icons-in-terminal'
 
 ;;; Code:
 
@@ -48,6 +45,7 @@
 (require 'sidebar-filemapping)
 (require 'sidebar-select)
 (require 'sidebar-utils)
+(require 'sidebar-face)
 
 (eval-after-load 'dash '(dash-enable-font-lock))
 
@@ -57,20 +55,6 @@
   :group 'convenience
   :link '(custom-manual "(sidebar) Top")
   :link '(info-link "(sidebar) Customizing"))
-
-(defgroup sidebar-terminal-face nil
-  "Faces uses in sidebar on terminals."
-  :prefix "sidebar-"
-  :link '(info-link "(sidebar) Frames and Faces")
-  :group 'sidebar
-  :group 'faces)
-
-(defgroup sidebar-gui-face nil
-  "Faces uses in sidebar with gui."
-  :prefix "sidebar-"
-  :link '(info-link "(sidebar) Frames and Faces")
-  :group 'sidebar
-  :group 'faces)
 
 (defmacro --getpath (file)
   "Return the path from FILE."
@@ -235,164 +219,6 @@ Default: nil."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-
-(defface sidebar-file-terminal-face
-  '((t :foreground "grey"))
-  "Face used with files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-dir-terminal-face
-  '((t :foreground "#005fff"))
-  "Face used with directories."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-untracked-dir-terminal-face
-  '((t :foreground "#FF8C00"))
-  "Face used with untracked directories."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-untracked-file-terminal-face
-  '((t :foreground "#FF8C00"))
-  "Face used with untracked files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-ignored-dir-terminal-face
-  '((t :foreground "#3f3f3f"))
-  "Face used with ignored (on git) directories."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-ignored-file-terminal-face
-  '((t :foreground "#3f3f3f"))
-  "Face used with ignored files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-not-updated-terminal-face
-  '((t :foreground "red"))
-  "Face used with icon for files not updated."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-updated-terminal-face
-  '((t :foreground "green"))
-  "Face used with icon for updated files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-changed-terminal-face
-  '((t :foreground "orange"))
-  "Face used with icon for changed files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-added-terminal-face
-  '((t :foreground "green"))
-  "Face used with icon for added files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-renamed-terminal-face
-  '((t :foreground "orange"))
-  "Face used with icon for renamed files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-match-terminal-face
-  '((t :foreground "green"))
-  "Face used with icon for matched files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-powerline-terminal-face
-  '((t :background "#005fff"
-       :foreground "black"))
-  "Face used for the powerline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-mode-line-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
-  "Face used with the mode line."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-header-line-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
-  "Face used with the header line."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-powerline-gui-face
-;;;  '((t :background "#005fff"
-  '((t :background "#1A237E"
-       :foreground "white"))
-  "Face used for the powerline."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-file-gui-face
-  '((t :foreground "grey"))
-  "Face used with files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-dir-gui-face
-  '((t :foreground "#005fff"))
-  "Face used with directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-untracked-dir-gui-face
-  '((t :foreground "purple"))
-  "Face used with untracked directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-untracked-file-gui-face
-  '((t :foreground "purple"))
-  "Face used with untracked files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-ignored-dir-gui-face
-  '((t :foreground "#3f3f3f"))
-  "Face used with ignored (on git) directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-ignored-file-gui-face
-  '((t :foreground "#3f3f3f"))
-  "Face used with ignored files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-not-updated-gui-face
-  '((t :foreground "brown"))
-  "Face used for files not updated."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-updated-gui-face
-  '((t :foreground "forest green"))
-  "Face used for updated files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-changed-gui-face
-  '((t :foreground "orange"))
-  "Face used for changed files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-added-gui-face
-  '((t :foreground "green"))
-  "Face used for added files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-renamed-gui-face
-  '((t :foreground "orange"))
-  "Face used for renamed files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-match-gui-face
-  '((t :foreground "forest green"))
-  "Face used for matched files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-mode-line-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
-  "Face used with the mode line."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-header-line-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
-  "Face used with the header line."
-  :group 'sidebar-terminal-faces)
-
 (defvar sidebar-status-on-directory nil)
 (defvar sidebar-filename-colored nil)
 (defvar sidebar-status-on-file nil)
@@ -400,55 +226,6 @@ Default: nil."
 (defvar sidebar-saved-line-number nil)
 (defvar sidebar-git-branches nil)
 (defvar sidebar-icon-inserted-on-line 0)
-
-(defface sidebar-powerline-face nil "" :group nil)
-(defface sidebar-file-face nil "" :group nil)
-(defface sidebar-dir-face nil "" :group nil)
-(defface sidebar-untracked-dir-face nil "" :group nil)
-(defface sidebar-untracked-file-face nil "" :group nil)
-(defface sidebar-ignored-dir-face nil "" :group nil)
-(defface sidebar-ignored-file-face nil "" :group nil)
-(defface sidebar-not-updated-face nil "" :group nil)
-(defface sidebar-updated-face nil "" :group nil)
-(defface sidebar-changed-face nil "" :group nil)
-(defface sidebar-added-face nil "" :group nil)
-(defface sidebar-renamed-face nil "" :group nil)
-(defface sidebar-match-face nil "" :group nil)
-(defface sidebar-header-line-face nil "" :group nil)
-(defface sidebar-mode-line-face nil "" :group nil)
-
-(defvar sidebar-files nil
-  "List where are stored all files printed in the sidebar.
-The format of each element is the one created by `\\[sidebar-file-struct]'.
-It's buffer local.
-The list is sorted the way it's printed on the sidebar.")
-
-(defvar sidebar-current-path nil
-  "Current directory.
-Buffer local.")
-
-(defvar sidebar-closed-directories nil
-  "List of dirs and their file previously opened.
-See `\\[sidebar-expand-dir]' and `\\[sidebar-close-dir]' for more info
-Buffer local.")
-
-(defvar sidebar-root-project nil
-  "Root of the current project.
-Buffer local.")
-
-(defvar sidebar-git-hashtable nil
-  "Hashtable of each file with a git status.
-See `\\[sidebar-git-parse-buffer] for more info'
-Buffer local.")
-
-(defvar sidebar-git-dir nil
-  "Path where the last time git has been running.
-Buffer local.")
-
-(defvar sidebar-window-origin nil
-  "Window where sidebar has been called.
-This is used to know where to open the file selected.
-It's a frame parameter (Or Frame local).")
 
 (defvar sidebar-buffer-name nil
   "Name of the buffer for the current frame.")
