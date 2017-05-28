@@ -49,6 +49,9 @@
 
 (eval-after-load 'dash '(dash-enable-font-lock))
 
+(defconst sidebar-version "0.5.0"
+  "Sidebar's version.")
+
 (defgroup sidebar nil
   "Customizable file explorer with git integration."
   :group 'tools
@@ -268,6 +271,12 @@ Default: nil."
   :type 'boolean
   :group 'sidebar)
 
+(defcustom sidebar-check-update t
+  "If non nil, sidebar checks if we're using the last version.
+Default: non-nil."
+  :type 'boolean
+  :group 'sidebar)
+
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defvar sidebar-icon-inserted-on-line 0)
@@ -301,6 +310,16 @@ See `\\[sidebar-cons-buffer-name]' for more info."
   (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
 			  (frame-parameter nil 'name))"-GIT*"))
 ;;;(concat "*" SIDEBAR "-" (frame-parameter nil 'name) "-GIT*"))
+
+(defun sidebar-cons-curl-buffer-name ()
+  "Construct the curl buffer name from 'SIDEBAR' and the frame name.
+See `\\[sidebar-cons-buffer-name]' for more info."
+  (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
+			  (frame-parameter nil 'name))"-CURL*"))
+
+(defun sidebar-get-curl-buffer ()
+  "Return the buffer associated to the curl buffer."
+  (get-buffer-create (sidebar-cons-curl-buffer-name)))
 
 (defun sidebar-get-git-buffer ()
   "Return the existing/created sidebar git buffer for the current frame."
@@ -684,6 +703,7 @@ returns an error on terminals."
       (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-mode)
+      (sidebar-curl-run)
       (sidebar-git-run))))
 
 (defun sidebar-close ()
@@ -1165,6 +1185,32 @@ So I'm just waiting for it to be delete :/"
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+(defun sidebar-curl-sentinel (process change)
+  "Sentinel for the PROCESS running curl.
+CHANGE is unused"
+  (when (eq (process-status process) 'exit)
+    (if (= (process-exit-status process) 0)
+	(with-current-buffer (sidebar-get-curl-buffer)
+	  (let ((data (buffer-substring-no-properties (point-min) (point-max))))
+	    (when (and (= (length data) 1)
+		       (s-equals? data "0"))
+	      (message "A new version of sidebar.el is available !")))))
+    (ignore-errors (kill-buffer (sidebar-get-curl-buffer)))))
+
+(defun sidebar-curl-run ()
+  "Run curl to determine if we're using the last version."
+  (when (and sidebar-check-update
+	     (executable-find "curl"))
+    (let ((process (get-buffer-process (sidebar-get-curl-buffer))))
+      (when (and process (process-live-p process))
+	(kill-process process)))
+    (with-current-buffer (sidebar-get-curl-buffer)
+      (erase-buffer)
+      (let* ((url (concat "http://sidebar.chapu.is/islast?version=" sidebar-version))
+	     (process (start-process "curl-process" (sidebar-get-curl-buffer) "curl" url)))
+	(set-process-query-on-exit-flag process nil)
+	(set-process-sentinel process 'sidebar-curl-sentinel)))))
+
 (defun sidebar-git-parse-branch (line)
   "Parse the first LINE of git status with the option `-b'.
 The format is `## branchname tracking info'"
@@ -1375,7 +1421,8 @@ This function just select another window before the frame is created."
 (defun sidebar-config-change-hook ()
   "If some other window change sidebar's width, this function resize it."
   (when (and (not (equal this-command 'sidebar-resize-window))
-	     (/= (window-total-width (sidebar-get-window)) sidebar-width))
+	     (window-live-p (get-buffer-window (sidebar-cons-buffer-name)))
+	     (/= (window-total-width (get-buffer-window (sidebar-cons-buffer-name))) sidebar-width))
     (save-excursion
       (window-resize (get-buffer-window (sidebar-cons-buffer-name))
 		     (- sidebar-width (window-total-width (sidebar-get-window)))
