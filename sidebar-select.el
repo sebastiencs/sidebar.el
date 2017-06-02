@@ -59,6 +59,7 @@
 
 (defface sidebar-select-line-gui-face
   '((t :foreground "white"
+       :box nil
        :background "#1A237E"))
   "Face used for the current line."
   :group 'sidebar-select-gui-face)
@@ -72,6 +73,7 @@
 
 (defface sidebar-select-line-terminal-face
   '((t :foreground "white"
+       :box nil
        :background "#005fff"))
   "Face used for the current line."
   :group 'sidebar-select-terminal-face)

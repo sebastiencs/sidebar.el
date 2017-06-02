@@ -1347,10 +1347,10 @@ See `sidebar-git-run' and `sidebar-refresh'"
 		(concat
 		 (icons-in-terminal sidebar-icon-remotebranch-start :foreground (face-background 'sidebar-remotebranch-face) :height sidebar-mode-line-height)
 		 (propertize " " 'face 'sidebar-remotebranch-face)
-		 (propertize (car str-branch-distant) 'face 'sidebar-remotebranch-face 'display '(raise 0.1))
-		 (propertize " " 'face 'sidebar-remotebranch-face)
 		 (icons-in-terminal sidebar-icon-remotebranch :face 'sidebar-icon-remotebranch-face :raise -0.1 :height 1.3)
-		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-remotebranch-face))))
+		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-remotebranch-face))
+		 (propertize (car str-branch-distant) 'face 'sidebar-remotebranch-face 'display '(raise 0.1))
+		 (propertize " " 'face 'sidebar-remotebranch-face)))
 	       (len-branch (length branch))
 	       (len-branch-remote (length branch-remote))
 	       (sidebar-width (window-width (sidebar-get-window)))

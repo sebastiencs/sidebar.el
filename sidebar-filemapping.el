@@ -30,6 +30,14 @@
 
 ;;; Code:
 
+(require 's)
+
+(defvar-local sidebar-filemapping-cache-plist nil
+  "List to cache the found icon with a file.
+\( :icon foo :file myfile.txt :color color \).")
+
+(defvar-local sidebar-filemapping-cache-hashtable nil)
+
 (defconst sidebar-filemapping-plist
   '(
     ( :icon file_video :regexp ".*\\.mpeg$\\|.*\\.mpg$" :color "red" )
@@ -243,6 +251,10 @@
     ( :icon oct_bookmark :regexp "^bookmark$" :color light_pink )
     ( :icon fa_file_text_o :regexp ".*\\.txt$\\|.*\\.text$" :color blue )
     ( :icon oct_database :regexp ".*\\.cache$" :color green )
+    ( :icon oct_package :regexp "^\\*Packages\\*$" :color green )
+    ( :icon file_diff :regexp "^\\*magit-diff:.*" :color green )
+    ( :icon fa_git :regexp "^\\*magit:.*" :color green )
+    ( :icon file_emacs :regexp "^\\*.*\\*$" :color blue_grey )
     ( :icon fa_folder :regexp "^\\.$\\|^\\.\\.$" :color dark_blue )
     ( :icon oct_gear :regexp "^\\..*" :color 0 )))
 
@@ -276,27 +288,40 @@
     (dark_yellow "#FFD600")
     (dark_orange "#FF6D00")
     (dark_maroon "#5D4037")
-    (dark_silver "#616161")))
+    (dark_silver "#616161")
+    (blue_grey "#607D8B")))
 
 (defun sidebar-filemapping-getcolor (color)
   "COLOR."
   (car (alist-get color sidebar-filemapping-gui-color)))
 
+(defun sidebar-filemapping-put-in-cache (plist file)
+  "PLIST FILE."
+  (puthash file plist sidebar-filemapping-cache-hashtable)
+  plist)
+
+(defun sidebar-filemapping-get-in-cache (filename)
+  "FILENAME."
+  (when (not sidebar-filemapping-cache-hashtable)
+    (setq sidebar-filemapping-cache-hashtable (make-hash-table :test 'equal :size 200)))
+  (gethash filename sidebar-filemapping-cache-hashtable))
+
 (defun sidebar-filemapping-lookup (filename)
   "FILENAME."
   (let ((iterator sidebar-filemapping-plist)
-	(found nil))
-    (while iterator
-      (let* ((elem (car iterator))
-	     (result (string-match (plist-get elem :regexp) filename)))
-	(if result
-	    (setq found `(:icon ,(plist-get elem :icon) :color ,(sidebar-filemapping-getcolor (plist-get elem :color)))
-		  iterator nil)
-	  (setq iterator (cdr iterator))
-	  )))
-    (unless found
-      (setq found '(:icon fa_file_o)))
-    found))
+	(found (sidebar-filemapping-get-in-cache filename)))
+    (if found
+	found
+      (while iterator
+	(let* ((elem (car iterator))
+	       (result (s-match (plist-get elem :regexp) filename)))
+	  (if result
+	      (setq found `(:icon ,(plist-get elem :icon) :color ,(sidebar-filemapping-getcolor (plist-get elem :color)))
+		    iterator nil)
+	    (setq iterator (cdr iterator)))))
+      (unless found
+	(setq found '(:icon fa_file_o)))
+      (sidebar-filemapping-put-in-cache found filename))))
 
 (provide 'sidebar-filemapping)
 
