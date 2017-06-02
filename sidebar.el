@@ -517,7 +517,7 @@ FILE PATH"
 
 (defun sidebar-insert-powerline ()
   "Insert the remaining spaces and a '' to make a powerline effect."
-  (let ((space-to-add (- (window-width (sidebar-get-window)) (+ (current-column) 1))))
+  (let ((space-to-add (- (window-width (sidebar-get-window)) (+ (current-column) 2))))
     (if (sidebar-gui?)
 	(setq space-to-add (- space-to-add sidebar-icon-inserted-on-line))
       (setq space-to-add (- space-to-add 1)))
@@ -570,7 +570,8 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
 	 (status (and git-hashtable
 		      (gethash path-fixed-dirname git-hashtable)))
 	 (depth (sidebar-calc-depth file status))
-	 (sidebar-icon-inserted-on-line 0))
+	 (sidebar-icon-inserted-on-line 0)
+	 (line-number (line-number-at-pos)))
     (sidebar-insert (s-repeat depth " ") (and current-line 'sidebar-powerline-face))
     (sidebar-gui-insert-icon-filename file filename status path-fixed-dirname current-line)
     (sidebar-gui-insert-status file path-fixed-dirname status current-line)
@@ -634,8 +635,10 @@ This is use when the sidebar is created."
       (if file
 	  (progn
 	    (sidebar-goto-line (--getline file))
+	    (sidebar-disable-current)
 	    (sidebar-show-current))
 	(sidebar-goto-line 1)
+	(sidebar-disable-current)
 	(sidebar-show-current)))))
 
 (defun sidebar-expand-path (project-path-root file-path)
@@ -714,13 +717,17 @@ returns an error on terminals."
 
 ;;(kill-buffer (sidebar-cons-buffer-name))
 
+(defvar-local sidebar-current-line nil)
+
 (defun sidebar-disable-current ()
   "Delete everything on the current line and reprint file without the powerline."
   (save-excursion
     (let ((file (nth (- (line-number-at-pos) 1) (--get-in-frame 'sidebar-files))))
       (when file
-	(delete-region (line-beginning-position) (line-end-position))
-	(sidebar-print-file file)))))
+	(let* ((line-begin (line-beginning-position))
+	       (line-end (line-end-position)))
+	  (delete-region line-begin line-end)
+	  (insert sidebar-current-line))))))
 
 (defun sidebar-count-chars-on-line ()
   "Return the number of character on the current line."
@@ -735,8 +742,16 @@ SIDEBAR-WINDOW is sidebar's window."
     (when (> (sidebar-count-chars-on-line) (window-total-width window))
       (window-resize window (+ 5 (- (sidebar-count-chars-on-line) (window-total-width))) t))))
 
+(defun sidebar-show-if-not-current ()
+  "."
+  (let* ((line-begin (line-beginning-position))
+	 (line-end (line-end-position))
+	 (line (buffer-substring line-begin line-end)))
+    (when (not (get-char-property 0 'face line))
+      (sidebar-show-current))))
+
 (defun sidebar-show-current ()
-  "Delete everything on current line and reprint file with powerline.
+  "Show the current line with a background and powerline.
 Resize the window if necessary (customizable)."
   (save-excursion
     (let ((file (nth (- (line-number-at-pos) 1) (--get-in-frame 'sidebar-files)))
@@ -746,10 +761,14 @@ Resize the window if necessary (customizable)."
 	  (window-resize sidebar-window (- sidebar-width (window-total-width)) t))
 	(when sidebar-resize-auto-window
 	  (sidebar-resize-window sidebar-window))
-	(delete-region (line-beginning-position) (line-end-position))
-	(sidebar-print-file file t))
-      (when sidebar-message-current
-	(message (--getpath file))))))
+	(let ((line-begin (line-beginning-position))
+	      (line-end (line-end-position)))
+	  (setq sidebar-current-line (buffer-substring line-begin line-end))
+	  (add-face-text-property line-begin line-end 'sidebar-powerline-face))
+	(end-of-line)
+	(sidebar-insert-powerline)
+	(when sidebar-message-current
+	  (message (--getpath file)))))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -943,7 +962,9 @@ Sort the list by line number
 	(--set-in-frame 'sidebar-files (-concat (--get-in-frame 'sidebar-files) old-files))
 	(sidebar-sort-files-by-line)
 	(sidebar-goto-line line-to-put-old-files)
-	(sidebar-show-current)))
+;;;	(sidebar-disable-current)
+	;; (sidebar-show-current)
+	))
     (sidebar-git-run)))
 
 (defun sidebar-open-directory (file)
@@ -967,7 +988,8 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-dir]'
     (--set-in-frame 'sidebar-root-project (sidebar-get-root-project))
     (sidebar-print-listfiles files)
     (sidebar-goto-line 1)
-    (sidebar-show-current))
+    ;; (sidebar-show-current)
+    )
   (sidebar-git-run))
 
 (defun sidebar-open-file-in-window (window buffer-file)
@@ -1298,6 +1320,7 @@ if FORCE is non-nil, force to run the process."
 	    (set-process-sentinel process 'sidebar-git-sentinel))))
     (sidebar-refresh)))
 
+
 (defun sidebar-refresh-cmd ()
   "Refresh the sidebar content.
 See `sidebar-git-run' and `sidebar-refresh'"
@@ -1357,7 +1380,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	  (if (> space-to-add 0)
 	      (concat branch (s-repeat space-to-add " ") branch-remote)
 	    (concat branch branch-remote)))
-      "")))
+      nil)))
 
 (defun sidebar-pre-command()
   (--set-in-frame 'sidebar-pre-hook-line-number (line-number-at-pos)))
@@ -1369,10 +1392,13 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	(line-at-pos (line-number-at-pos)))
     (if saved-line
 	(progn (when line-pre-hook
-		 (sidebar-goto-line line-pre-hook)
-		 (sidebar-disable-current))
+		 (sidebar-goto-line line-pre-hook))
+;;;		 (sidebar-disable-current))
+	       (message (format "command: %s" this-command))
 	       (sidebar-goto-line saved-line)
-	       (sidebar-show-current)
+	       (when (and (not (eq this-command 'sidebar-up-directory))
+			  (not (eq this-command 'sidebar-open-line)))
+		 (sidebar-show-if-not-current))
 	       (--set-in-frame 'sidebar-saved-line-number nil))
       (when (and line-pre-hook
 		 (/= line-pre-hook line-at-pos)
@@ -1383,6 +1409,9 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	  (sidebar-disable-current)
 	  (sidebar-goto-line new-line)
 	  (sidebar-show-current))))))
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
 ;;  (message (concat "line changed to: " (number-to-string (line-number-at-pos))))))))
 
 (defun sidebar-before-make-frame-hook ()
