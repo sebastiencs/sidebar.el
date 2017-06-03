@@ -36,59 +36,38 @@
 (require 'icons-in-terminal)
 (require 'sidebar-utils)
 
-(defgroup sidebar-select nil
-  "Window showing a list of options to the user."
-  :group 'tools
-  :group 'convenience
-  :link '(custom-manual "(sidebar-select) Top")
-  :link '(info-link "(sidebar-select) Customizing"))
-
-(defgroup sidebar-select-terminal-face nil
-  "Faces uses in sidebar-select on terminals."
-  :prefix "sidebar-select-"
-  :link '(info-link "(sidebar-select) Frames and Faces")
-  :group 'sidebar-select
-  :group 'faces)
-
-(defgroup sidebar-select-gui-face nil
-  "Faces uses in sidebar-select with gui."
-  :prefix "sidebar-select-"
-  :link '(info-link "(sidebar-select) Frames and Faces")
-  :group 'sidebar-select
-  :group 'faces)
-
 (defface sidebar-select-line-gui-face
   '((t :foreground "white"
        :box nil
        :background "#1A237E"))
   "Face used for the current line."
-  :group 'sidebar-select-gui-face)
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-select-header-gui-face
   '((t :foreground "white"
        :background "#1A237E"
        :overline "#1A237E"))
   "Face used for the headers."
-  :group 'sidebar-select-gui-face)
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-select-line-terminal-face
   '((t :foreground "white"
        :box nil
        :background "#005fff"))
   "Face used for the current line."
-  :group 'sidebar-select-terminal-face)
+  :group 'sidebar-terminal-faces)
 
 (defface sidebar-select-header-terminal-face
   '((t :foreground "white"
        :background "#005fff"
        :overline "#005fff"))
   "Face used for the headers."
-  :group 'sidebar-select-terminal-face)
+  :group 'sidebar-terminal-faces)
 
 (defcustom sidebar-select-height-min 10
   "Minimum window height of `sidebar-select'."
   :type 'integer
-  :group 'sidebar-select)
+  :group 'sidebar)
 
 (defcustom sidebar-select-icon-left-header 'myicons_0006
   "Icon to use on the left of the header.
@@ -96,7 +75,7 @@ To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
-  :group 'sidebar-select)
+  :group 'sidebar)
 
 (defcustom sidebar-select-icon-right-header 'myicons_0008
   "Icon to use on the right of the header.
@@ -104,7 +83,7 @@ To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
-  :group 'sidebar-select)
+  :group 'sidebar)
 
 (defcustom sidebar-select-icon-before-window 'oct_device_desktop
   "Icon to use before the window name.
@@ -112,7 +91,7 @@ To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
-  :group 'sidebar-select)
+  :group 'sidebar)
 
 (defcustom sidebar-select-icon-before-directory 'oct_file_directory
   "Icon to use before the directory name.
@@ -120,7 +99,7 @@ To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
-  :group 'sidebar-select)
+  :group 'sidebar)
 
 (defvar sidebar-select-buffer-name " SIDEBAR-SELECT")
 

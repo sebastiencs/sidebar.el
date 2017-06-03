@@ -1319,15 +1319,25 @@ See `sidebar-git-run' and `sidebar-refresh'"
     (concat
      (propertize " " 'face 'sidebar-header-line-face)
      (if project
-	 (icons-in-terminal sidebar-icon-header-project :face 'sidebar-icon-header-project-face :raise -0.07 :height 1.3)
-       (icons-in-terminal sidebar-icon-header-directory :face 'sidebar-icon-header-directory-face :raise -0.0 :height 1.3))
+	 (icons-in-terminal sidebar-icon-header-project
+			    :face 'sidebar-icon-header-project-face
+			    :background (face-background 'sidebar-header-line-face)
+			    :raise -0.07
+			    :height 1.3)
+       (icons-in-terminal sidebar-icon-header-directory
+			  :face 'sidebar-icon-header-directory-face
+			  :background (face-background 'sidebar-header-line-face)
+			  :raise -0.0
+			  :height 1.3))
      (propertize
       (concat " "
 	      project-name
 	      (s-repeat (- (window-width (sidebar-get-window)) (+ (length project-name) 4)) " "))
       'face 'sidebar-header-line-face
       'display '(raise 0.12))
-     (icons-in-terminal sidebar-icon-header-end :foreground (face-background 'sidebar-header-line-face) :height sidebar-header-line-height))))
+     (icons-in-terminal sidebar-icon-header-end
+			:foreground (face-background 'sidebar-header-line-face)
+			:height sidebar-header-line-height))))
 
 (defun sidebar-set-modeline ()
   "."
@@ -1336,18 +1346,32 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	(let* ((branch
 		(concat
 		 (propertize " " 'face 'sidebar-branch-face)
-		 (icons-in-terminal sidebar-icon-branch :face 'sidebar-icon-branch-face :raise -0.1 :height 1.3)
+		 (icons-in-terminal sidebar-icon-branch
+				    :face 'sidebar-icon-branch-face
+				    :background (face-background 'sidebar-branch-face)
+				    :raise -0.1
+				    :height 1.3)
 		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-branch-face))
-		 (propertize (car (--get-in-frame 'sidebar-git-branches)) 'face 'sidebar-branch-face 'display '(raise 0.1))
-		 (propertize " " 'face 'sidebar-branch-face)
-		 (icons-in-terminal sidebar-icon-branch-end :foreground (face-background 'sidebar-branch-face)
-				    :raise -0.1 :height sidebar-mode-line-height)))
+		 (propertize (car (--get-in-frame 'sidebar-git-branches))
+			     'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face))
+			     'display '(raise 0.1))
+		 (propertize " " 'face `(:background ,(face-background 'sidebar-branch-face)))
+		 (icons-in-terminal sidebar-icon-branch-end
+				    :foreground (face-background 'sidebar-branch-face)
+				    :raise -0.1
+				    :height sidebar-mode-line-height)))
 	       (str-branch-distant (s-split " \\[\\|\\]" (cadr (--get-in-frame 'sidebar-git-branches))))
 	       (branch-remote
 		(concat
-		 (icons-in-terminal sidebar-icon-remotebranch-start :foreground (face-background 'sidebar-remotebranch-face) :height sidebar-mode-line-height)
+		 (icons-in-terminal sidebar-icon-remotebranch-start
+				    :foreground (face-background 'sidebar-remotebranch-face)
+				    :height sidebar-mode-line-height)
 		 (propertize " " 'face 'sidebar-remotebranch-face)
-		 (icons-in-terminal sidebar-icon-remotebranch :face 'sidebar-icon-remotebranch-face :raise -0.1 :height 1.3)
+		 (icons-in-terminal sidebar-icon-remotebranch
+				    :face 'sidebar-icon-remotebranch-face
+				    :background (face-background 'sidebar-remotebranch-face)
+				    :raise -0.1
+				    :height 1.3)
 		 (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-remotebranch-face))
 		 (propertize (car str-branch-distant) 'face 'sidebar-remotebranch-face 'display '(raise 0.1))
 		 (propertize " " 'face 'sidebar-remotebranch-face)))
@@ -1465,7 +1489,7 @@ This function just select another window before the frame is created."
   '(())
   ;;  '((t :background "yellow"))
   "Face used with files."
-  :group 'sidebar-terminal-faces)
+  :group nil)
 
 (define-derived-mode sidebar-mode nil "Sidebar"
   "Major mode for Sidebar.

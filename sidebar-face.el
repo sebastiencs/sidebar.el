@@ -63,7 +63,7 @@
 
 (defface sidebar-ignored-dir-terminal-face
   '((t :foreground "#3f3f3f"))
-  "Face used with ignored (on git) directories."
+  "Face used with ignored directories."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-ignored-file-terminal-face
@@ -73,32 +73,32 @@
 
 (defface sidebar-not-updated-terminal-face
   '((t :foreground "red"))
-  "Face used with icon for files not updated."
+  "Face used with icon or filename for files not updated."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-updated-terminal-face
   '((t :foreground "green"))
-  "Face used with icon for updated files."
+  "Face used with icon or filename for updated files."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-changed-terminal-face
   '((t :foreground "orange"))
-  "Face used with icon for changed files."
+  "Face used with icon or filename for changed files."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-added-terminal-face
   '((t :foreground "green"))
-  "Face used with icon for added files."
+  "Face used with icon or filename for added files."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-renamed-terminal-face
   '((t :foreground "orange"))
-  "Face used with icon for renamed files."
+  "Face used with icon or filename for renamed files."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-match-terminal-face
   '((t :foreground "green"))
-  "Face used with icon for matched files."
+  "Face used with icon or filename for matched files."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-powerline-terminal-face
@@ -116,25 +116,23 @@
 (defface sidebar-branch-terminal-face
   '((t :foreground "white"
        :background "#222222"))
-  "Face used on the current branch."
+  "Face used on the current branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-branch-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
-  "Face used on the icon before the current branch."
+  '((t :inherit 'sidebar-branch-terminal-face))
+  "Face used on the icon before the current branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-remotebranch-terminal-face
   '((t :foreground "white"
        :background "#222222"))
-  "Face used on the remote branch."
+  "Face used on the remote branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-remotebranch-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
-  "Face used on the icon after the remote branch."
+  '((t :inherit 'sidebar-remotebranch-terminal-face))
+  "Face used on the icon before the remote branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-header-line-terminal-face
@@ -144,15 +142,13 @@
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-header-project-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
-  "Face used with the icon before a project name."
+  '((t :inherit 'sidebar-header-line-terminal-face))
+  "Face used with the icon before a project name in the headerline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-header-directory-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
-  "Face used with the icon before a directory name (On the header line)."
+  '((t :inherit 'sidebar-header-line-terminal-face))
+  "Face used with the icon before a directory name in the header line."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-powerline-gui-face
@@ -184,7 +180,7 @@
 
 (defface sidebar-ignored-dir-gui-face
   '((t :foreground "#3f3f3f"))
-  "Face used with ignored (on git) directories."
+  "Face used with ignored directories."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-ignored-file-gui-face
@@ -225,44 +221,39 @@
 (defface sidebar-branch-gui-face
   '((t :foreground "white"
        :background "#1A237E"))
-  "Face used on the current branch."
+  "Face used on the current branch in the mode line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-branch-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
-  "Face used on the icon before the current branch."
+  '((t :inherit 'sidebar-branch-gui-face))
+  "Face used on the icon before the current branch in the mode line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-remotebranch-gui-face
   '((t :foreground "white"
        :background "#1A237E"))
-  "Face used on the remote branch."
+  "Face used on the remote branch in the mode line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-remotebranch-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
-  "Face used on the icon after the remote branch."
+  '((t :inherit 'sidebar-remotebranch-gui-face))
+  "Face used on the icon before the remote branch in the mode line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-header-line-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
+  '((t :background "#1A237E"))
   "Face used with the header line."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-header-project-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
+  '((t :inherit 'sidebar-header-line-gui-face))
   "Face used with the icon before a project name."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-header-directory-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
+  '((t :inherit 'sidebar-header-line-gui-face))
   "Face used with the icon before a directory name (On the header line)."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-powerline-face nil "" :group nil)
 (defface sidebar-file-face nil "" :group nil)
