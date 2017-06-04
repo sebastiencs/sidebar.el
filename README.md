@@ -4,7 +4,7 @@
 
 `sidebar` is a customizable file explorer with git integration.  
 
-I had few problems with others similar projects, so I learned elisp and wrote this one:  
+I had few problems with others similar projects, so I wrote this one:  
 - With the others, we're limited to 1 instance per emacs instance, it's annoying when we're using emacs daemon.  
   `sidebar` is written in a way to be able to open one sidebar for each frame.  
 - We can't select in which window we want to open the file. it's possible with `sidebar`  
