@@ -159,20 +159,126 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 
 ;;;"Insert the remaining spaces and a '' to make a powerline effect."
 
-(defcustom sidebar-icon-powerline 'powerline_left_hard_divider
+(defcustom sidebar-icon-powerline '(powerline_left_hard_divider 0 -0.05 1.0)
   "Icon to insert at the end of the current line.
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
-  :type 'symbol
+  :type `(radio
+	  (const :tag ,(format "Triangle up     %s" (icons-in-terminal 'myicons_0002))
+		 (myicons_0002 0 -0.01 1.11))
+	  (const :tag ,(format "Triangle bottom %s" (icons-in-terminal 'myicons_0003))
+		 (myicons_0003 0 -0.05 1.2))
+	  (const :tag ,(format "Wave-Bottom     %s" (icons-in-terminal 'myicons_0009))
+		 (myicons_0009 0 -0.05 1.0))
+	  (const :tag ,(format "Wave-Up         %s" (icons-in-terminal 'myicons_0008))
+		 (myicons_0008 0 -0.05 1.0))
+	  (const :tag ,(format "Powerline       %s" (icons-in-terminal 'powerline_left_hard_divider))
+		 (powerline_left_hard_divider 0 -0.05 1.0))
+	  (const :tag ,(format "Circle          %s" (icons-in-terminal 'powerline_extra_right_half_circle_thick))
+		 (powerline_extra_right_half_circle_thick 0 -0.05 1.0))
+	  (const :tag ,(format "Flame           %s" (icons-in-terminal 'powerline_extra_flame_thick))
+		 (powerline_extra_flame_thick 1 -0.05 1.0))
+	  (const :tag ,(format "Squares small   %s" (icons-in-terminal 'powerline_extra_pixelated_squares_small))
+		 (powerline_extra_pixelated_squares_small 1 -0.05 1.0))
+	  (const :tag ,(format "Squares big     %s" (icons-in-terminal 'powerline_extra_pixelated_squares_big))
+		 (powerline_extra_pixelated_squares_big 1 -0.05 1.0))
+	  (const :tag ,(format "Ice             %s" (icons-in-terminal 'powerline_extra_ice_waveform))
+		 (powerline_extra_ice_waveform 1 -0.05 1.0))
+	  (const :tag ,(format "Lego            %s" (icons-in-terminal 'myicons_0010))
+		 (myicons_0010 0 0.0 1.0))
+	  )
   :group 'sidebar)
 
-(defcustom sidebar-icon-header-end 'myicons_0008
+(defcustom sidebar-icons-branches-modeline '(myicons_0009 myicons_0007 0)
+  "Icons to use in the modeline with branch and remote branch."
+  :group 'sidebar
+  :type `(radio
+          (const :tag ,(format "Triangle up left / bottom right    Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0002)
+                               (icons-in-terminal 'myicons_0004))
+		 (myicons_0002 myicons_0004 0))
+          (const :tag ,(format "Triangle bottom left / up right    Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0003)
+                               (icons-in-terminal 'myicons_0005))
+		 (myicons_0003 myicons_0005 0))
+          (const :tag ,(format "Triangle bottom                    Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0003)
+                               (icons-in-terminal 'myicons_0004))
+		 (myicons_0003 myicons_0004 0))
+          (const :tag ,(format "Triangle up                        Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0002)
+                               (icons-in-terminal 'myicons_0005))
+		 (myicons_0002 myicons_0005 0))
+          (const :tag ,(format "Wave-Bottom                        Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0009)
+                               (icons-in-terminal 'myicons_0007))
+		 (myicons_0009 myicons_0007 0))
+          (const :tag ,(format "Wave-Up                            Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0008)
+                               (icons-in-terminal 'myicons_0006))
+		 (myicons_0008 myicons_0006 0))
+          (const :tag ,(format "Wave up left / bottom right        Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0008)
+                               (icons-in-terminal 'myicons_0007))
+		 (myicons_0008 myicons_0007 0))
+          (const :tag ,(format "Wave bottom left / up right        Left %s  %s Right"
+                               (icons-in-terminal 'myicons_0009)
+                               (icons-in-terminal 'myicons_0006))
+		 (myicons_0009 myicons_0006 0))
+          (const :tag ,(format "Powerline                          Left %s  %s Right"
+                               (icons-in-terminal 'powerline_left_hard_divider)
+                               (icons-in-terminal 'powerline_right_hard_divider))
+		 (powerline_left_hard_divider powerline_right_hard_divider 0))
+          (const :tag ,(format "Circle                             Left %s  %s Right"
+                               (icons-in-terminal 'powerline_extra_right_half_circle_thick)
+                               (icons-in-terminal 'powerline_extra_left_half_circle_thick))
+		 (powerline_extra_right_half_circle_thick powerline_extra_left_half_circle_thick 2))
+          (const :tag ,(format "Flame                              Left %s %s Right"
+                               (icons-in-terminal 'powerline_extra_flame_thick)
+                               (icons-in-terminal 'powerline_extra_flame_thick_mirrored))
+		 (powerline_extra_flame_thick powerline_extra_flame_thick_mirrored 2))
+          (const :tag ,(format "Squares small                      Left %s %s Right"
+                               (icons-in-terminal 'powerline_extra_pixelated_squares_small)
+                               (icons-in-terminal 'powerline_extra_pixelated_squares_small_mirrored))
+		 (powerline_extra_pixelated_squares_small powerline_extra_pixelated_squares_small_mirrored 2))
+          (const :tag ,(format "Squares big                        Left %s %s Right"
+                               (icons-in-terminal 'powerline_extra_pixelated_squares_big)
+                               (icons-in-terminal 'powerline_extra_pixelated_squares_big_mirrored))
+		 (powerline_extra_pixelated_squares_big powerline_extra_pixelated_squares_big_mirrored 2))
+          (const :tag ,(format "Ice                                Left %s %s Right"
+                               (icons-in-terminal 'powerline_extra_ice_waveform)
+                               (icons-in-terminal 'powerline_extra_ice_waveform_mirrored))
+		 (powerline_extra_ice_waveform powerline_extra_ice_waveform_mirrored 2))
+	  ))
+
+(defcustom sidebar-icon-header-end '(myicons_0008 0)
   "Icon to insert at the end of the header line.
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
-  :type 'symbol
+  :type `(radio
+	  (const :tag ,(format "Triangle up     %s" (icons-in-terminal 'myicons_0002))
+		 (myicons_0002 1))
+	  (const :tag ,(format "Triangle bottom %s" (icons-in-terminal 'myicons_0003))
+		 (myicons_0003 1))
+	  (const :tag ,(format "Wave-Bottom     %s" (icons-in-terminal 'myicons_0009))
+		 (myicons_0009 0))
+	  (const :tag ,(format "Wave-Up         %s" (icons-in-terminal 'myicons_0008))
+		 (myicons_0008 0))
+	  (const :tag ,(format "Powerline       %s" (icons-in-terminal 'powerline_left_hard_divider))
+		 (powerline_left_hard_divider 1))
+	  (const :tag ,(format "Circle          %s" (icons-in-terminal 'powerline_extra_right_half_circle_thick))
+		 (powerline_extra_right_half_circle_thick 1))
+	  (const :tag ,(format "Flame           %s" (icons-in-terminal 'powerline_extra_flame_thick))
+		 (powerline_extra_flame_thick 2))
+	  (const :tag ,(format "Squares small   %s" (icons-in-terminal 'powerline_extra_pixelated_squares_small))
+		 (powerline_extra_pixelated_squares_small 2))
+	  (const :tag ,(format "Squares big     %s" (icons-in-terminal 'powerline_extra_pixelated_squares_big))
+		 (powerline_extra_pixelated_squares_big 2))
+	  (const :tag ,(format "Ice             %s" (icons-in-terminal 'powerline_extra_ice_waveform))
+		 (powerline_extra_ice_waveform 2))
+	  )
   :group 'sidebar)
 
 (defcustom sidebar-icon-header-project 'oct_repo
@@ -196,7 +302,30 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
-  :type 'symbol
+  :type `(radio
+	  (const :tag ,(format "Triangle up     %s" (icons-in-terminal 'myicons_0002))
+		 myicons_0002)
+	  (const :tag ,(format "Triangle bottom %s" (icons-in-terminal 'myicons_0003))
+		 myicons_0003)
+	  (const :tag ,(format "Wave-Bottom     %s" (icons-in-terminal 'myicons_0009))
+		 myicons_0009)
+	  (const :tag ,(format "Wave-Up         %s" (icons-in-terminal 'myicons_0008))
+		 myicons_0008)
+	  (const :tag ,(format "Powerline       %s" (icons-in-terminal 'powerline_left_hard_divider))
+		 powerline_left_hard_divider)
+	  (const :tag ,(format "Circle          %s" (icons-in-terminal 'powerline_extra_right_half_circle_thick))
+		 powerline_extra_right_half_circle_thick)
+	  (const :tag ,(format "Flame           %s" (icons-in-terminal 'powerline_extra_flame_thick))
+		 powerline_extra_flame_thick)
+	  (const :tag ,(format "Squares small   %s" (icons-in-terminal 'powerline_extra_pixelated_squares_small))
+		 powerline_extra_pixelated_squares_small)
+	  (const :tag ,(format "Squares big     %s" (icons-in-terminal 'powerline_extra_pixelated_squares_big))
+		 powerline_extra_pixelated_squares_big)
+	  (const :tag ,(format "Ice             %s" (icons-in-terminal 'powerline_extra_ice_waveform))
+		 powerline_extra_ice_waveform)
+	  (const :tag ,(format "Trapezoid       %s" (icons-in-terminal 'powerline_extra_trapezoid_top_bottom))
+		 powerline_extra_trapezoid_top_bottom)
+	  )
   :group 'sidebar)
 
 (defcustom sidebar-icon-branch 'oct_git_branch
@@ -212,7 +341,30 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
-  :type 'symbol
+  :type `(radio
+	  (const :tag ,(format "Triangle up     %s" (icons-in-terminal 'myicons_0005))
+		 myicons_0005)
+	  (const :tag ,(format "Triangle bottom %s" (icons-in-terminal 'myicons_0004))
+		 myicons_0004)
+	  (const :tag ,(format "Wave-Bottom     %s" (icons-in-terminal 'myicons_0007))
+		 myicons_0007)
+	  (const :tag ,(format "Wave-Up         %s" (icons-in-terminal 'myicons_0006))
+		 myicons_0006)
+	  (const :tag ,(format "Powerline       %s" (icons-in-terminal 'powerline_right_hard_divider))
+		 powerline_right_hard_divider)
+	  (const :tag ,(format "Circle          %s" (icons-in-terminal 'powerline_extra_left_half_circle_thick))
+		 powerline_extra_left_half_circle_thick)
+	  (const :tag ,(format "Flame           %s" (icons-in-terminal 'powerline_extra_flame_thick_mirrored))
+		 powerline_extra_flame_thick_mirrored)
+	  (const :tag ,(format "Squares small   %s" (icons-in-terminal 'powerline_extra_pixelated_squares_small_mirrored))
+		 powerline_extra_pixelated_squares_small_mirrored)
+	  (const :tag ,(format "Squares big     %s" (icons-in-terminal 'powerline_extra_pixelated_squares_big_mirrored))
+		 powerline_extra_pixelated_squares_big_mirrored)
+	  (const :tag ,(format "Ice             %s" (icons-in-terminal 'powerline_extra_ice_waveform_mirrored))
+		 powerline_extra_ice_waveform_mirrored)
+	  (const :tag ,(format "Trapezoid       %s" (icons-in-terminal 'powerline_extra_trapezoid_top_bottom_mirrored))
+		 powerline_extra_trapezoid_top_bottom_mirrored)
+	  )
   :group 'sidebar)
 
 (defcustom sidebar-icon-remotebranch 'oct_git_branch
@@ -492,10 +644,16 @@ LINE."
 ICONS-ON-LINE."
   (let ((space-to-add (- (window-width (sidebar-get-window)) (+ (current-column) 2))))
     (if (sidebar-gui?)
-	(setq space-to-add (- space-to-add icons-on-line))
-      (setq space-to-add (- space-to-add 1)))
+	(setq space-to-add (- space-to-add icons-on-line (cadr sidebar-icon-powerline)))
+      (setq space-to-add (1- space-to-add)))
     (insert (propertize (s-repeat space-to-add " ") 'font-lock-face 'sidebar-powerline-face)))
-  (insert (icons-in-terminal sidebar-icon-powerline :foreground (face-background 'sidebar-powerline-face))))
+  (insert (icons-in-terminal (car sidebar-icon-powerline)
+			     :raise (car (cddr sidebar-icon-powerline))
+			     :height (cadr (cddr sidebar-icon-powerline))
+			     :foreground (face-background 'sidebar-powerline-face)))
+  (unless (or (sidebar-gui?)
+	      (= (cadr sidebar-icon-powerline) 0))
+    (insert " ")))
 
 (defun sidebar-gui-insert-icon-filename (file filename status path)
   "FILE FILENAME STATUS PATH."
@@ -1311,11 +1469,15 @@ See `sidebar-git-run' and `sidebar-refresh'"
   "."
   (let* ((project (--get-in-frame 'sidebar-root-project))
 	 (current-path (--get-in-frame 'sidebar-current-path))
-	 (project-name (or project (abbreviate-file-name current-path))))
+	 (project-name (or project (abbreviate-file-name current-path)))
+	 (length 0))
     (when project
-      (setq project-name (s-chop-suffix "/"
-					(s-chop-prefix (file-name-directory (directory-file-name project-name))
-						       current-path))))
+      (setq project-name (s-chop-suffix "/" (s-chop-prefix (file-name-directory (directory-file-name project-name))
+							   current-path))))
+    (setq length (- (window-width (sidebar-get-window)) (+ (length project-name) 4)))
+    (when (sidebar-gui?)
+      (setq length (- length (cadr sidebar-icon-header-end))))
+;;;    (setq length (- length 0)))
     (concat
      (propertize " " 'face 'sidebar-header-line-face)
      (if project
@@ -1332,10 +1494,10 @@ See `sidebar-git-run' and `sidebar-refresh'"
      (propertize
       (concat " "
 	      project-name
-	      (s-repeat (- (window-width (sidebar-get-window)) (+ (length project-name) 4)) " "))
+	      (s-repeat length " "))
       'face 'sidebar-header-line-face
       'display '(raise 0.12))
-     (icons-in-terminal sidebar-icon-header-end
+     (icons-in-terminal (car sidebar-icon-header-end)
 			:foreground (face-background 'sidebar-header-line-face)
 			:height sidebar-header-line-height))))
 
@@ -1356,14 +1518,14 @@ See `sidebar-git-run' and `sidebar-refresh'"
 			     'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face))
 			     'display '(raise 0.1))
 		 (propertize " " 'face `(:background ,(face-background 'sidebar-branch-face)))
-		 (icons-in-terminal sidebar-icon-branch-end
+		 (icons-in-terminal (car sidebar-icons-branches-modeline)
 				    :foreground (face-background 'sidebar-branch-face)
 				    :raise -0.1
 				    :height sidebar-mode-line-height)))
 	       (str-branch-distant (s-split " \\[\\|\\]" (cadr (--get-in-frame 'sidebar-git-branches))))
 	       (branch-remote
 		(concat
-		 (icons-in-terminal sidebar-icon-remotebranch-start
+		 (icons-in-terminal (cadr sidebar-icons-branches-modeline)
 				    :foreground (face-background 'sidebar-remotebranch-face)
 				    :height sidebar-mode-line-height)
 		 (propertize " " 'face 'sidebar-remotebranch-face)
@@ -1380,11 +1542,23 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	       (sidebar-width (window-width (sidebar-get-window)))
 	       (space-to-add (- sidebar-width (+ len-branch len-branch-remote))))
 	  (when (sidebar-gui?)
-	    (setq space-to-add (- space-to-add 2)))
-	  (if (> space-to-add 0)
+	    (setq space-to-add (- (+ (- space-to-add 5)
+				     (* sidebar-mode-line-height 2))
+				  (car (cddr sidebar-icons-branches-modeline)))))
+	  ;; (setq space-to-add (+ (- space-to-add 5)
+	  ;; 			(* sidebar-mode-line-height 2)))
+	  ;; (setq space-to-add (- space-to-add (car (cddr sidebar-icons-branches-modeline)))))
+	  (if (>= space-to-add 0)
 	      (concat branch (s-repeat space-to-add " ") branch-remote)
-	    (concat branch branch-remote)))
+	    branch))
       nil)))
+
+;;;(sidebar-set-modeline)
+
+;; (defun sidebar-set-modeline ()
+;;   "."
+;;   nil)
+;; ;;;(sidebar-set-modeline)
 
 (defun sidebar-pre-command()
   (--set-in-frame 'sidebar-pre-hook-line-number (line-number-at-pos)))
