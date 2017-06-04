@@ -737,9 +737,6 @@ keep track of which file is on which line."
   (let ((file (file-name-nondirectory file)))
     (or (string= "." file) (string= ".." file))))
 
-(defvar it)      ; Declared to avoid warning for this variable from dash.el
-(defvar other)   ; Declared to avoid warning for this variable from dash.el
-
 ;;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defun sidebar-load-dir (path)
