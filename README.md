@@ -33,7 +33,7 @@ Add those lines in your emacs init file:
 ## Default commands
 
 | Key     | Command                       | Note                                        |
-| --------------------------------------------------------------------------------------|
+| --------|-------------------------------|---------------------------------------------|
 | `RET`   | `sidebar-open-line`           | Open file or enter directory                |
 | `M-RET` | `sidebar-open-line-in-window` | Open file in a selected window              |
 | `C-d`   | `sidebar-deleted-selected`    | Delete the file                             |
@@ -50,9 +50,12 @@ Add those lines in your emacs init file:
 
 ## Customization
 
-`<kbd>M-x customize-group [RET] sidebar [RET]</kbd>` to customize the icons and behaviours of sidebar.  
-`<kbd>M-x customize-group [RET] sidebar-gui-faces [RET]</kbd>` to customize the colors in GUI.  
-`<kbd>M-x customize-group [RET] sidebar-terminal-faces [RET]</kbd>` to customize the colors in terminals.  
+To customize icons and behaviours of sidebar:  
+`<kbd>M-x customize-group [RET] sidebar [RET]</kbd>`   
+To customize the colors in GUI:  
+`<kbd>M-x customize-group [RET] sidebar-gui-faces [RET]</kbd>`  
+To customize the colors in terminals:  
+`<kbd>M-x customize-group [RET] sidebar-terminal-faces [RET]</kbd>`  
 
 I made 2 differents groups of faces because on terminals, emacs doesn't support true colors [yet](http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=e463e57)
 
