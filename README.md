@@ -10,21 +10,23 @@ I had few problems with others similar projects, so I learned elisp and wrote th
 - We can't select in which window we want to open the file. it's possible with `sidebar`  
 
 Everything is customizable.  
-The icons are available of both GUI and terminal versions.  
+The icons are available on both GUI and terminal versions.  
 Please give me your feedback and open issue for bugs.  
 
 ## Installation
 
 Your first need to install [icons-in-terminal](https://github.com/sebastiencs/icons-in-terminal) (for both GUI and terminal).  
-Follow the instructions for emacs integration (`(add-to-list 'load-path "~/.local/share/icons-in-terminal/")`).  
+Follow the instructions for emacs integration.  
 
 `sidebar` is not yet available on [MELPA](https://melpa.org/).  
 I'm waiting for feedbacks to add it on melpa.  
+  
 ```bash
 $ git clone https://github.com/sebastiencs/sidebar.el.git
 ```
 Add those lines in your emacs init file:
 ```el
+(add-to-list 'load-path "~/.local/share/icons-in-terminal/") ;; If it's not already done
 (add-to-list 'load-path "PATH-TO-SIDEBAR-DIRECTORY")
 (require 'sidebar)
 (global-set-key (kbd "C-x C-f") 'sidebar-open)
