@@ -32,6 +32,9 @@ Add those lines in your emacs init file:
 (global-set-key (kbd "C-x C-f") 'sidebar-open)
 ```
 
+`sidebar` require some packages: `dash`,`s`, `projectile` and `loop`.  
+You can install them through melpa.  
+
 ## Default commands
 
 | Key     | Command                       | Note                                        |
