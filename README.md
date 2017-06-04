@@ -41,6 +41,7 @@ Add those lines in your emacs init file:
 | `C-d`   | `sidebar-deleted-selected`    | Delete the file                             |
 | `C-h`   | `sidebar-history`             | Open the history of visited directory       |
 | `C-n`   | `sidebar-create-directory`    | Create a directory                          |
+| `n`     | `sidebar-create-file`         | Create a file                               |
 | `C-w`   | `sidebar-cut-selected`        | Cut the file                                |
 | `M-w`   | `sidebar-copy-selected`       | Copy the file                               |
 | `C-y`   | `sidebar-paste`               | Paste the file                              |
