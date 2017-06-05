@@ -93,7 +93,7 @@ by binding a key to it."
   :type 'integer
   :group 'sidebar)
 
-(defcustom sidebar-icon-dir-closed 'fa_folder_o
+(defcustom sidebar-icon-dir-closed 'myicons_0013
   "Icon to use before a closed directory.
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
@@ -101,7 +101,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
   :group 'sidebar)
 
-(defcustom sidebar-icon-dir-opened 'fa_folder_open_o
+(defcustom sidebar-icon-dir-opened 'myicons_0014
   "Icon to use before an opened directory.
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
