@@ -1681,7 +1681,7 @@ This function just select another window before the frame is created."
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
     (define-key map (kbd "M-RET") 'sidebar-open-in-window)
-    (define-key map (kbd "h") 'sidebar-refresh-cmd)
+    (define-key map (kbd "g") 'sidebar-refresh-cmd)
     (define-key map (kbd "C-h") 'sidebar-history)
     (define-key map (kbd "n") 'sidebar-create-file)
     (define-key map (kbd "C-n") 'sidebar-create-directory)
