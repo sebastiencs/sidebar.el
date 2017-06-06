@@ -501,12 +501,21 @@ Example: (('path . \"/tmp/dir1/dir2\") ('dir . t) ('line . 8) ('opened . nil))"
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+(defun sidebar-count-char (char s)
+  "Count the occurence of CHAR in string S."
+  (let ((n 0)
+	(c (elt char 0)))
+    (--dotimes (length s)
+      (when (eq (elt s it) c)
+	(setq n (1+ n))))
+    n))
+
 (defun sidebar-calc-depth (file status)
   "Calcul the depth of FILE from the current directory point of view.
 This is uses to count the number of space to insert before the filename.
 STATUS is the status of the FILE."
   (let* ((path-from-current (s-chop-prefix (--get-in-frame 'sidebar-current-path) (--getpath file)))
-	 (depth (s-count-matches "/" path-from-current))) ; TODO: Support Windows (replace '/')
+	 (depth (sidebar-count-char "/" path-from-current))) ; TODO: Support Windows (replace '/')
     (when (> depth 0)
       (setq depth (* depth 2)))
     (setq depth (+ depth 1))
@@ -539,17 +548,20 @@ PATH is the path of the file relative to the project root directory
 STATUS is the status from git
 ICON
 NO-COLOR."
-  (cond ((and (equal 'ignored status)
-	      (if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face)))
-	((and (sidebar-child-of-status? path 'ignored)
-	      (if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face)))
-	((and (equal 'untracked status) (not icon)
-	      (if (--dir? file) 'sidebar-untracked-dir-face 'sidebar-untracked-file-face)))
-	((and (sidebar-child-of-status? path 'untracked)
-	      (if (--dir? file) 'sidebar-untracked-dir-face 'sidebar-untracked-file-face)))
-	((--dir? file) 'sidebar-dir-face)
-	((and no-color 'sidebar-file-face))
-	((and (not icon) (sidebar-color-from-status status 'sidebar-file-face)))))
+  (if (not status)
+      (unless icon
+	(if (--dir? file) 'sidebar-dir-face 'sidebar-file-face))
+    (cond ((and (equal 'ignored status)
+		(if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face)))
+	  ((and (sidebar-child-of-status? path 'ignored)
+		(if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face)))
+	  ((and (equal 'untracked status) (not icon)
+		(if (--dir? file) 'sidebar-untracked-dir-face 'sidebar-untracked-file-face)))
+	  ((and (sidebar-child-of-status? path 'untracked)
+		(if (--dir? file) 'sidebar-untracked-dir-face 'sidebar-untracked-file-face)))
+	  ((--dir? file) 'sidebar-dir-face)
+	  ((and no-color 'sidebar-file-face))
+	  ((and (not icon) (sidebar-color-from-status status 'sidebar-file-face))))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -682,8 +694,8 @@ ICONS-ON-LINE."
 	    ((equal 'renamed status) (funcall func sidebar-icon-git-renamed))
 	    ((equal 'match status) (funcall func sidebar-icon-git-match))))))
 
-(defun sidebar-print-file (file)
-  "Insert FILE on the current line.
+(defun sidebar-print-file (file &optional line)
+  "Insert FILE on the current LINE.
 The function inserts the filename without parents directories.
 
 First, it inserts ' ' x times, depending on the file depth (relative to
@@ -702,7 +714,7 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
 	 (status (and git-hashtable
 		      (gethash path-fixed-dirname git-hashtable)))
 	 (depth (sidebar-calc-depth file status))
-	 (line-number (line-number-at-pos)))
+	 (line-number (or line (line-number-at-pos))))
     (setq sidebar-icon-inserted-on-line 0)
     (sidebar-insert (s-repeat depth " "))
     (sidebar-gui-insert-icon-filename file filename status path-fixed-dirname)
@@ -717,11 +729,13 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
   "Insert all files in LIST from the current line.
 It updates the associated value 'line for each file.  This is used to
 keep track of which file is on which line."
-  (let ((func-insert 'sidebar-print-file))
-    (loop-for-each file list
-      (setf (--getline file) (line-number-at-pos))
-      (funcall func-insert file)
-      (newline))))
+  (let ((func-insert 'sidebar-print-file)
+	(line-number (line-number-at-pos)))
+    (--each list
+      (setf (--getline it) line-number)
+      (funcall func-insert it line-number)
+      (newline)
+      (setq line-number (1+ line-number)))))
 
 (defun sidebar-sort-files-by-line ()
   "Sort `sidebar-files' by the associated value 'line."
@@ -1092,10 +1106,7 @@ Sort the list by line number
 	(sidebar-print-listfiles old-files)
 	(--set-in-frame 'sidebar-files (-concat (--get-in-frame 'sidebar-files) old-files))
 	(sidebar-sort-files-by-line)
-	(sidebar-goto-line line-to-put-old-files)
-;;;	(sidebar-disable-current)
-	;; (sidebar-show-current)
-	))
+	(sidebar-goto-line line-to-put-old-files)))
     (sidebar-git-run)))
 
 (defun sidebar-open-directory (file)
@@ -1117,10 +1128,7 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-dir]'
     (setq default-directory (--get-in-frame 'sidebar-current-path))
     (--set-in-frame 'sidebar-history (add-to-list 'history default-directory nil 's-equals?))
     (--set-in-frame 'sidebar-root-project (sidebar-get-root-project))
-    (sidebar-print-listfiles files)
-    (sidebar-goto-line 1)
-    ;; (sidebar-show-current)
-    )
+    (sidebar-goto-line 1))
   (sidebar-git-run))
 
 (defun sidebar-open-file-in-window (window buffer-file)
