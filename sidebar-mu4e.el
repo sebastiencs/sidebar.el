@@ -73,7 +73,7 @@
 
 (defun sidebar-mu4e? ()
   "."
-  (with-selected-window (--get-in-frame 'sidebar-window-origin)
+  (with-selected-window (sidebar-get window-origin)
     (derived-mode-p 'mu4e-compose-mode
 		    'mu4e-main-mode
 		    'mu4e-headers-mode)))

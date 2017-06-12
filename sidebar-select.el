@@ -196,7 +196,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (defun sidebar-select-killed-hook ()
   "."
   (when (s-equals? sidebar-select-buffer-name (buffer-name))
-    (--set-in-frame 'sidebar-select-active nil)))
+    (sidebar-set select-active nil)))
 
 (defun sidebar-select-previous ()
   "."
@@ -285,7 +285,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 	mode-line-format "Type 'q' or C-g to cancel"
 	cursor-type nil
 	buffer-read-only nil)
-  (--set-in-frame 'sidebar-select-active t)
+  (sidebar-set select-active t)
   (internal-show-cursor nil nil)
 
   (if (sidebar-gui?)

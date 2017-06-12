@@ -34,13 +34,22 @@
 
 (defvar sidebar-width)
 
-(defmacro --set-in-frame (var val)
-  "Set VAR to VAL in the current frame."
-  `(set-frame-parameter nil ,var ,val))
-
-(defmacro --get-in-frame (var)
+(defmacro sidebar-get (var)
   "Get VAR in the current frame."
-  `(frame-parameter nil ,var))
+  (let ((var-name (intern (format "sidebar-%s" var))))
+    `(frame-parameter nil ',var-name)))
+
+(defmacro sidebar-set (var val)
+  "Set VAR to VAL in the current frame."
+  (let ((var-name (intern (format "sidebar-%s" var))))
+    `(set-frame-parameter nil ',var-name ,val)))
+
+(defmacro sidebar-set1 (var val)
+  "Set VAR to VAL in the current frame.
+The difference with `sidebar-set' is that the var parameter is
+evaluated.
+The var need to be prefixed with 'sidebar-'."
+  `(set-frame-parameter nil ,var ,val))
 
 (defun sidebar-gui? ()
   "Return non-nil if we're on a graphic instance."
@@ -64,12 +73,12 @@ The return value should be unique for each frame.
 On terminals instance, we use the frame parameter `name'
 On Graphics ones, the name isn't unique for each frame, so we use
 `window-id' that isn't available on terminals instance."
-  (let ((name (--get-in-frame 'sidebar-buffer-name)))
+  (let ((name (sidebar-get buffer-name)))
     (if name
 	name
       (setq name (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
 					 (frame-parameter nil 'name))"*"))
-      (--set-in-frame 'sidebar-buffer-name name)
+      (sidebar-set buffer-name name)
       name)))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
