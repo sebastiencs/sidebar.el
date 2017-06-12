@@ -83,10 +83,11 @@ On Graphics ones, the name isn't unique for each frame, so we use
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-(defun sidebar-get-window ()
-  "Return the created/existing window displaying the sidebar buffer."
+(defun sidebar-get-window (&optional no-creation)
+  "Return the created/existing window displaying the sidebar buffer.
+If NO-CREATION is non-nil, the window is not created."
   (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
-    (unless sidebar-window
+    (unless (or sidebar-window no-creation)
       (let ((sidebar-buffer (sidebar-get-buffer)))
 	(setq sidebar-window (display-buffer sidebar-buffer (display-buffer-in-side-window sidebar-buffer '((side . left)))))
 	(set-window-dedicated-p sidebar-window t)
@@ -96,6 +97,8 @@ On Graphics ones, the name isn't unique for each frame, so we use
 	    (when (< current-width sidebar-width)
 	      (window-resize sidebar-window (- current-width sidebar-width) t))))))
     sidebar-window))
+
+(unless (or t t) t)
 
 (defun sidebar-file-struct (file)
   "Return an association list from FILE.

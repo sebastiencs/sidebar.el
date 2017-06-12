@@ -41,6 +41,7 @@
 (require 'loop)
 (require 's)
 (require 'dash)
+(require 'dash-functional)
 (require 'icons-in-terminal)
 (require 'sidebar-filemapping)
 (require 'sidebar-select)
@@ -629,34 +630,39 @@ LINE."
 (defun sidebar-insert-fileicon (file filename status path face)
   "FILE FILENAME STATUS PATH FACE."
   (if (--dir? file)
-      (sidebar-insert-icon (if (--opened? file) sidebar-icon-dir-opened sidebar-icon-dir-closed)
-			   (sidebar-get-color file path status))
-    (let* ((icon-and-color (sidebar-filemapping-lookup filename))
-	   (icon (plist-get icon-and-color :icon))
-	   (color (plist-get icon-and-color :color)))
-      (if face
-	  (insert (icons-in-terminal icon :face face :height 1.1))
-	(if color
-	    (insert (icons-in-terminal icon :foreground color :height 1.1))
-	  (insert (icons-in-terminal icon :height 1.1)))))))
+      (let ((icon (if (--opened? file) sidebar-icon-dir-opened sidebar-icon-dir-closed)))
+	(sidebar-insert-icon icon (sidebar-get-color file path status)))
+    (let* ((icon-color (sidebar-filemapping-lookup filename))
+	   (icon (plist-get icon-color :icon))
+	   (color (plist-get icon-color :color))
+	   (partial (-partial 'icons-in-terminal icon :height 1.1)))
+      (cond (face (insert (funcall partial :face face)))
+	    (color (insert (funcall partial :foreground color)))
+	    (t (insert (funcall partial)))))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
+(defsubst sidebar-window-width ()
+  "Return the sidebar's window width."
+  (window-width (sidebar-get-window)))
 
 (defun sidebar-insert-powerline (icons-on-line)
   "Insert the remaining spaces and a '' to make a powerline effect.
 ICONS-ON-LINE."
-  (let ((space-to-add (- (window-width (sidebar-get-window)) (+ (current-column) 2))))
-    (if (sidebar-gui?)
-	(setq space-to-add (- space-to-add icons-on-line (cadr sidebar-icon-powerline)))
-      (setq space-to-add (1- space-to-add)))
-    (insert (propertize (s-repeat space-to-add " ") 'font-lock-face 'sidebar-powerline-face)))
-  (insert (icons-in-terminal (car sidebar-icon-powerline)
-			     :raise (car (cddr sidebar-icon-powerline))
-			     :height (cadr (cddr sidebar-icon-powerline))
-			     :foreground (face-background 'sidebar-powerline-face)))
-  (unless (or (sidebar-gui?)
-	      (= (cadr sidebar-icon-powerline) 0))
-    (insert " ")))
+  (let* ((space-to-add (-> (sidebar-window-width) (- (+ (current-column) 2))))
+	 (space-to-add (-> space-to-add (- (cond ((sidebar-gui?) (+ icons-on-line
+								    (cadr sidebar-icon-powerline)))
+	 					 (t 1)))))
+	 (icon sidebar-icon-powerline)
+	 (face 'sidebar-powerline-face))
+    (insert (propertize (s-repeat space-to-add " ") 'font-lock-face face))
+    (insert (icons-in-terminal (car icon)
+			       :raise (car (cddr icon))
+			       :height (cadr (cddr icon))
+			       :foreground (face-background face)))
+    (unless (or (sidebar-gui?)
+		(= (cadr icon) 0))
+      (insert " "))))
 
 (defun sidebar-gui-insert-icon-filename (file filename status path)
   "FILE FILENAME STATUS PATH."
@@ -693,12 +699,11 @@ If FILE is a directory and closed (not expanded), it inserts the icons of
  all the files it contains just after its name, still on the same line.
 
 FILE is a associated list created from `\\[sidebar-file-struct]'."
-  (let* ((filename (file-name-nondirectory (--getpath file)))
+  (let* ((filename (-some-> file --getpath file-name-nondirectory))
 	 (path-in-project (s-chop-prefix (sidebar-get root-project) (--getpath file)))
 	 (path-fixed-dirname (if (--dir? file) (file-name-as-directory path-in-project) path-in-project))
 	 (git-hashtable (sidebar-get git-hashtable))
-	 (status (and git-hashtable
-		      (gethash path-fixed-dirname git-hashtable)))
+	 (status (-some->> git-hashtable (gethash path-fixed-dirname)))
 	 (depth (sidebar-calc-depth file status))
 	 (line-number (or line (line-number-at-pos))))
     (setq sidebar-icon-inserted-on-line 0)
@@ -715,19 +720,18 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
   "Insert all files in LIST from the current line.
 It updates the associated value 'line for each file.  This is used to
 keep track of which file is on which line."
-  (let ((func-insert 'sidebar-print-file)
-	(line-number (line-number-at-pos)))
+  (let ((line-number (line-number-at-pos)))
     (--each list
       (setf (--getline it) line-number)
-      (funcall func-insert it line-number)
-      (newline)
+      (sidebar-print-file it line-number)
+      (insert "\n")
+      ;; (newline)
       (setq line-number (1+ line-number)))))
 
 (defun sidebar-sort-files-by-line ()
   "Sort `sidebar-files' by the associated value 'line."
-  (sidebar-set files (-sort (lambda (first second)
-					  (< (--getline first) (--getline second)))
-					(sidebar-get files))))
+  (sidebar-set files (--sort (< (--getline it) (--getline other))
+			     (sidebar-get files))))
 
 (defun sidebar-print ()
   "Prints Sidebar."
@@ -747,9 +751,9 @@ It removes '.' and '..'
 Sort the directories first
 The list returned is a list of association list for each file created
 with `\\[sidebar-file-struct]'"
-  (let* ((files-and-dirs (-remove 'sidebar-dots-file (directory-files path t)))
+  (let* ((files-and-dirs (--> path (directory-files it t) (-remove 'sidebar-dots-file it)))
 	 (dirs-sorted (--sort (string< it other) (-filter 'file-directory-p files-and-dirs)))
-	 (files-sorted (--sort (string< it other) (--filter (not (file-directory-p it)) files-and-dirs))))
+	 (files-sorted (--sort (string< it other) (--filter (-> it file-directory-p not) files-and-dirs))))
     (-map 'sidebar-file-struct (-concat dirs-sorted files-sorted))))
 
 (defun sidebar-load-content (path)
@@ -764,31 +768,25 @@ If there is no filename equal to the BUFFER-NAME, it put the cursor
 on the first line.
 This is use when the sidebar is created."
   (when buffer-name
-    (let ((file (--first (string= (--getpath it) buffer-name) (sidebar-get files))))
-      (if file
-	  (progn
-	    (sidebar-disable-current)
-	    (sidebar-goto-line (--getline file))
-	    (let ((line-begin (line-beginning-position))
-		  (line-end (line-end-position)))
-	      (setq sidebar-current-line (buffer-substring line-begin line-end)))
-	    (sidebar-show-current))
-	(sidebar-goto-line 1)
-	(sidebar-disable-current)
-	(sidebar-show-current)))))
+    (let* ((file (--first (string= (--getpath it) buffer-name) (sidebar-get files)))
+	   (line (or (--getline file) 1)))
+      (sidebar-disable-current)
+      (sidebar-goto-line line)
+      (setq sidebar-current-line (buffer-substring (line-beginning-position) (line-end-position)))
+      (sidebar-show-current))))
 
 (defun sidebar-expand-path (project-path-root file-path)
   "PROJECT-PATH-ROOT FILE-PATH."
-  (when file-path
-    (let* ((rel-path-to-file (s-chop-prefix (directory-file-name project-path-root) file-path))
-	   (rel-path-to-file (s-chop-suffix (file-name-nondirectory rel-path-to-file) rel-path-to-file))
-	   (rel-path-to-file (directory-file-name rel-path-to-file))
-	   (dirs-to-open (split-path rel-path-to-file)))
-      (when dirs-to-open
-	(let ((base project-path-root))
-	  (-map 'sidebar-file-struct
-		(--map (setq base (concat (file-name-as-directory base) it))
-		       dirs-to-open)))))))
+  (let* ((base project-path-root)
+	 (dirs-to-open (-some->> file-path
+				 (s-chop-prefix (-> base directory-file-name))
+				 (s-chop-suffix (-> file-path file-name-nondirectory))
+				 directory-file-name
+				 split-path)))
+    (when dirs-to-open
+      (-map 'sidebar-file-struct
+	    (--map (setq base (concat (file-name-as-directory base) it))
+		   dirs-to-open)))))
 
 ;; (file-name-nondirectory "/home/seb/seb/")
 ;; (directory-file-name "/home/seb/seb/")
@@ -804,10 +802,10 @@ This is use when the sidebar is created."
 
 (defun split-path-helper (path accum)
   "PATH ACCUM."
-  (let ((dir  (directory-file-name (file-name-directory path)))
-        (name (file-name-nondirectory path)))
+  (let ((dir (-> path file-name-directory directory-file-name))
+	(name (file-name-nondirectory path)))
     (if (equal dir path)
-        accum
+	accum
       (split-path-helper dir (cons name accum)))))
 
 (defun sidebar-check-setup ()
@@ -866,7 +864,7 @@ returns an error on terminals."
 (defun sidebar-close ()
   "Close the sidebar for the current frame, you still can reopen it."
   (interactive)
-  (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
+  (let ((sidebar-window (sidebar-get-window t)))
     (when sidebar-window (delete-window sidebar-window))))
 
 ;;(kill-buffer (sidebar-cons-buffer-name))
@@ -874,12 +872,10 @@ returns an error on terminals."
 (defun sidebar-disable-current ()
   "Delete everything on the current line and reprint file without the powerline."
   (save-excursion
-    (let ((file (nth (- (line-number-at-pos) 1) (sidebar-get files))))
+    (let ((file (-> (line-number-at-pos) (- 1) (nth (sidebar-get files)))))
       (when file
-	(let* ((line-begin (line-beginning-position))
-	       (line-end (line-end-position)))
-	  (delete-region line-begin line-end)
-	  (insert sidebar-current-line))))))
+	(delete-region (line-beginning-position) (line-end-position))
+	(insert sidebar-current-line)))))
 
 (defun sidebar-count-chars-on-line ()
   "Return the number of character on the current line."
@@ -890,7 +886,7 @@ returns an error on terminals."
 than the window's width.
 SIDEBAR-WINDOW is sidebar's window."
   (interactive)
-  (let ((window (or sidebar-window (get-buffer-window (sidebar-cons-buffer-name)))))
+  (let ((window (or sidebar-window (sidebar-get-window t))))
     (when (> (sidebar-count-chars-on-line) (window-total-width window))
       (window-resize window (+ 5 (- (sidebar-count-chars-on-line) (window-total-width))) t))))
 
@@ -899,15 +895,15 @@ SIDEBAR-WINDOW is sidebar's window."
   (let* ((line-begin (line-beginning-position))
 	 (line-end (line-end-position))
 	 (line (buffer-substring line-begin line-end)))
-    (when (not (get-char-property 0 'face line))
+    (unless (get-char-property 0 'face line)
       (sidebar-show-current))))
 
 (defun sidebar-show-current ()
   "Show the current line with a background and powerline.
 Resize the window if necessary (customizable)."
   (save-excursion
-    (let* ((file (nth (- (line-number-at-pos) 1) (sidebar-get files)))
-	   (sidebar-window (get-buffer-window (sidebar-cons-buffer-name)))
+    (let* ((file (-> (line-number-at-pos) 1- (nth (sidebar-get files))))
+	   (sidebar-window (sidebar-get-window t))
 	   (icons-on-line (gethash (--getpath file) (sidebar-get icons-inserted-hashtable))))
       (when file
 	(when (/= (window-total-width sidebar-window) sidebar-width)
@@ -928,9 +924,10 @@ Resize the window if necessary (customizable)."
 (defun sidebar-create-directory ()
   "Create a directory and its parents if non existing."
   (interactive)
-  (let* ((file-at-line (sidebar-find-file-from-line))
-	 (path-at-line (file-name-directory (--getpath file-at-line)))
-	 (new-dir (read-string "[sidebar] Create directory: " path-at-line)))
+  (let* ((new-dir (-some->> (sidebar-find-file-from-line)
+			    --getpath
+			    file-name-directory
+			    (read-string "[sidebar] Create directory: "))))
     (if (file-exists-p new-dir)
 	(error "[sidebar] Cannot create directory %s, it already exists" new-dir)
       (condition-case err
@@ -945,16 +942,19 @@ Resize the window if necessary (customizable)."
 The file should be in an existing directory.
 To create directories, see `sidebar-create-directory'"
   (interactive)
-  (let* ((file-at-line (sidebar-find-file-from-line))
-	 (path-at-line (file-name-directory (or (--getpath file-at-line) (sidebar-get current-path))))
-	 (new-file (read-string "[sidebar] Create file: " path-at-line)))
-    (if (file-exists-p new-file)
-	(error "[sidebar] Cannot create file %s, it already exists" new-file)
-      (if (not (file-writable-p new-file))
-	  (error "[sidebar] Cannot create file %s, directory not writable" new-file)
-	(let ((sidebar-window (frame-parameter nil 'sidebar-window-origin)))
+  (let* ((new-file (-some--> (sidebar-find-file-from-line)
+			     --getpath
+			     (or it (sidebar-get current-path))
+			     file-name-directory
+			     (read-string "[sidebar] Create file: " it))))
+    (cond
+     ((file-exists-p new-file)
+      (error "[sidebar] Cannot create file %s, it already exists" new-file))
+     ((-> new-file file-writable-p not)
+      (error "[sidebar] Cannot create file %s, directory not writable" new-file))
+     (t (let ((sidebar-window (sidebar-get window-origin)))
 	  (when sidebar-window
-	    (select-window (frame-parameter nil 'sidebar-window-origin))
+	    (select-window sidebar-window)
 	    (find-file new-file)
 	    (save-buffer)
 	    (message "[sidebar] File %s created" new-file)
@@ -965,14 +965,13 @@ To create directories, see `sidebar-create-directory'"
 If it's a directory, it removes recursively its subfiles."
   (interactive)
   (let* ((file-at-line (sidebar-find-file-from-line))
-	 (str-prompt (format "[sidebar] Delete the %s %s ? ('yes' or anything else): "
+	 (path (--getpath file-at-line))
+	 (str-prompt (format "[sidebar] Delete the %s %s ? ('yes' or anything else to cancel): "
 			     (if (--dir? file-at-line) "directory" "file")
-			     (--getpath file-at-line)))
+			     path))
 	 (confirm (read-string str-prompt)))
     (when (s-equals? "yes" confirm)
-      (if (--dir? file-at-line)
-	  (delete-directory (--getpath file-at-line) t)
-	(delete-file (--getpath file-at-line)))
+      (if (--dir? file-at-line) (delete-directory path t) (delete-file path))
       (sidebar-refresh))))
 
 (defun sidebar-rename-buffer-name (buffers name new-name)
@@ -990,13 +989,13 @@ If it's a directory, it removes recursively its subfiles."
 If there are buffers visiting this file, you'll be ask to rename them too."
   (interactive)
   (let* ((file-at-line (sidebar-find-file-from-line))
-	 (directory (file-name-directory (--getpath file-at-line)))
-	 (filename-at-line (file-name-nondirectory (--getpath file-at-line)))
-	 (new-name (read-string (format "[sidebar] Rename %s to: " filename-at-line))))
+	 (path (--getpath file-at-line))
+	 (directory (file-name-directory path))
+	 (new-name (read-string (format "[sidebar] Rename %s to: " (file-name-nondirectory path)))))
     (if (file-exists-p new-name)
 	(error "[sidebar] Cannot rename to %s, it already exists" new-name)
-      (rename-file (--getpath file-at-line) (concat directory new-name))
-      (sidebar-rename-buffer-name (buffer-list) (--getpath file-at-line) new-name)
+      (rename-file path (concat directory new-name))
+      (sidebar-rename-buffer-name (buffer-list) path new-name)
       (sidebar-refresh))))
 
 (defvar-local sidebar-file-to-copy
@@ -1039,28 +1038,30 @@ If the file is cut, you'll be ask to rename the buffers visiting it."
 		      (file-name-directory (--getpath file-at-line))))
 	 (method (plist-get sidebar-file-to-copy :method))
 	 (file (plist-get sidebar-file-to-copy :file))
-	 (new-file (concat directory (file-name-nondirectory (--getpath file))))
+	 (path (--getpath file))
+	 (new-file (->> path file-name-nondirectory (concat directory)))
 	 (str-prompt (format "%s %s to %s ? "
 			     (if (equal method 'copy) "Copy" "Cut")
-			     (file-name-nondirectory (--getpath file))
+			     (file-name-nondirectory path)
 			     directory)))
     (when (y-or-n-p str-prompt)
-      (cond ((file-exists-p new-file)
-	     (error "[sidebar] Cannot paste file.  Already exists"))
-	    ((not (file-writable-p directory))
-	     (error "[sidebar] Cannot create file, directory not writable"))
-	    (t (condition-case err
-		   (progn
-		     (if (--dir? file)
-			 (copy-directory (--getpath file) directory t t nil)
-		       (copy-file (--getpath file) directory nil t t t))
-		     (when (equal method 'cut)
-		       (if (--dir? file)
-			   (delete-directory (--getpath file) t)
-			 (delete-file (--getpath file))
-			 (sidebar-rename-buffer-name (buffer-list) (--getpath file) new-file)))
-		     (sidebar-refresh))
-		 (error "Error while copying file: " (error-message-string err))))))))
+      (cond
+       ((file-exists-p new-file)
+	(error "[sidebar] Cannot paste file.  Already exists"))
+       ((not (file-writable-p directory))
+	(error "[sidebar] Cannot create file, directory not writable"))
+       (t (condition-case err
+	      (progn
+		(if (--dir? file)
+		    (copy-directory path directory t t nil)
+		  (copy-file path directory nil t t t))
+		(when (equal method 'cut)
+		  (if (--dir? file)
+		      (delete-directory path t)
+		    (delete-file path)
+		    (sidebar-rename-buffer-name (buffer-list) path new-file)))
+		(sidebar-refresh))
+	    (error "Error while copying file: " (error-message-string err))))))))
 
 (defun sidebar-update-to-opened (list path-old)
   "Return LIST with PATH-OLD's 'opened value to t."
@@ -1146,11 +1147,11 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-content]'
 (defun sidebar-list-windows-others-frame (frames)
   "FRAMES."
   (let ((windows nil))
-    (loop-for-each frame frames
-      (when (and (not (equal frame (window-frame)))
-		 (not (s-equals? "initial_terminal" (terminal-name frame)))
-		 (frame-visible-p frame))
-	(setq windows (append windows (-remove 'window-dedicated-p (window-list frame))))))
+    (--each frames
+      (when (and (not (equal it (window-frame)))
+		 (not (s-equals? "initial_terminal" (terminal-name it)))
+		 (frame-visible-p it))
+	(setq windows (append windows (-remove 'window-dedicated-p (window-list it))))))
     windows))
 
 (defun sidebar-open-in-window ()
@@ -1170,8 +1171,6 @@ Only the windows non dedicated are shown."
 				  sidebar-select-icon-before-window
 				  'sidebar-open-file-in-window
 				  (find-file-noselect (--getpath file))))))
-
-;;;    (let ((string (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" window)))))
 
 (defun sidebar-find-file-from-line (&optional line)
   "Return the file on the LINE.
@@ -1202,24 +1201,22 @@ If it's a file, open it on the window where `\\[sidebar-open]' has been called"
 (defun sidebar-update-line-number (num line)
   "Add NUM to every file where 'line is > than LINE."
   (let ((list (sidebar-get files)))
-    (loop-for-each file list
-      (let ((line-for-this-file (--getline file)))
+    (--each list
+      (let ((line-for-this-file (--getline it)))
 	(when (> line-for-this-file line)
-	  (setf (--getline file) (+ line-for-this-file num)))))))
+	  (setf (--getline it) (+ line-for-this-file num)))))))
 
 (defun sidebar-search-closed-dir (file)
   "Search FILE in the list of previously closed directory.
 If found, it is extracted and remove from the list
 Return the found element."
-  (let ((found (-filter (lambda (list)
-			  (string= (car list) (file-name-as-directory (--getpath file))))
-			(sidebar-get closed-directories))))
+  (let ((found (--filter (string= (car it) (-> file --getpath file-name-as-directory))
+			 (sidebar-get closed-directories))))
     (when found
       (sidebar-set closed-directories
-		      (-remove (lambda (list)
-				 (string= (car list) (file-name-as-directory (--getpath file))))
-			       (sidebar-get closed-directories))))
-    (cdr (car found))))
+		   (--remove (string= (car it) (-> file --getpath file-name-as-directory))
+			     (sidebar-get closed-directories))))
+    (cdar found)))
 
 ;;(kill-buffer (sidebar-cons-buffer-name))
 
@@ -1301,8 +1298,9 @@ if FORCE is non-nil, there is no check."
 
 (defun sidebar-update-from-opened-dirs (list opened)
   "Set the associated value `opened' to t for all files of LIST present in the list OPENED."
-  (loop-for-each file opened
-    (let ((found (--first (string= (--getpath it) (--getpath file)) list)))
+  (--each opened
+    (let* ((path (--getpath it))
+	   (found (--first (string= (--getpath it) path) list)))
       (when found
 	(setf (--opened? found) t))))
   list)
@@ -1331,8 +1329,9 @@ with `\\[sidebar-load-content]' and print them on the sidebar at the right place
       (erase-buffer)
       (sidebar-print-listfiles (sidebar-get files))
       (sidebar-sort-files-by-line)
-      (loop-for-each dir opened-dirs
-	(let ((found (--first (string= (--getpath it) (--getpath dir)) (sidebar-get files))))
+      (--each opened-dirs
+	(let* ((path (--getpath it))
+	       (found (--first (string= (--getpath it) path) (sidebar-get files))))
 	  (when found
 	    (setf (--opened? found) t)
 	    (sidebar-goto-line (+ (--getline found) 1) t)
@@ -1349,7 +1348,7 @@ with `\\[sidebar-load-content]' and print them on the sidebar at the right place
 
 (defun sidebar-refresh-on-save-after-timer ()
   "Function called when a buffer is saved, it refreshes the sidebar."
-  (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
+  (let ((sidebar-window (sidebar-get-window t)))
     (when sidebar-window
       (with-current-buffer (sidebar-get-buffer)
 	(sidebar-git-run t)))))
@@ -1435,9 +1434,9 @@ The key in the hashtable is the filepath, the value is its status."
 	   (table (make-hash-table :test 'equal :size (- (length str-table) 1))))
       (sidebar-git-parse-branch (car str-table))
       (setq str-table (cdr str-table))
-      (loop-for-each line str-table
-	(let ((status (sidebar-git-match-status (substring line 0 2)))
-	      (filepath (substring line 3 nil)))
+      (--each str-table
+	(let ((status (sidebar-git-match-status (substring it 0 2)))
+	      (filepath (substring it 3 nil)))
 	  (puthash filepath status table)))
       table)))
 
@@ -1452,7 +1451,7 @@ CHANGE is unused"
       (if (/= (process-exit-status process) 0)
 	  (sidebar-refresh)
 	(let ((table (sidebar-git-parse-buffer))
-	      (sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
+	      (sidebar-window (sidebar-get-window t)))
 	  (with-current-buffer (sidebar-get-buffer)
 	    (sidebar-set git-hashtable table)
 	    (sidebar-refresh))))
@@ -1477,7 +1476,8 @@ if FORCE is non-nil, force to run the process."
 	    (kill-process process)))
 	(with-current-buffer (sidebar-get-git-buffer)
 	  (erase-buffer)
-	  (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer) "git" "status" "--porcelain" "--ignored" "-z" "-b" ".")))
+	  (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer)
+					"git" "status" "--porcelain" "--ignored" "-z" "-b" ".")))
 	    (set-process-query-on-exit-flag process nil)
 	    (set-process-sentinel process 'sidebar-git-sentinel))))
     (sidebar-refresh)))
@@ -1498,7 +1498,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
     (when project
       (setq project-name (s-chop-suffix "/" (s-chop-prefix (file-name-directory (directory-file-name project-name))
 							   current-path))))
-    (setq length (- (window-width (sidebar-get-window)) (+ (length project-name) 4)))
+    (setq length (- (sidebar-window-width) (+ (length project-name) 4)))
     (when (sidebar-gui?)
       (setq length (- length (cadr sidebar-icon-header-end))))
 ;;;    (setq length (- length 0)))
@@ -1561,7 +1561,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	   (propertize " " 'face 'sidebar-remotebranch-face)))
 	 (len-branch (length branch))
 	 (len-branch-remote (length branch-remote))
-	 (sidebar-width (window-width (sidebar-get-window)))
+	 (sidebar-width (sidebar-window-width))
 	 (space-to-add (- sidebar-width (+ len-branch len-branch-remote))))
     (when (sidebar-gui?)
       (setq space-to-add (- (+ (- space-to-add 5)
@@ -1577,7 +1577,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	 (dirs nil)
 	 (files-plurial (when (> sidebar-files-number 1) t))
 	 (dirs-plurial (when (> sidebar-directories-number 1) t))
-	 (sidebar-width (window-width (sidebar-get-window)))
+	 (sidebar-width (sidebar-window-width))
 	 (space-to-add 0))
     (setq files (concat (propertize (concat " "
 					    (number-to-string sidebar-files-number)
@@ -1652,7 +1652,7 @@ sidebar, it opens a sidebar in the new frame.  I don't know why.
 This function just select another window before the frame is created."
   (let ((selected-window (frame-selected-window))
 	(windows-in-frame (window-list))
-	(sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
+	(sidebar-window (sidebar-get-window t)))
     (when (equal selected-window sidebar-window)
       (let ((other-window (--first (not (equal sidebar-window it)) windows-in-frame)))
 	(set-frame-selected-window nil other-window)))))
@@ -1681,10 +1681,10 @@ This function just select another window before the frame is created."
 (defun sidebar-config-change-hook ()
   "If some other window change sidebar's width, this function resize it."
   (when (and (not (equal this-command 'sidebar-resize-window))
-	     (window-live-p (get-buffer-window (sidebar-cons-buffer-name)))
-	     (/= (window-total-width (get-buffer-window (sidebar-cons-buffer-name))) sidebar-width))
+	     (window-live-p (sidebar-get-window t))
+	     (/= (window-total-width (sidebar-get-window t)) sidebar-width))
     (save-excursion
-      (window-resize (get-buffer-window (sidebar-cons-buffer-name))
+      (window-resize (sidebar-get-window t)
 		     (- sidebar-width (window-total-width (sidebar-get-window)))
 		     t))))
 
