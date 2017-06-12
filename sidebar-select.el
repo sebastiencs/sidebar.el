@@ -30,7 +30,6 @@
 
 ;;; Code:
 
-(require 'loop)
 (require 's)
 (require 'dash)
 (require 'icons-in-terminal)
@@ -157,12 +156,11 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (defun sidebar-select-insert-list (list func-on-string icon)
   "LIST FUNC-ON-STRING ICON."
   (newline)
-  (loop-for-each window list
-    (let ((string (funcall func-on-string window)))
+  (--each list
+    (let ((string (funcall func-on-string it)))
       (setq sidebar-select-mapping
-	    (append
-	     sidebar-select-mapping
-	     (list `(:line ,(line-number-at-pos) :window ,window))))
+	    (append sidebar-select-mapping
+		    (list `(:line ,(line-number-at-pos) :window ,it))))
       (sidebar-select-insert-buffername string icon))))
 
 (defun sidebar-select-make-buffer (list header1 header2 func-on-string icon callback &rest args)

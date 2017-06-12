@@ -30,7 +30,6 @@
 ;; Librairies that are required by this project:
 ;;
 ;;  `projectile'
-;;  `loop'
 ;;  `s'
 ;;  `dash'
 ;;  `icons-in-terminal'
@@ -38,7 +37,6 @@
 ;;; Code:
 
 (require 'projectile)
-(require 'loop)
 (require 's)
 (require 'dash)
 (require 'dash-functional)
