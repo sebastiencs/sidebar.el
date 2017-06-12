@@ -88,6 +88,22 @@ On Graphics ones, the name isn't unique for each frame, so we use
 	      (window-resize sidebar-window (- current-width sidebar-width) t))))))
     sidebar-window))
 
+(defun sidebar-file-struct (file)
+  "Return an association list from FILE.
+The parameter FILE is a path.
+In this project (sidebar.el) every parameters named 'file' are
+object using this structure.
+- 'path is the FILE's path
+- 'dir is non-nil if FILE is a directory
+- 'line is the number line where FILE is printed on the sidebar
+- 'opened is non-nil it it's a directory and is expanded.
+
+Example: (('path . \"/tmp/dir1/dir2\") ('dir . t) ('line . 8) ('opened . nil))"
+  (list (cons 'path file)
+	(cons 'dir (file-directory-p file))
+	(cons 'line 0)
+	(cons 'opened nil)))
+
 (defun sidebar-get-buffer ()
   "Return the existing/created sidebar buffer for the current frame."
   (get-buffer-create (sidebar-cons-buffer-name)))
