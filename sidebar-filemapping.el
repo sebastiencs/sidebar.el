@@ -406,14 +406,15 @@
   "FILENAME."
   (or (sidebar-filemapping-get-in-cache filename)
       (sidebar-filemapping-put-in-cache
-       (let ((found (or (gethash filename sidebar-filemapping-full-hashtable)
-			(sidebar-filemapping-find-prefix filename)
-			(sidebar-filemapping-find-suffix filename)
-			(gethash (file-name-extension filename) sidebar-filemapping-extension-hashtable)
-			(sidebar-filemapping-emacs-buffers filename)
-			(sidebar-filemapping-dotfile filename)
-			'(:icon fa_file_o))))
-	 `(:icon ,(plist-get found :icon) :color ,(sidebar-filemapping-getcolor (plist-get found :color))))
+       (-let (((&plist :icon icon :color color)
+	       (or (gethash filename sidebar-filemapping-full-hashtable)
+		   (sidebar-filemapping-find-prefix filename)
+		   (sidebar-filemapping-find-suffix filename)
+		   (gethash (file-name-extension filename) sidebar-filemapping-extension-hashtable)
+		   (sidebar-filemapping-emacs-buffers filename)
+		   (sidebar-filemapping-dotfile filename)
+		   '(:icon fa_file_o))))
+	 `(:icon ,icon :color ,(sidebar-filemapping-getcolor color)))
        filename)))
 
 (provide 'sidebar-filemapping)
