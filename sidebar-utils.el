@@ -83,22 +83,21 @@ On Graphics ones, the name isn't unique for each frame, so we use
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
+(defun sidebar-set-window (&optional width)
+  "Display the sidebar buffer in a side window.
+It can also be used to resize the window with WIDTH."
+  (let ((w (or width (sidebar-get default-width) sidebar-width)))
+    (display-buffer (sidebar-get-buffer)
+		    `(display-buffer-in-side-window . ((side . left) (window-width . ,w))))))
+
 (defun sidebar-get-window (&optional no-creation)
   "Return the created/existing window displaying the sidebar buffer.
 If NO-CREATION is non-nil, the window is not created."
   (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
     (unless (or sidebar-window no-creation)
-      (let ((sidebar-buffer (sidebar-get-buffer)))
-	(setq sidebar-window (display-buffer sidebar-buffer (display-buffer-in-side-window sidebar-buffer '((side . left)))))
-	(set-window-dedicated-p sidebar-window t)
-	(let ((current-width (window-total-width sidebar-window)))
-	  (if (> current-width sidebar-width)
-	      (window-resize sidebar-window (- sidebar-width current-width) t)
-	    (when (< current-width sidebar-width)
-	      (window-resize sidebar-window (- current-width sidebar-width) t))))))
+      (setq sidebar-window (sidebar-set-window))
+      (set-window-dedicated-p sidebar-window t))
     sidebar-window))
-
-(unless (or t t) t)
 
 (defun sidebar-file-struct (file)
   "Return an association list from FILE.

@@ -75,11 +75,11 @@
   "Return the line where is FILE."
   `(alist-get 'line ,file))
 
-(defcustom sidebar-resize-auto-window nil
+(defcustom sidebar-adjust-auto-window-width nil
   "If activated, the sidebar's window will automatically be resize if the..
 filename on the current line is longer than the window.
-This can be done manually by calling the function `sidebar-resize-window' or
-by binding a key to it."
+This can be done manually by calling the function `sidebar-adjust-window-width'
+or by binding a key to it."
   :type 'boolean
   :group 'sidebar)
 
@@ -831,6 +831,7 @@ returns an error on terminals."
   (sidebar-set root-project (sidebar-get-root-project))
   (sidebar-set history (list project-path-root))
   (sidebar-set current-path project-path-root)
+  (sidebar-set default-width sidebar-width)
   (sidebar-set files (sidebar-load-content project-path-root)))
 
 (defun sidebar-open ()
@@ -874,14 +875,20 @@ returns an error on terminals."
   "Return the number of character on the current line."
   (- (line-end-position) (line-beginning-position)))
 
-(defun sidebar-resize-window (&optional sidebar-window)
+(defun sidebar-adjust-window-width (&optional sidebar-window)
   "Resize the sidebar window if the filename on the current line is longer...
 than the window's width.
 SIDEBAR-WINDOW is sidebar's window."
   (interactive)
-  (let ((window (or sidebar-window (sidebar-get-window t))))
-    (when (> (sidebar-count-chars-on-line) (window-total-width window))
-      (window-resize window (+ 5 (- (sidebar-count-chars-on-line) (window-total-width))) t))))
+  (let ((window (or sidebar-window (sidebar-get-window t)))
+	(chars-on-line (sidebar-count-chars-on-line)))
+    (when (> chars-on-line (window-total-width window))
+      (sidebar-set-window (+ 3 chars-on-line)))))
+
+(defun sidebar-reset-window-width ()
+  "Reset the sidebar window to the default value `sidebar-width'."
+  (interactive)
+  (sidebar-set-window))
 
 (defun sidebar-show-if-not-current ()
   "."
@@ -899,16 +906,14 @@ Resize the window if necessary (customizable)."
 	   (sidebar-window (sidebar-get-window t))
 	   (icons-on-line (gethash (--getpath file) (sidebar-get icons-inserted-hashtable))))
       (when file
-	(when (/= (window-total-width sidebar-window) sidebar-width)
-	  (window-resize sidebar-window (- sidebar-width (window-total-width)) t))
-	(when sidebar-resize-auto-window
-	  (sidebar-resize-window sidebar-window))
 	(let ((line-begin (line-beginning-position))
 	      (line-end (line-end-position)))
 	  (sidebar-set current-line (buffer-substring line-begin line-end))
 	  (add-face-text-property line-begin line-end 'sidebar-powerline-face))
 	(end-of-line)
 	(sidebar-insert-powerline (or icons-on-line 0))
+	(when sidebar-adjust-auto-window-width
+	  (sidebar-adjust-window-width sidebar-window))
 	(when sidebar-message-current
 	  (message (--getpath file)))))))
 
@@ -1664,13 +1669,12 @@ This function just select another window before the frame is created."
 
 (defun sidebar-config-change-hook ()
   "If some other window change sidebar's width, this function resize it."
-  (when (and (not (equal this-command 'sidebar-resize-window))
+  (when (and (not (equal this-command 'sidebar-adjust-window-width))
 	     (window-live-p (sidebar-get-window t))
-	     (/= (window-total-width (sidebar-get-window t)) sidebar-width))
+	     (sidebar-get default-width)
+	     (/= (window-total-width (sidebar-get-window t)) (sidebar-get default-width)))
     (save-excursion
-      (window-resize (sidebar-get-window t)
-		     (- sidebar-width (window-total-width (sidebar-get-window)))
-		     t))))
+      (sidebar-set-window (sidebar-get default-width)))))
 
 (defvar sidebar-mode-map nil
   "Keymap uses with sidebar-mode.")
@@ -1691,7 +1695,8 @@ This function just select another window before the frame is created."
     (define-key map (kbd "C-w") 'sidebar-cut-selected)
     (define-key map (kbd "C-y") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
-    (define-key map (kbd "<right>") 'sidebar-resize-window)
+    (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
+    (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-mode-map map)))
 
