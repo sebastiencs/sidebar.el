@@ -661,8 +661,7 @@ ICONS-ON-LINE."
 
 (defun sidebar-gui-insert-icon-filename (file filename status path)
   "FILE FILENAME STATUS PATH."
-  (funcall (sidebar-get insert-icon-function)
-	   file filename status path (sidebar-get-color file path status t))
+  (sidebar-insert-fileicon file filename status path (sidebar-get-color file path status t))
   (setq sidebar-icon-inserted-on-line 0)
   (sidebar-insert " ")
   (sidebar-insert-filename filename (sidebar-get-color file path status nil (not sidebar-filename-colored))))
@@ -718,7 +717,7 @@ keep track of which file is on which line."
   (let ((line-number (line-number-at-pos)))
     (--each list
       (setf (--getline it) line-number)
-      (sidebar-print-file it line-number)
+      (funcall (sidebar-get print-item) it line-number)
       (insert "\n")
       ;; (newline)
       (setq line-number (1+ line-number)))))
@@ -740,7 +739,7 @@ keep track of which file is on which line."
 
 ;;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-(defun sidebar-load-dir (path)
+(sidebar-content-provider files (path)
   "Return a list of files/directories in PATH.
 It removes '.' and '..'
 Sort the directories first
@@ -749,7 +748,7 @@ with `\\[sidebar-file-struct]'"
   (let* ((files-and-dirs (--> path (directory-files it t) (-remove 'sidebar-dots-file it)))
 	 (dirs-sorted (--sort (string< it other) (-filter 'file-directory-p files-and-dirs)))
 	 (files-sorted (--sort (string< it other) (--filter (-> it file-directory-p not) files-and-dirs))))
-    (-map 'sidebar-file-struct (-concat dirs-sorted files-sorted))))
+    (-concat dirs-sorted files-sorted)))
 
 (defsubst sidebar-load-content (path)
   "PATH."
@@ -760,15 +759,13 @@ with `\\[sidebar-file-struct]'"
 (defun sidebar-goto-buffername (buffer-name)
   "This function jump the cursor to BUFFER-NAME (string) in the sidebar.
 If there is no filename equal to the BUFFER-NAME, it put the cursor
-on the first line.
+on the frame parameter `sidebar-line-to-start'.
 This is use when the sidebar is created."
-  (when buffer-name
-    (let* ((file (--first (string= (--getpath it) buffer-name) (sidebar-get files)))
-	   (line (or (--getline file) 1)))
-      (sidebar-disable-current)
-      (sidebar-goto-line line)
-      (sidebar-set current-line (buffer-substring (line-beginning-position) (line-end-position)))
-      (sidebar-show-current))))
+  (let* ((file (when buffer-name (--first (string= (--getpath it) buffer-name) (sidebar-get files))))
+	 (line (or (--getline file) (sidebar-get line-to-start))))
+    (sidebar-disable-current)
+    (sidebar-goto-line line)
+    (sidebar-show-current)))
 
 (defun sidebar-expand-path (project-path-root file-path)
   "PROJECT-PATH-ROOT FILE-PATH."
@@ -812,13 +809,23 @@ returns an error on terminals."
 
 (defvar sidebar-mode-association
   '(:sidebar-mode
-    ((sidebar-mode-to-use           . sidebar-mode)
-     (sidebar-load-content-function . sidebar-load-dir)
-     (sidebar-insert-icon-function  . sidebar-insert-fileicon))
+    ((sidebar-mode-to-use                  . sidebar-mode)
+     (sidebar-load-content-function        . sidebar-content-files)
+     (sidebar-make-header-function         . sidebar-make-header)
+     (sidebar-make-modeline-left-function  . sidebar-make-modeline-left)
+     (sidebar-make-modeline-right-function . sidebar-make-modeline-right)
+     (sidebar-item-builder-function        . sidebar-file-struct)
+     (sidebar-print-item                   . sidebar-print-file)
+     (sidebar-line-to-start                . 1))
     :sidebar-mu4e-mode
-    ((sidebar-load-content-function . sidebar-mu4e-load-maildirs)
-     (sidebar-mode-to-use           . sidebar-mu4e-mode)
-     (sidebar-insert-icon-function  . sidebar-mu4e-insert-icon))
+    ((sidebar-load-content-function        . sidebar-content-mu4e)
+     (sidebar-mode-to-use                  . sidebar-mu4e-mode)
+     (sidebar-make-header-function         . sidebar-mu4e-make-header)
+     (sidebar-make-modeline-left-function  . sidebar-mu4e-make-modeline-left)
+     (sidebar-make-modeline-right-function . sidebar-mu4e-make-modeline-right)
+     (sidebar-item-builder-function        . sidebar-mu4e-item-builder)
+     (sidebar-print-item                   . sidebar-mu4e-print-item)
+     (sidebar-line-to-start                . 2))
     ))
 
 (defun sidebar-init-vars (project-path-root)
@@ -1481,8 +1488,8 @@ See `sidebar-git-run' and `sidebar-refresh'"
   (interactive)
   (sidebar-git-run t))
 
-(defun sidebar-set-header ()
-  "."
+(defun sidebar-make-header ()
+  "Return the string to insert in the header."
   (let* ((project (sidebar-get root-project))
 	 (current-path (sidebar-get current-path))
 	 (project-name (or project (abbreviate-file-name current-path)))
@@ -1490,12 +1497,8 @@ See `sidebar-git-run' and `sidebar-refresh'"
     (when project
       (setq project-name (s-chop-suffix "/" (s-chop-prefix (file-name-directory (directory-file-name project-name))
 							   current-path))))
-    (setq length (- (sidebar-window-width) (+ (length project-name) 4)))
-    (when (sidebar-gui?)
-      (setq length (- length (cadr sidebar-icon-header-end))))
-;;;    (setq length (- length 0)))
     (concat
-     (propertize " " 'face 'sidebar-header-line-face)
+     " "
      (if project
 	 (icons-in-terminal sidebar-icon-header-project
 			    :face 'sidebar-icon-header-project-face
@@ -1507,103 +1510,89 @@ See `sidebar-git-run' and `sidebar-refresh'"
 			  :background (face-background 'sidebar-header-line-face)
 			  :raise -0.0
 			  :height 1.3))
-     (propertize
-      (concat " "
-	      project-name
-	      (s-repeat length " "))
-      'face 'sidebar-header-line-face
-      'display '(raise 0.12))
+     (propertize project-name 'display '(raise 0.12))
+     )))
+
+(defun sidebar-set-header ()
+  "Format the header with the string from `sidebar-make-header-function'."
+  (let* ((string (funcall (sidebar-get make-header-function)))
+	 (length 0))
+    (add-face-text-property 0 (length string) 'sidebar-header-line-face nil string)
+    (setq length (- (sidebar-window-width) (1+ (length string))))
+    (when (sidebar-gui?)
+      (setq length (- length (cadr sidebar-icon-header-end))))
+    (concat
+     string
+     (propertize (concat (s-repeat length " "))
+		 'face 'sidebar-header-line-face 'display '(raise 0.12))
      (icons-in-terminal (car sidebar-icon-header-end)
 			:foreground (face-background 'sidebar-header-line-face)
 			:height sidebar-header-line-height))))
 
-(defun sidebar-set-modeline-git ()
+(defun sidebar-make-modeline-left ()
   "."
-  (let* ((branch
-	  (concat
-	   (propertize " " 'face 'sidebar-branch-face)
-	   (icons-in-terminal sidebar-icon-branch
-			      :face 'sidebar-icon-branch-face
-			      :background (face-background 'sidebar-branch-face)
-			      :raise -0.1
-			      :height 1.3)
-	   (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-branch-face))
-	   (propertize (car (sidebar-get git-branches))
-		       'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face))
-		       'display '(raise 0.1))
-	   (propertize " " 'face `(:background ,(face-background 'sidebar-branch-face)))
-	   (icons-in-terminal (car sidebar-icons-branches-modeline)
-			      :foreground (face-background 'sidebar-branch-face)
-			      :raise -0.1
-			      :height sidebar-mode-line-height)))
-	 (str-branch-distant (s-split " \\[\\|\\]" (cadr (sidebar-get git-branches))))
-	 (branch-remote
-	  (concat
-	   (icons-in-terminal (cadr sidebar-icons-branches-modeline)
-			      :foreground (face-background 'sidebar-remotebranch-face)
-			      :height sidebar-mode-line-height)
-	   (propertize " " 'face 'sidebar-remotebranch-face)
-	   (icons-in-terminal sidebar-icon-remotebranch
-			      :face 'sidebar-icon-remotebranch-face
-			      :background (face-background 'sidebar-remotebranch-face)
-			      :raise -0.1
-			      :height 1.3)
-	   (when (not (sidebar-gui?)) (propertize " " 'face 'sidebar-remotebranch-face))
-	   (propertize (car str-branch-distant) 'face 'sidebar-remotebranch-face 'display '(raise 0.1))
-	   (propertize " " 'face 'sidebar-remotebranch-face)))
-	 (len-branch (length branch))
-	 (len-branch-remote (length branch-remote))
-	 (sidebar-width (sidebar-window-width))
-	 (space-to-add (- sidebar-width (+ len-branch len-branch-remote))))
-    (when (sidebar-gui?)
-      (setq space-to-add (- (+ (- space-to-add 5)
-			       (* sidebar-mode-line-height 2))
-			    (car (cddr sidebar-icons-branches-modeline)))))
-    (if (>= space-to-add 0)
-	(concat branch (s-repeat space-to-add " ") branch-remote)
-      branch)))
+  (if (and (sidebar-get root-project) (sidebar-get git-branches))
+      (concat
+       " "
+       (icons-in-terminal sidebar-icon-branch
+			  :face 'sidebar-icon-branch-face
+			  :background (face-background 'sidebar-branch-face)
+			  :raise -0.1
+			  :height 1.3)
+       (when (not (sidebar-gui?)) " ")
+       (propertize (car (sidebar-get git-branches))
+		   'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face))
+		   'display '(raise 0.1)))
+    (concat " "
+	    (number-to-string sidebar-files-number)
+	    (if (> sidebar-files-number 1) " files" " file"))))
 
-(defun sidebar-set-modeline-numbers ()
+(defun sidebar-make-modeline-right ()
   "."
-  (let* ((files nil)
-	 (dirs nil)
-	 (files-plurial (when (> sidebar-files-number 1) t))
-	 (dirs-plurial (when (> sidebar-directories-number 1) t))
-	 (sidebar-width (sidebar-window-width))
-	 (space-to-add 0))
-    (setq files (concat (propertize (concat " "
-					    (number-to-string sidebar-files-number)
-					    (if files-plurial " files " " file "))
-				    'face 'sidebar-branch-face)
-			(icons-in-terminal (car sidebar-icons-branches-modeline)
-					   :foreground (face-background 'sidebar-branch-face)
-					   :raise -0.1
-					   :height sidebar-mode-line-height)))
-    (setq dirs (concat (icons-in-terminal (cadr sidebar-icons-branches-modeline)
-					  :foreground (face-background 'sidebar-remotebranch-face)
-					  :raise -0.1
-					  :height sidebar-mode-line-height)
-		       (propertize (concat " "
-					   (number-to-string sidebar-directories-number)
-					   (if dirs-plurial " directories " " directory "))
-				   'face 'sidebar-remotebranch-face)))
-    (setq space-to-add (- sidebar-width (+ (length files) (length dirs))))
-    (when (sidebar-gui?)
-      (setq space-to-add (- (+ (- space-to-add 3)
-			       (* sidebar-mode-line-height 2))
-			    (car (cddr sidebar-icons-branches-modeline)))))
-    (concat files
-	    (s-repeat space-to-add " ")
-	    dirs
-	    (propertize "    " 'face 'sidebar-remotebranch-face))))
+  (if (and (sidebar-get root-project) (sidebar-get git-branches))
+      (let ((str-branch-distant (s-split " \\[\\|\\]" (cadr (sidebar-get git-branches)))))
+	(concat
+	 (icons-in-terminal sidebar-icon-remotebranch
+			    :face 'sidebar-icon-remotebranch-face
+			    :background (face-background 'sidebar-remotebranch-face)
+			    :raise -0.1
+			    :height 1.3)
+	 (when (not (sidebar-gui?)) " ")
+	 (propertize (car str-branch-distant) 'display '(raise 0.1))
+	 "  "))
+    (concat (number-to-string sidebar-directories-number)
+	    (if (> sidebar-directories-number 1) " directories" " directory"))
+    ))
 
 (defun sidebar-set-modeline ()
   "."
   (when (not (sidebar-get select-active))
-    (let ((project (sidebar-get root-project)))
-      (if (and project (sidebar-get git-branches))
-	  (sidebar-set-modeline-git)
-	(sidebar-set-modeline-numbers)))))
+    (let ((left (concat (funcall (sidebar-get make-modeline-left-function)) " "))
+	  (right (concat " " (funcall (sidebar-get make-modeline-right-function))))
+	  (sidebar-width (sidebar-window-width))
+	  (space-to-add 0))
+      (when (> (length left) 1)
+	(add-face-text-property 0 (length left) 'sidebar-branch-face nil left)
+	(setq left (concat left (icons-in-terminal (car sidebar-icons-branches-modeline)
+						   :foreground (face-background 'sidebar-branch-face)
+						   :raise -0.1
+						   :height sidebar-mode-line-height))))
+      (when (> (length right) 1)
+	(add-face-text-property 0 (length right) 'sidebar-remotebranch-face nil right)
+	(setq right (concat (icons-in-terminal (cadr sidebar-icons-branches-modeline)
+					       :foreground (face-background 'sidebar-remotebranch-face)
+					       :raise -0.1
+					       :height sidebar-mode-line-height)
+			    right)))
+      (setq space-to-add (- sidebar-width (+ (length left) (length right))))
+      (when (sidebar-gui?)
+	(setq space-to-add (- (+ (- space-to-add 3)
+				 (* sidebar-mode-line-height 2))
+			      (car (cddr sidebar-icons-branches-modeline)))))
+      (concat left
+	      (s-repeat space-to-add " ")
+	      right
+	      (propertize "    " 'face 'sidebar-remotebranch-face)))))
 
 (defun sidebar-pre-command()
   (sidebar-set pre-hook-line-number (line-number-at-pos)))

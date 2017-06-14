@@ -48,8 +48,23 @@
   "Set VAR to VAL in the current frame.
 The difference with `sidebar-set' is that the var parameter is
 evaluated.
-The var need to be prefixed with 'sidebar-'."
+VAR need to be prefixed with 'sidebar-'."
   `(set-frame-parameter nil ,var ,val))
+
+(defmacro sidebar-content-provider (name arglist &rest args)
+  "Make a content provider NAME with arguments ARGLIST.
+The function should return a list of strings that will be
+display in the sidebar.
+ARGS is the function body with an optional doc."
+  (declare (doc-string 3) (indent 2))
+  (let* ((doc (when (stringp (car args))
+		(prog1 (car args)
+		  (setq args (cdr args)))))
+	 (body args))
+    `(progn
+       (defun ,(intern (format "sidebar-content-%s" name)) ,arglist
+	 ,doc
+	 (-map (sidebar-get item-builder-function) (progn ,@body))))))
 
 (defun sidebar-gui? ()
   "Return non-nil if we're on a graphic instance."

@@ -35,112 +35,223 @@
 (require 'dash)
 (require 'sidebar-utils)
 (require 'icons-in-terminal)
-(require 's)
 
 (declare-function mu4e-get-maildirs "ext:mu4e-utils.el")
 (declare-function mu4e~headers-jump-to-maildir "ext:mu4e-headers.el")
+(declare-function mu4e-headers-search "ext:mu4e-headers.el")
 (declare-function mu4e-context-name "ext:mu4e-context.el")
 (declare-function mu4e-context-current "ext:mu4e-context.el")
+(declare-function mu4e-bookmark-name "ext:mu4e-bookmark.el")
+(declare-function mu4e-bookmark-query "ext:mu4e-bookmark.el")
+(declare-function mu4e-bookmarks "ext:mu4e-bookmark.el")
 (declare-function sidebar-find-file-from-line "ext:sidebar.el")
-(declare-function --getpath "ext:sidebar.el")
+(declare-function sidebar-refresh "ext:sidebar.el")
+(declare-function sidebar-open "ext:sidebar.el")
+(declare-function sidebar-adjust-window-width "ext:sidebar.el")
+(declare-function sidebar-reset-window-width "ext:sidebar.el")
 
 (defvar mu4e-contexts)
-(defvar sidebar-icon-header-end)
-(defvar sidebar-header-line-height)
-(defvar sidebar-width)
-(defvar sidebar-icons-branches-modeline)
-(defvar sidebar-mode-line-height)
-(defvar sidebar-files-number)
 
-(defun sidebar-mu4e-load-maildirs (&rest p)
-  "P."
-  (-map 'sidebar-file-struct (mu4e-get-maildirs)))
+(defgroup sidebar-mu4e nil
+  "Sidebar mode to view its maildirs and bookmarks."
+  :group 'tools
+  :group 'convenience
+  :link '(custom-manual "(sidebar-mu4e) Top")
+  :link '(info-link "(sidebar-mu4e) Customizing"))
 
-(defun sidebar--mu4e-open-maildir-1 (maildir)
-  "MAILDIR."
+(defcustom sidebar-mu4e-autostart t
+  "If non-nil, sidebar-mu4e is started with mu4e.
+More precisely, it is started when `mu4e' is called."
+  :type 'boolean
+  :group 'sidebar-mu4e)
+
+(defcustom sidebar-mu4e-width 30
+  "Width of the sidebar with mu4e."
+  :type 'integer
+  :group 'sidebar-mu4e)
+
+(defcustom sidebar-mu4e-maildir-icon 'fa_inbox
+  "Icon to use with maildirs.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar-mu4e)
+
+(defcustom sidebar-mu4e-bookmark-icon 'fa_bookmark
+  "Icon to use with bookmarks.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar-mu4e)
+
+(defun sidebar-mu4e-item-builder (item)
+  "Return an association list from ITEM.
+Function similar to `sidebar-file-struct' adapted for mu4e data."
+  (list (cons 'data item)
+	(cons 'type (cond ((listp item) 'bookmark)
+			  ((stringp item)'maildir)
+			  (t 'separator)))
+	(cons 'line 0)))
+
+(defun sidebar-mu4e-get-maildirs ()
+  "Return a list of maildirs.
+It can be advised to modify the list."
+  (mu4e-get-maildirs))
+
+(defun sidebar-mu4e-get-bookmarks (bookmarks)
+  "Return a list of BOOKMARKS.
+It can be advised to modify the list."
+  (--map `(,(mu4e-bookmark-name it) ,(mu4e-bookmark-query it))
+	 bookmarks))
+
+(sidebar-content-provider mu4e (&rest _)
+  "Return a list of maildirs and bookmarks to print in the sidebar.
+The list will be mapped with `sidebar-mu4e-item-builder' to make them
+easily usable."
+  (let ((maildirs (sidebar-mu4e-get-maildirs))
+	(bookmarks (sidebar-mu4e-get-bookmarks (mu4e-bookmarks))))
+    (sidebar-set mu4e-bookmarks-count (length bookmarks))
+    (sidebar-set mu4e-maildirs-count (length maildirs))
+    (-concat '(separator) maildirs '(separator) bookmarks)))
+
+(defun sidebar-mu4e-print-item (item _)
+  "Function to print ITEM in sidebar.
+It doesn't print anything if ITEM is a separator.
+ITEM is an object created with `sidebar-mu4e-item-builder'."
+  (-let* (((&alist 'data data 'type type) item))
+    (unless (equal type 'separator)
+      (insert " ")
+      (pcase type
+	('bookmark (insert (icons-in-terminal sidebar-mu4e-bookmark-icon :height 1.1)))
+	('maildir  (insert (icons-in-terminal sidebar-mu4e-maildir-icon :height 1.1))))
+      (insert " ")
+      (pcase type
+	('bookmark (insert (car data)))
+	('maildir  (insert data))))))
+
+(defun sidebar-mu4e-open-maildir (maildir)
+  "Open MAILDIR.
+This is a small subfunction of `sidebar-mu4e-open-line' to let the
+user advise it and easily access the parameter MAILDIR."
   (mu4e~headers-jump-to-maildir maildir))
 
-(defun sidebar-mu4e-open-maildir ()
-  "."
-  (interactive)
-  (let* ((maildir (sidebar-find-file-from-line)))
-    (sidebar--mu4e-open-maildir-1 (--getpath maildir))))
+(defun sidebar-mu4e-open-bookmark (bookmark)
+  "Open BOOKMARK.
+This is a small subfunction of `sidebar-mu4e-open-line' to let the
+user advise it and easily access the parameter BOOKMARK."
+  (mu4e-headers-search bookmark))
 
-(defun sidebar-mu4e-insert-icon (&rest p)
-  "P."
-  (insert (icons-in-terminal 'oct_inbox :height 1.1))
-  )
+(defun sidebar-mu4e-open-line ()
+  "Open the maildir or bookmark on the current line."
+  (interactive)
+  (-let* (((&alist 'data data 'type type) (sidebar-find-file-from-line)))
+    (pcase type
+      ('maildir  (sidebar-mu4e-open-maildir data))
+      ('bookmark (sidebar-mu4e-open-bookmark (cadr data))))))
 
 (defun sidebar-mu4e? ()
-  "."
-  (with-selected-window (sidebar-get window-origin)
-    (derived-mode-p 'mu4e-compose-mode
-		    'mu4e-main-mode
-		    'mu4e-headers-mode)))
+  "Return non-nil if we have to use `sidebar-mu4e-mode' on the sidebar creation."
+  (prog1
+      (with-selected-window (sidebar-get window-origin)
+	(or (sidebar-get mu4e-force)
+	    (derived-mode-p 'mu4e-compose-mode
+			    'mu4e-main-mode
+			    'mu4e-headers-mode)))
+    (sidebar-set mu4e-force nil)))
 
-(defun sidebar-mu4e-set-header ()
-  "."
+(defun sidebar-mu4e-make-header ()
+  "Return the string to insert in the sidebar header."
   (let* ((context (or (and mu4e-contexts
 			   (mu4e-context-name (mu4e-context-current)))
-		      "mu4e"))
-	 (length (- (window-width (sidebar-get-window)) (+ (length context) 4))))
+		      "mu4e")))
     (concat
-     (propertize " " 'face 'sidebar-header-line-face)
+     " "
      (icons-in-terminal 'oct_mail
 			:face 'sidebar-icon-header-project-face
 			:background (face-background 'sidebar-header-line-face)
 			:raise -0.07
 			:height 1.3)
+     " "
      (propertize
-      (concat " "
-	      context
-	      (s-repeat length " "))
-      'face 'sidebar-header-line-face
-      'display '(raise 0.12))
-     (icons-in-terminal (car sidebar-icon-header-end)
-			:foreground (face-background 'sidebar-header-line-face)
-			:height sidebar-header-line-height))))
+      (concat (upcase (substring context 0 1)) (substring context 1))
+      'display '(raise 0.12)))))
 
-(defun sidebar-mu4e-set-modeline ()
-  "."
-  (let* ((maildirs nil)
-	 (space-to-add 0))
-    (setq maildirs (concat
-		    (icons-in-terminal (cadr sidebar-icons-branches-modeline)
-				       :foreground (face-background 'sidebar-remotebranch-face)
-				       :raise -0.1
-				       :height sidebar-mode-line-height)
-		    (propertize (concat " "
-					(number-to-string sidebar-files-number)
-					(if (> sidebar-files-number 1) " maildirs " " maildir "))
-				'face 'sidebar-remotebranch-face)))
-    (setq space-to-add (- (window-width (sidebar-get-window)) (length maildirs)))
-    (when (sidebar-gui?)
-      (setq space-to-add (- (+ (- space-to-add 3)
-			       (* sidebar-mode-line-height 2))
-			    (car (cddr sidebar-icons-branches-modeline)))))
-    (concat (s-repeat space-to-add " ")
-	    maildirs
-	    (propertize "    " 'face 'sidebar-remotebranch-face))))
+(defun sidebar-mu4e-make-modeline-left ()
+  "Return the string to insert in the modeline (left side)."
+  " mu4e")
+
+(defun sidebar-mu4e-make-modeline-right ()
+  "Return the string to insert in the modeline (right side)."
+  (concat
+   (number-to-string (sidebar-get mu4e-maildirs-count))
+   " "
+   (icons-in-terminal sidebar-mu4e-maildir-icon)
+   " | "
+   (number-to-string (sidebar-get mu4e-bookmarks-count))
+   " "
+   (icons-in-terminal sidebar-mu4e-bookmark-icon)
+   "  "))
+
+(defun sidebar-mu4e-context-switch (&rest _)
+  "Function called when the context on mu4e has been changed.
+Refresh the content of the sidebar (maildirs and bookmarks)."
+  (when (sidebar-get-window t)
+    (sidebar-refresh)))
+
+(defun sidebar-mu4e-quit (&rest _)
+  "Function called when mu4e quits.
+It removes the sidebar."
+  (advice-remove 'mu4e-context-switch 'sidebar-mu4e-context-switch)
+  (advice-remove 'mu4e-quit 'sidebar-mu4e-quit)
+  (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
+
+(defun sidebar-mu4e-autostart (&rest _)
+  "If `sidebar-mu4e-autostart' is non-nil, sidebar-mu4e is open automatically..
+with mu4e."
+  (when sidebar-mu4e-autostart
+    (sidebar-set mu4e-force t)
+    (sidebar-open)))
+
+(defun sidebar-mu4e-pre-command ()
+  "See `sidebar-mu4e-post-command'."
+  (sidebar-set mu4e-pre-line (line-number-at-pos)))
+
+(defun sidebar-mu4e-post-command ()
+  "Function to ensure that the cursor is never on a separator."
+  (-when-let* ((pre-line (sidebar-get mu4e-pre-line))
+	       (line (line-number-at-pos))
+	       ((&alist 'type type) (sidebar-find-file-from-line)))
+    (when (equal type 'separator)
+      (cond ((or (< pre-line line) (<= line 1)) (forward-line 1))
+	    ((> line 1) (forward-line -1))))))
 
 (defvar sidebar-mu4e-mode-map nil
-  "Keymap uses with sidebar-mu4e-mode.")
+  "Keymap used with sidebar-mu4e-mode.")
 (unless sidebar-mu4e-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
+    (define-key map (kbd ";") 'mu4e-context-switch)
     (define-key map (kbd "q") 'sidebar-close)
-    (define-key map (kbd "RET") 'sidebar-mu4e-open-maildir)
-    (define-key map (kbd "<right>") 'sidebar-resize-window)
+    (define-key map (kbd "RET") 'sidebar-mu4e-open-line)
+    (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
+    (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-mu4e-mode-map map)))
+
+(advice-add 'mu4e :after 'sidebar-mu4e-autostart)
 
 (define-derived-mode sidebar-mu4e-mode nil "Sidebar-mu4e"
   "Major mode for Sidebar-mu4e.
 
 \\{sidebar-mu4e-mode-map}"
-  ::group sidebar
+  ::group sidebar-mu4e
 
-  (setq-local sidebar-width 30)
+  (sidebar-set default-width sidebar-mu4e-width)
+
+  (advice-add 'mu4e-context-switch :after 'sidebar-mu4e-context-switch)
+  (advice-add 'mu4e-quit :before 'sidebar-mu4e-quit)
 
   (if (sidebar-gui?)
       (progn
@@ -191,39 +302,28 @@
     (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
-  ;; (make-local-variable 'sidebar-pre-hook-line-number)
-  ;; (make-local-variable 'sidebar-saved-line-number)
-  ;; (make-local-variable 'sidebar-git-branches)
-  ;; (make-local-variable 'sidebar-files)
-  ;; (make-local-variable 'sidebar-current-path)
-  ;; (make-local-variable 'sidebar-closed-directories)
-  ;; (make-local-variable 'sidebar-root-project)
-  ;; (make-local-variable 'sidebar-git-hashtable)
-  ;; (make-local-variable 'sidebar-git-dir)
-  ;; (make-local-variable 'sidebar-icon-inserted-on-line)
-  ;; (make-local-variable 'sidebar-file-to-copy)
   (setq cursor-type nil)
-  (add-to-list 'display-buffer-alist '(" SIDEBAR-SELECT" display-buffer-in-side-window (side . left) (slot . 1)))
-  ;; (push '("SIDEBAR-CHOICE" display-buffer-in-side-window (side . left) (slot . -1))
-  ;; 	display-buffer-alist)
-  ;; (display-buffer (get-buffer-create "buff2"))
 
   (make-local-variable 'post-command-hook)
   (make-local-variable 'pre-command-hook)
-  (add-hook 'post-command-hook 'sidebar-post-command)
+  (add-hook 'pre-command-hook 'sidebar-mu4e-pre-command nil)
+  (add-hook 'post-command-hook 'sidebar-mu4e-post-command nil)
+  (add-hook 'post-command-hook 'sidebar-post-command t)
   (add-hook 'pre-command-hook 'sidebar-pre-command)
-  (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
+  ;; (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
-  (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
+  ;; (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
   (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
   (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
   (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
   (setq header-line-format nil
 	buffer-read-only nil
 	mode-line-format nil)
-  (setq mode-line-format (list '(:eval (sidebar-mu4e-set-modeline))))
-  (setq header-line-format (list '(:eval (sidebar-mu4e-set-header))))
+  (setq mode-line-format (list '(:eval (sidebar-set-modeline))))
+  (setq header-line-format (list '(:eval (sidebar-set-header))))
+
+  (sidebar-set-window)
   )
 
 (provide 'sidebar-mu4e)
