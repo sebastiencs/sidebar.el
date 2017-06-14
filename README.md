@@ -56,6 +56,18 @@ You can install them through melpa.
 | `<right>` | `sidebar-adjust-window-width` | Adjust the window width if the filename is too long     |
 | `<left>`  | `sidebar-reset-window-width`  | Reset the window width to the default value             |
 
+## Commands with sidebar-mu4e
+
+| Key       | Command                       | Note                                                    |
+| ----------|-------------------------------|---------------------------------------------------------|
+| `;`       | `sidebar-mu4e-switch-context` | Switch context on mu4e and refresh the sidebar content  |
+| `RET`     | `sidebar-mu4e-open-line`      | Open the maildir or bookmark                            |
+| `q`       | `sidebar-close`               | Close sidebar                                           |
+| `<right>` | `sidebar-adjust-window-width` | Adjust the window width if the filename is too long     |
+| `<left>`  | `sidebar-reset-window-width`  | Reset the window width to the default value             |
+| `?`       | `sidebar-help`                | Open `describe-mode`                                    |
+
+
 ## Customization
 
 To customize icons and behaviours of sidebar:  
