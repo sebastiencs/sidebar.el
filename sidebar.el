@@ -1665,43 +1665,15 @@ This function just select another window before the frame is created."
     (save-excursion
       (sidebar-set-window (sidebar-get default-width)))))
 
-(defvar sidebar-mode-map nil
-  "Keymap uses with sidebar-mode.")
-(unless sidebar-mode-map
-  (let ((map (make-sparse-keymap)))
-    (suppress-keymap map t)
-    (define-key map (kbd "q") 'sidebar-close)
-    (define-key map (kbd "SPC") 'sidebar-expand-or-close-dir)
-    (define-key map (kbd "DEL") 'sidebar-up-directory)
-    (define-key map (kbd "RET") 'sidebar-open-line)
-    (define-key map (kbd "M-RET") 'sidebar-open-in-window)
-    (define-key map (kbd "g") 'sidebar-refresh-cmd)
-    (define-key map (kbd "C-h") 'sidebar-history)
-    (define-key map (kbd "n") 'sidebar-create-file)
-    (define-key map (kbd "C-n") 'sidebar-create-directory)
-    (define-key map (kbd "C-d") 'sidebar-delete-selected)
-    (define-key map (kbd "M-w") 'sidebar-copy-selected)
-    (define-key map (kbd "C-w") 'sidebar-cut-selected)
-    (define-key map (kbd "C-y") 'sidebar-paste)
-    (define-key map (kbd "R") 'sidebar-rename-selected)
-    (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
-    (define-key map (kbd "<left>") 'sidebar-reset-window-width)
-    (define-key map (kbd "?") 'sidebar-help)
-    (setq sidebar-mode-map map)))
+(defun sidebar-init-mode ()
+  "."
+  (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
+  (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
+  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
 
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
-
-(defface sidebar-header-face
-  '(())
-  ;;  '((t :background "yellow"))
-  "Face used with files."
-  :group nil)
-
-(define-derived-mode sidebar-mode nil "Sidebar"
-  "Major mode for Sidebar.
-
-\\{sidebar-mode-map}"
-  ::group sidebar
+  (setq cursor-type nil
+	mode-line-format (list '(:eval (sidebar-set-modeline)))
+	header-line-format (list '(:eval (sidebar-set-header))))
 
   (if (sidebar-gui?)
       (progn
@@ -1752,22 +1724,48 @@ This function just select another window before the frame is created."
     (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
-  ;; (make-local-variable 'sidebar-pre-hook-line-number)
-  ;; (make-local-variable 'sidebar-saved-line-number)
-  ;; (make-local-variable 'sidebar-git-branches)
-  ;; (make-local-variable 'sidebar-files)
-  ;; (make-local-variable 'sidebar-current-path)
-  ;; (make-local-variable 'sidebar-closed-directories)
-  ;; (make-local-variable 'sidebar-root-project)
-  ;; (make-local-variable 'sidebar-git-hashtable)
-  ;; (make-local-variable 'sidebar-git-dir)
-  ;; (make-local-variable 'sidebar-icon-inserted-on-line)
-  ;; (make-local-variable 'sidebar-file-to-copy)
-  (setq cursor-type nil)
+  )
+
+(defvar sidebar-mode-map nil
+  "Keymap uses with sidebar-mode.")
+(unless sidebar-mode-map
+  (let ((map (make-sparse-keymap)))
+    (suppress-keymap map t)
+    (define-key map (kbd "q") 'sidebar-close)
+    (define-key map (kbd "SPC") 'sidebar-expand-or-close-dir)
+    (define-key map (kbd "DEL") 'sidebar-up-directory)
+    (define-key map (kbd "RET") 'sidebar-open-line)
+    (define-key map (kbd "M-RET") 'sidebar-open-in-window)
+    (define-key map (kbd "g") 'sidebar-refresh-cmd)
+    (define-key map (kbd "C-h") 'sidebar-history)
+    (define-key map (kbd "n") 'sidebar-create-file)
+    (define-key map (kbd "C-n") 'sidebar-create-directory)
+    (define-key map (kbd "C-d") 'sidebar-delete-selected)
+    (define-key map (kbd "M-w") 'sidebar-copy-selected)
+    (define-key map (kbd "C-w") 'sidebar-cut-selected)
+    (define-key map (kbd "C-y") 'sidebar-paste)
+    (define-key map (kbd "R") 'sidebar-rename-selected)
+    (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
+    (define-key map (kbd "<left>") 'sidebar-reset-window-width)
+    (define-key map (kbd "?") 'sidebar-help)
+    (setq sidebar-mode-map map)))
+
+;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+
+(defface sidebar-header-face
+  '(())
+  ;;  '((t :background "yellow"))
+  "Face used with files."
+  :group nil)
+
+(define-derived-mode sidebar-mode nil "Sidebar"
+  "Major mode for Sidebar.
+
+\\{sidebar-mode-map}"
+  ::group sidebar
+
+  (sidebar-init-mode)
   (add-to-list 'display-buffer-alist '(" SIDEBAR-SELECT" display-buffer-in-side-window (side . left) (slot . 1)))
-  ;; (push '("SIDEBAR-CHOICE" display-buffer-in-side-window (side . left) (slot . -1))
-  ;; 	display-buffer-alist)
-  ;; (display-buffer (get-buffer-create "buff2"))
 
   (make-local-variable 'post-command-hook)
   (make-local-variable 'pre-command-hook)
@@ -1777,14 +1775,6 @@ This function just select another window before the frame is created."
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
   (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
-  (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
-  (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
-  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
-  (setq header-line-format nil
-	buffer-read-only nil
-	mode-line-format nil)
-  (setq mode-line-format (list '(:eval (sidebar-set-modeline))))
-  (setq header-line-format (list '(:eval (sidebar-set-header))))
   )
 
 ;; (eval-buffer)
