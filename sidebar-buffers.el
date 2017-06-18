@@ -224,9 +224,9 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 
 (defun sidebar-buffers? ()
   "Return non-nil if we have to use `sidebar-buffers-mode' on the sidebar creation."
-  t)
-;; (prog1 (sidebar-get buffers-force)
-;;   (sidebar-set buffers-force nil)))
+  ;; t)
+  (prog1 (sidebar-get buffers-force)
+    (sidebar-set buffers-force nil)))
 
 (defun sidebar-buffers-make-header ()
   "Return the string to insert in the sidebar header."
