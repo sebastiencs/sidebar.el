@@ -225,13 +225,16 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 (defun sidebar-buffers? ()
   "Return non-nil if we have to use `sidebar-buffers-mode' on the sidebar creation."
   t)
-  ;; (prog1 (sidebar-get buffers-force)
-  ;;   (sidebar-set buffers-force nil)))
+;; (prog1 (sidebar-get buffers-force)
+;;   (sidebar-set buffers-force nil)))
 
 (defun sidebar-buffers-make-header ()
   "Return the string to insert in the sidebar header."
-  (propertize (concat " Buffers list")
-	      'display '(raise 0.12)))
+  (concat
+   " "
+   (icons-in-terminal 'fa_list_ul :raise 0.12)
+   (propertize " Buffers list"
+	       'display '(raise 0.12))))
 
 (defun sidebar-buffers-make-modeline-left ()
   "Return the string to insert in the modeline (left side)."
