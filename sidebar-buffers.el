@@ -126,12 +126,21 @@ easily usable."
        (-concat (sidebar-buffers-separator "Hidden buffers")
 		hidden)))))
 
-(setq sidebar-buffers-show-hidden nil)
+;; (setq sidebar-buffers-show-hidden t)
 ;; get-buffer-process
 
-(defun sidebar-buffers-insert-icon (icon)
-  "ICON."
-  (concat " " (icons-in-terminal icon)))
+(defun sidebar-buffers-insert-icon (&rest props)
+  "PROPS."
+  (concat " " (apply 'icons-in-terminal props)))
+
+(defun sidebar-buffers-insert-marks (buffer)
+  "BUFFER."
+  (-when-let (marks (alist-get buffer (sidebar-get buffers-marks)))
+    (concat
+     (when (member 'delete marks)
+       (sidebar-buffers-insert-icon 'oct_trashcan :foreground "brown"))
+     (when (member 'save marks)
+       (sidebar-buffers-insert-icon 'md_save :foreground "sea green")))))
 
 (defun sidebar-buffers-format-name (buffer name visiting)
   "BUFFER NAME VISITING."
@@ -146,7 +155,8 @@ easily usable."
      " "
      (s-trim name)
      (when read-only (sidebar-buffers-insert-icon 'fa_lock))
-     (when modified (sidebar-buffers-insert-icon 'md_whatshot)))))
+     (when modified (sidebar-buffers-insert-icon 'md_whatshot))
+     (sidebar-buffers-insert-marks buffer))))
 
 (defun sidebar-buffers-print-item (item _)
   "Function to print ITEM in sidebar.
@@ -165,34 +175,58 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 
 (defun sidebar-buffers-add-mark (buffer mark)
   "BUFFER MARK."
-  (let ((list-marks (sidebar-get buffers-marks)))
-    (if (not list-marks)
-	(sidebar-set buffers-marks (list (cons buffer `(,mark))))
-      (let ((found (alist-get buffer list-marks)))
-	)
-      )
-    )
-  )
+  (let ((buffers-marks (sidebar-get buffers-marks)))
+    (sidebar-set buffers-marks
+      (cond
+       ((not buffers-marks) (list (cons buffer (list mark))))
+       ((alist-get buffer buffers-marks) (--map-when (equal (car it) buffer) (add-to-list 'it mark t) buffers-marks))
+       (t (-concat buffers-marks (list (cons buffer (list mark)))))))))
 
-(sidebar-set buffers-marks nil)
-(sidebar-get buffers-marks)
+(defun sidebar-buffers-mark-execute ()
+  "."
+  (interactive)
+  (-when-let (buffers-marks (sidebar-get buffers-marks))
+    (--each buffers-marks
+      (-let [buffer (car it)]
+	(when (buffer-live-p buffer)
+	  (when (member 'save it)
+	    (with-current-buffer buffer
+	      (save-buffer)))
+	  (when (member 'delete it)
+	    (kill-buffer buffer)))))
+    (sidebar-set buffers-marks nil)
+    (sidebar-refresh)))
 
 (defun sidebar-buffers-mark-delete ()
   "."
   (interactive)
-  (-let* (((buffer &as &alist 'data data) (sidebar-find-file-from-line))
-	  (list-marks (sidebar-get buffers-marks)))
+  (-let* (((buffer &as &alist 'data data) (sidebar-find-file-from-line)))
     (sidebar-buffers-add-mark data 'delete)
-    ;; (add-to-list list-marks 'delete)
-    ;; (message (format "%s" list-marks))
-    )
-  )
+    (sidebar-refresh)
+    (forward-line)))
+
+(defun sidebar-buffers-mark-save ()
+  "."
+  (interactive)
+  (-let* (((buffer &as &alist 'data data) (sidebar-find-file-from-line)))
+    (sidebar-buffers-add-mark data 'save)
+    (sidebar-refresh)
+    (forward-line)))
+
+(defun sidebar-buffers-unmark ()
+  "."
+  (interactive)
+  (-let* (((&alist 'data data) (sidebar-find-file-from-line))
+	  (list-marks (sidebar-get buffers-marks)))
+    (sidebar-set buffers-marks (--remove (equal data (car it)) list-marks))
+    (sidebar-refresh)
+    (forward-line)))
 
 (defun sidebar-buffers? ()
   "Return non-nil if we have to use `sidebar-buffers-mode' on the sidebar creation."
   t)
-;; (prog1 (sidebar-get buffers-force)
-;;   (sidebar-set buffers-force nil)))
+  ;; (prog1 (sidebar-get buffers-force)
+  ;;   (sidebar-set buffers-force nil)))
 
 (defun sidebar-buffers-make-header ()
   "Return the string to insert in the sidebar header."
@@ -227,6 +261,12 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 			       (-last 'sidebar-buffers-not-sep?)
 			       (--getline))))
 
+(defun sidebar-buffers-toggle-hidden ()
+  "."
+  (interactive)
+  (setq sidebar-buffers-show-hidden (not sidebar-buffers-show-hidden))
+  (sidebar-refresh))
+
 (defun sidebar-buffers-post-command ()
   "Function to ensure that the cursor is never on a separator."
   (-when-let* ((pre-line (sidebar-get buffers-pre-line))
@@ -244,7 +284,11 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
     (suppress-keymap map t)
     (define-key map (kbd "q") 'sidebar-close)
     (define-key map (kbd "g") 'sidebar-refresh)
+    (define-key map (kbd "x") 'sidebar-buffers-mark-execute)
+    (define-key map (kbd "u") 'sidebar-buffers-unmark)
     (define-key map (kbd "d") 'sidebar-buffers-mark-delete)
+    (define-key map (kbd "s") 'sidebar-buffers-mark-save)
+    (define-key map (kbd "h") 'sidebar-buffers-toggle-hidden)
     (define-key map (kbd "RET") 'sidebar-buffers-open-line)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
@@ -268,6 +312,9 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
   (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
+
+  (remove-hook 'post-command-hook 'global-hl-line-highlight)
+
 
   (sidebar-set-window))
 

@@ -41,6 +41,7 @@
 
 (defmacro sidebar-set (var val)
   "Set VAR to VAL in the current frame."
+  (declare (indent 1))
   (let ((var-name (intern (format "sidebar-%s" var))))
     `(set-frame-parameter nil ',var-name ,val)))
 
