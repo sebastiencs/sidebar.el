@@ -32,7 +32,7 @@ Add those lines in your emacs init file:
 (global-set-key (kbd "C-x C-f") 'sidebar-open)
 ```
 
-`sidebar` require some packages: `dash`, `dash-functional`, `s` and `projectile`.  
+`sidebar` require some packages: `dash`, `dash-functional`, `s`, `ov` and `projectile`.  
 You can install them through melpa.  
 
 ## Default commands

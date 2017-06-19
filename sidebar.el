@@ -33,6 +33,7 @@
 ;;  `s'
 ;;  `dash'
 ;;  `icons-in-terminal'
+;;  `ov'
 
 ;;; Code:
 
@@ -40,6 +41,7 @@
 (require 's)
 (require 'dash)
 (require 'dash-functional)
+(require 'ov)
 (require 'icons-in-terminal)
 (require 'sidebar-filemapping)
 (require 'sidebar-select)
@@ -850,6 +852,7 @@ returns an error on terminals."
   (sidebar-set history (list project-path-root))
   (sidebar-set current-path project-path-root)
   (sidebar-set default-width sidebar-width)
+  (sidebar-set overlay (ov (point-min) (point-min) 'face 'sidebar-powerline-face))
   (sidebar-set files (sidebar-load-content project-path-root)))
 
 (defun sidebar-open ()
@@ -884,10 +887,14 @@ returns an error on terminals."
 
 (defun sidebar-disable-current ()
   "Delete everything on the current line and reprint file without the powerline."
-  (save-excursion
-    (-when-let (file (-> (line-number-at-pos) (- 1) (nth (sidebar-get files))))
-      (delete-region (line-beginning-position) (line-end-position))
-      (insert (sidebar-get current-line)))))
+  nil)
+
+;; (defun sidebar-disable-current ()
+;;   "Delete everything on the current line and reprint file without the powerline."
+;;   (save-excursion
+;;     (-when-let (file (-> (line-number-at-pos) (- 1) (nth (sidebar-get files))))
+;;       (delete-region (line-beginning-position) (line-end-position))
+;;       (insert (sidebar-get current-line)))))
 
 (defun sidebar-count-chars-on-line ()
   "Return the number of character on the current line."
@@ -916,8 +923,44 @@ SIDEBAR-WINDOW is sidebar's window."
     (unless (get-char-property 0 'face line)
       (sidebar-show-current))))
 
+(defun sidebar-count-icons (string)
+  "Count the numbers of icons in STRING.
+The icons are known to be characters between 0xe000 and 0xf8ff."
+  (let ((n 0))
+    (--dotimes (length string)
+      (let ((c (elt string it)))
+	(when (and (>= c #xe000) (<= c #xf8ff))
+	  (setq n (1+ n)))))
+    n))
+
+(defun sidebar-make-powerline (window-width n-icons n-characters)
+  "WINDOW-WIDTH N-ICONS N-CHARACTERS."
+  (let* ((space-to-add (- window-width (1+ n-characters)
+			  (if (sidebar-gui?) (+ n-icons (cadr sidebar-icon-powerline)) 1)))
+	 (icon sidebar-icon-powerline)
+	 (face 'sidebar-powerline-face))
+    (concat
+     (propertize (s-repeat space-to-add " ") 'font-lock-face face)
+     (icons-in-terminal (car icon)
+			:raise (car (cddr icon))
+			:height (cadr (cddr icon))
+			:foreground (face-background face))
+     (unless (or (sidebar-gui?)
+		 (= (cadr icon) 0))
+       " "))))
+
+(defun sidebar-move-overlay (beg end window)
+  "BEG END WINDOW."
+  (let* ((ov (sidebar-get overlay))
+	 (window-width (window-width window))
+	 (n-icons (sidebar-count-icons (buffer-substring beg end)))
+	 (n-characters (- end beg))
+	 (powerline (sidebar-make-powerline window-width n-icons n-characters)))
+    (ov-move ov beg end)
+    (ov-set ov 'face 'sidebar-powerline-face 'after-string powerline)))
+
 (defun sidebar-show-current ()
-  "Show the current line with a background and powerline.
+  "Show the current line with a background color and powerline effect.
 Resize the window if necessary (customizable)."
   (save-excursion
     (let* ((file (-> (line-number-at-pos) 1- (nth (sidebar-get files))))
@@ -926,14 +969,12 @@ Resize the window if necessary (customizable)."
       (when file
 	(let ((line-begin (line-beginning-position))
 	      (line-end (line-end-position)))
-	  (sidebar-set current-line (buffer-substring line-begin line-end))
-	  (add-face-text-property line-begin line-end 'sidebar-powerline-face))
-	(end-of-line)
-	(sidebar-insert-powerline (or icons-on-line 0))
+	  (sidebar-move-overlay line-begin line-end sidebar-window))
 	(when sidebar-adjust-auto-window-width
 	  (sidebar-adjust-window-width sidebar-window))
-	(when sidebar-message-current
-	  (message (--getpath file)))))))
+	(-when-let* ((_ sidebar-message-current)
+		     (path (--getpath file)))
+	  (message path))))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
