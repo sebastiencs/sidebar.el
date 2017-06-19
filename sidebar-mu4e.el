@@ -234,7 +234,7 @@ with mu4e."
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
     (define-key map (kbd ";") 'mu4e-context-switch)
-    (define-key map (kbd "q") 'sidebar-close)
+    (define-key map (kbd "q") 'sidebar-mu4e-quit)
     (define-key map (kbd "RET") 'sidebar-mu4e-open-line)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)

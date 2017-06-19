@@ -864,6 +864,8 @@ returns an error on terminals."
   "Open or create a sidebar for the current frame."
   (interactive)
   (sidebar-set window-origin (get-buffer-window))
+  (when (or (sidebar-get mu4e-force) (sidebar-mu4e?))
+    (sidebar-kill))
   (let ((sidebar-exists (sidebar-exists?))
 	(sidebar-buffer (sidebar-get-buffer))
 	(sidebar-window (sidebar-get-window))
