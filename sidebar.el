@@ -434,8 +434,6 @@ Default: non-nil."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-;;(defvar-local sidebar-current-line nil)
-(defvar-local sidebar-icon-inserted-on-line 0)
 (defvar-local sidebar-files-number 0)
 (defvar-local sidebar-directories-number 0)
 
@@ -617,15 +615,12 @@ FILE PATH"
   "Small function to insert STR with FACE if non-nil."
   (insert (propertize str 'font-lock-face face 'mouse-face face 'keymap sidebar-button-keymap)))
 
-(defvar-local sidebar-icons-inserted-hashtable nil)
-
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil.
 LINE."
   (if face
       (insert (icons-in-terminal icon :face face :height 1.15))
-    (insert (icons-in-terminal icon :height 1.15)))
-  (setq sidebar-icon-inserted-on-line (1+ sidebar-icon-inserted-on-line)))
+    (insert (icons-in-terminal icon :height 1.15))))
 
 (defun sidebar-insert-fileicon (file filename status path face)
   "FILE FILENAME STATUS PATH FACE."
@@ -665,7 +660,6 @@ ICONS-ON-LINE."
 (defun sidebar-gui-insert-icon-filename (file filename status path)
   "FILE FILENAME STATUS PATH."
   (sidebar-insert-fileicon file filename status path (sidebar-get-color file path status t))
-  (setq sidebar-icon-inserted-on-line 0)
   (sidebar-insert " ")
   (sidebar-insert-filename filename (sidebar-get-color file path status nil (not sidebar-filename-colored))))
 
@@ -703,13 +697,10 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
 	 (status (-some->> git-hashtable (gethash path-fixed-dirname)))
 	 (depth (sidebar-calc-depth file status))
 	 (line-number (or line (line-number-at-pos))))
-    (setq sidebar-icon-inserted-on-line 0)
     (sidebar-insert (s-repeat depth " "))
     (sidebar-gui-insert-icon-filename file filename status path-fixed-dirname)
     (sidebar-gui-insert-status file path-fixed-dirname status)
-    (sidebar-insert-status-subfiles file path-fixed-dirname)
-    (when (> sidebar-icon-inserted-on-line 0)
-      (puthash (--getpath file) sidebar-icon-inserted-on-line (sidebar-get icons-inserted-hashtable)))))
+    (sidebar-insert-status-subfiles file path-fixed-dirname)))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -766,7 +757,6 @@ on the frame parameter `sidebar-line-to-start'.
 This is use when the sidebar is created."
   (let* ((file (when buffer-name (--first (string= (--getpath it) buffer-name) (sidebar-get files))))
 	 (line (or (--getline file) (sidebar-get line-to-start))))
-    (sidebar-disable-current)
     (sidebar-goto-line line)
     (sidebar-show-current)))
 
@@ -847,7 +837,6 @@ returns an error on terminals."
 		    (t                  :sidebar-mode))))
     (--each (plist-get sidebar-mode-association mode)
       (sidebar-set1 (car it) (cdr it))))
-  (sidebar-set icons-inserted-hashtable (make-hash-table :test 'equal))
   (sidebar-set root-project (sidebar-get-root-project))
   (sidebar-set history (list project-path-root))
   (sidebar-set current-path project-path-root)
@@ -885,43 +874,21 @@ returns an error on terminals."
 
 ;;(kill-buffer (sidebar-cons-buffer-name))
 
-(defun sidebar-disable-current ()
-  "Delete everything on the current line and reprint file without the powerline."
-  nil)
-
-;; (defun sidebar-disable-current ()
-;;   "Delete everything on the current line and reprint file without the powerline."
-;;   (save-excursion
-;;     (-when-let (file (-> (line-number-at-pos) (- 1) (nth (sidebar-get files))))
-;;       (delete-region (line-beginning-position) (line-end-position))
-;;       (insert (sidebar-get current-line)))))
-
-(defun sidebar-count-chars-on-line ()
-  "Return the number of character on the current line."
-  (- (line-end-position) (line-beginning-position)))
-
-(defun sidebar-adjust-window-width (&optional sidebar-window)
+(defun sidebar-adjust-window-width (&optional n-chars-on-line sidebar-window)
   "Resize the sidebar window if the filename on the current line is longer...
 than the window's width.
+N-CHARS-ON-LINE is the number of characters on the current line.
 SIDEBAR-WINDOW is sidebar's window."
   (interactive)
   (let ((window (or sidebar-window (sidebar-get-window t)))
-	(chars-on-line (sidebar-count-chars-on-line)))
-    (when (> chars-on-line (window-total-width window))
-      (sidebar-set-window (+ 3 chars-on-line)))))
+	(chars (or n-chars-on-line (- (line-end-position) (line-beginning-position)))))
+    (when (> chars (window-total-width window))
+      (sidebar-set-window (+ 3 chars)))))
 
 (defun sidebar-reset-window-width ()
   "Reset the sidebar window to the default value `sidebar-width'."
   (interactive)
   (sidebar-set-window))
-
-(defun sidebar-show-if-not-current ()
-  "."
-  (let* ((line-begin (line-beginning-position))
-	 (line-end (line-end-position))
-	 (line (buffer-substring line-begin line-end)))
-    (unless (get-char-property 0 'face line)
-      (sidebar-show-current))))
 
 (defun sidebar-count-icons (string)
   "Count the numbers of icons in STRING.
@@ -945,9 +912,7 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
 			:raise (car (cddr icon))
 			:height (cadr (cddr icon))
 			:foreground (face-background face))
-     (unless (or (sidebar-gui?)
-		 (= (cadr icon) 0))
-       " "))))
+     (unless (or (sidebar-gui?) (= (cadr icon) 0)) " "))))
 
 (defun sidebar-move-overlay (beg end window)
   "BEG END WINDOW."
@@ -963,18 +928,16 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
   "Show the current line with a background color and powerline effect.
 Resize the window if necessary (customizable)."
   (save-excursion
-    (let* ((file (-> (line-number-at-pos) 1- (nth (sidebar-get files))))
-	   (sidebar-window (sidebar-get-window t))
-	   (icons-on-line (gethash (--getpath file) (sidebar-get icons-inserted-hashtable))))
-      (when file
-	(let ((line-begin (line-beginning-position))
-	      (line-end (line-end-position)))
-	  (sidebar-move-overlay line-begin line-end sidebar-window))
-	(when sidebar-adjust-auto-window-width
-	  (sidebar-adjust-window-width sidebar-window))
-	(-when-let* ((_ sidebar-message-current)
-		     (path (--getpath file)))
-	  (message path))))))
+    (-when-let* ((file (-> (line-number-at-pos) 1- (nth (sidebar-get files))))
+		 (sidebar-window (sidebar-get-window t))
+		 (line-begin (line-beginning-position))
+		 (line-end (line-end-position)))
+      (sidebar-move-overlay line-begin line-end sidebar-window)
+      (when sidebar-adjust-auto-window-width
+	(sidebar-adjust-window-width (- line-end line-begin) sidebar-window))
+      (-when-let* ((_ sidebar-message-current)
+		   (path (--getpath file)))
+	(message path)))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -1332,7 +1295,6 @@ the directory is re-opened"
   (interactive)
   (let ((line (line-number-at-pos))
 	(file (sidebar-find-file-from-line)))
-    (remhash (--getpath file) (sidebar-get icons-inserted-hashtable))
     (when (--dir? file)
       (if (--opened? file)
 	  (sidebar-close-dir file line)
@@ -1380,7 +1342,6 @@ with `\\[sidebar-load-content]' and print them on the sidebar at the right place
     (let ((opened-dirs (or to-expand (--filter (--opened? it) (sidebar-get files))))
 	  (current-line (line-number-at-pos)))
       (sidebar-set files (sidebar-update-from-opened-dirs (sidebar-load-content (sidebar-get current-path)) opened-dirs))
-      (clrhash (sidebar-get icons-inserted-hashtable))
       (erase-buffer)
       (sidebar-print-listfiles (sidebar-get files))
       (sidebar-sort-files-by-line)
@@ -1647,30 +1608,12 @@ See `sidebar-git-run' and `sidebar-refresh'"
 	      right
 	      (propertize "    " 'face 'sidebar-remotebranch-face)))))
 
-(defun sidebar-pre-command()
-  (sidebar-set pre-hook-line-number (line-number-at-pos)))
-
 (defun sidebar-post-command()
   ;; (message "last command: %s" this-command)
-  (let ((line-pre-hook (sidebar-get pre-hook-line-number))
-	(saved-line (sidebar-get saved-line-number))
-	(line-at-pos (line-number-at-pos)))
-    (cond
-     (saved-line
-      (progn (when line-pre-hook
-	       (sidebar-goto-line line-pre-hook))
-	     (sidebar-goto-line saved-line)
-	     (unless (member this-command '(sidebar-up-directory sidebar-open-line))
-	       (sidebar-show-if-not-current))
-	     (sidebar-set saved-line-number nil)))
-     ((and line-pre-hook
-	   (/= line-pre-hook line-at-pos)
-	   (not (member this-command '(sidebar-up-directory sidebar-open sidebar-open-line))))
-      (let ((new-line line-at-pos))
-	(sidebar-goto-line line-pre-hook)
-	(sidebar-disable-current)
-	(sidebar-goto-line new-line)
-	(sidebar-show-current))))))
+  (-let [line (or (sidebar-get saved-line-number) (line-number-at-pos))]
+    (sidebar-goto-line line))
+  (sidebar-set saved-line-number nil)
+  (sidebar-show-current))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -1821,9 +1764,7 @@ This function just select another window before the frame is created."
   (add-to-list 'display-buffer-alist '(" SIDEBAR-SELECT" display-buffer-in-side-window (side . left) (slot . 1)))
 
   (make-local-variable 'post-command-hook)
-  (make-local-variable 'pre-command-hook)
   (add-hook 'post-command-hook 'sidebar-post-command)
-  (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
