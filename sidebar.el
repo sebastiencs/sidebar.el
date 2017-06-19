@@ -1276,8 +1276,9 @@ Otherwise it load the dir with `\\[sidebar-load-content]'."
       (sidebar-sort-files-by-line)))
   (save-excursion
     (beginning-of-line)
-    (delete-region (line-beginning-position) (line-end-position))
-    (sidebar-print-file file)
+    (sidebar-writable
+     (delete-region (line-beginning-position) (line-end-position))
+     (sidebar-print-file file))
     (sidebar-show-current)))
 
 (defun sidebar-delete-line ()
@@ -1309,8 +1310,9 @@ the directory is re-opened"
 	(sidebar-delete-line))))
   (save-excursion
     (beginning-of-line)
-    (delete-region (line-beginning-position) (line-end-position))
-    (sidebar-print-file file)
+    (sidebar-writable
+     (delete-region (line-beginning-position) (line-end-position))
+     (sidebar-print-file file))
     (sidebar-show-current)))
 
 (defun sidebar-expand-or-close-dir ()
