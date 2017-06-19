@@ -224,9 +224,8 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 
 (defun sidebar-buffers? ()
   "Return non-nil if we have to use `sidebar-buffers-mode' on the sidebar creation."
-  nil)
-;; (prog1 (sidebar-get buffers-force)
-;;   (sidebar-set buffers-force nil)))
+  (prog1 (sidebar-get buffers-force)
+    (sidebar-set buffers-force nil)))
 
 (defun sidebar-buffers-make-header ()
   "Return the string to insert in the sidebar header."
@@ -280,6 +279,12 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 	    ((< pre-line line) (sidebar-buffers-jump-after line))
 	    (t (sidebar-buffers-jump-before line))))))
 
+(defun sidebar-buffers-switch-to-files ()
+  "."
+  (interactive)
+  (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+  (sidebar-open))
+
 (defvar sidebar-buffers-mode-map nil
   "Keymap used with sidebar-buffers-mode.")
 (unless sidebar-buffers-mode-map
@@ -291,6 +296,7 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
     (define-key map (kbd "u") 'sidebar-buffers-unmark)
     (define-key map (kbd "d") 'sidebar-buffers-mark-delete)
     (define-key map (kbd "s") 'sidebar-buffers-mark-save)
+    (define-key map (kbd "<tab>") 'sidebar-buffers-switch-to-files)
     (define-key map (kbd "h") 'sidebar-buffers-toggle-hidden)
     (define-key map (kbd "RET") 'sidebar-buffers-open-line)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
@@ -305,14 +311,12 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
   ::group sidebar-buffers
 
   (make-local-variable 'post-command-hook)
-  (make-local-variable 'pre-command-hook)
 
   (sidebar-init-mode)
 
   (add-hook 'pre-command-hook 'sidebar-buffers-pre-command nil)
   (add-hook 'post-command-hook 'sidebar-buffers-post-command nil)
   (add-hook 'post-command-hook 'sidebar-post-command t)
-  (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
 

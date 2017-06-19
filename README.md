@@ -52,6 +52,7 @@ You can install them through melpa.
 | `R`       | `sidebar-rename-selected`     | Rename the file                                         |
 | `g`       | `sidebar-refresh`             | Refresh the content of the sidebar                      |
 | `q`       | `sidebar-close`               | Close sidebar                                           |
+| `<tab>`   | `sidebar-switch-to-buffers    | Show the list of buffers                                |
 | `DEL`     | `sidebar-up-directory`        | Change the current directory to its parent (Backspace)  |
 | `<right>` | `sidebar-adjust-window-width` | Adjust the window width if the filename is too long     |
 | `<left>`  | `sidebar-reset-window-width`  | Reset the window width to the default value             |

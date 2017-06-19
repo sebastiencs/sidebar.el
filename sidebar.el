@@ -756,9 +756,13 @@ If there is no filename equal to the BUFFER-NAME, it put the cursor
 on the frame parameter `sidebar-line-to-start'.
 This is use when the sidebar is created."
   (let* ((file (when buffer-name (--first (string= (--getpath it) buffer-name) (sidebar-get files))))
-	 (line (or (--getline file) (sidebar-get line-to-start))))
+	 (line (or (sidebar-get save-line) (--getline file) (sidebar-get line-to-start))))
     (sidebar-goto-line line)
-    (sidebar-show-current)))
+    (sidebar-show-current)
+    (when (and (sidebar-get restore-function)
+	       (sidebar-get window-start))
+      (set-window-start (sidebar-get-window) (sidebar-get window-start)))
+    (sidebar-set save-line nil)))
 
 (defun sidebar-expand-path (project-path-root file-path)
   "PROJECT-PATH-ROOT FILE-PATH."
@@ -808,6 +812,7 @@ returns an error on terminals."
      (sidebar-make-modeline-left-function  . sidebar-make-modeline-left)
      (sidebar-make-modeline-right-function . sidebar-make-modeline-right)
      (sidebar-item-builder-function        . sidebar-file-struct)
+     (sidebar-restore-function             . sidebar-restore-state)
      (sidebar-print-item                   . sidebar-print-file)
      (sidebar-line-to-start                . 1))
     :sidebar-mu4e-mode
@@ -817,6 +822,7 @@ returns an error on terminals."
      (sidebar-make-modeline-left-function  . sidebar-mu4e-make-modeline-left)
      (sidebar-make-modeline-right-function . sidebar-mu4e-make-modeline-right)
      (sidebar-item-builder-function        . sidebar-mu4e-item-builder)
+     (sidebar-restore-function             . nil)
      (sidebar-print-item                   . sidebar-mu4e-print-item)
      (sidebar-line-to-start                . 2))
     :sidebar-buffers-mode
@@ -826,8 +832,9 @@ returns an error on terminals."
      (sidebar-make-modeline-left-function  . sidebar-buffers-make-modeline-left)
      (sidebar-make-modeline-right-function . sidebar-buffers-make-modeline-right)
      (sidebar-item-builder-function        . sidebar-buffers-item-builder)
+     (sidebar-restore-function             . nil)
      (sidebar-print-item                   . sidebar-buffers-print-item)
-     (sidebar-line-to-start                . 3))
+     (sidebar-line-to-start                . 4))
     ))
 
 (defun sidebar-init-vars (project-path-root)
@@ -837,12 +844,15 @@ returns an error on terminals."
 		    (t                  :sidebar-mode))))
     (--each (plist-get sidebar-mode-association mode)
       (sidebar-set1 (car it) (cdr it))))
-  (sidebar-set root-project (sidebar-get-root-project))
-  (sidebar-set history (list project-path-root))
-  (sidebar-set current-path project-path-root)
-  (sidebar-set default-width sidebar-width)
-  (sidebar-set overlay (ov (point-min) (point-min) 'face 'sidebar-powerline-face))
-  (sidebar-set files (sidebar-load-content project-path-root)))
+  (if (and (sidebar-get restore-function) (sidebar-get saved-state-files))
+      (funcall (sidebar-get restore-function))
+    (sidebar-set root-project (sidebar-get-root-project))
+    (sidebar-set history (list project-path-root))
+    (sidebar-set current-path project-path-root)
+    (sidebar-set default-width sidebar-width)
+    (sidebar-set files (sidebar-load-content project-path-root))
+    (unless (sidebar-get overlay)
+      (sidebar-set overlay (ov (point-min) (point-min) 'face 'sidebar-powerline-face)))))
 
 (defun sidebar-open ()
   "Open or create a sidebar for the current frame."
@@ -864,7 +874,8 @@ returns an error on terminals."
       (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-curl-run)
-      (sidebar-git-run))))
+      (unless (sidebar-get saved-state-files)
+	(sidebar-git-run)))))
 
 (defun sidebar-close ()
   "Close the sidebar for the current frame, you still can reopen it."
@@ -922,7 +933,7 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
 	 (n-characters (- end beg))
 	 (powerline (sidebar-make-powerline window-width n-icons n-characters)))
     (ov-move ov beg end)
-    (ov-set ov 'face 'sidebar-powerline-face 'after-string powerline)))
+    (ov-set ov 'after-string powerline)))
 
 (defun sidebar-show-current ()
   "Show the current line with a background color and powerline effect.
@@ -1661,6 +1672,35 @@ This function just select another window before the frame is created."
     (save-excursion
       (sidebar-set-window (sidebar-get default-width)))))
 
+(defun sidebar-save-state ()
+  "."
+  (sidebar-set window-start (window-start (sidebar-get-window)))
+  (sidebar-set save-line-files (line-number-at-pos))
+  (sidebar-set save-files (sidebar-get files))
+  (sidebar-set save-default-width (sidebar-get default-width))
+  (sidebar-set save-root-project (sidebar-get root-project))
+  (sidebar-set save-history (sidebar-get history))
+  (sidebar-set save-current-path (sidebar-get current-path)))
+
+(defun sidebar-restore-state ()
+  "."
+  (sidebar-set save-line (sidebar-get save-line-files))
+  (sidebar-set files (sidebar-get save-files))
+  (sidebar-set default-width (sidebar-get save-default-width))
+  (sidebar-set root-project (sidebar-get save-root-project))
+  (sidebar-set history (sidebar-get save-history))
+  (sidebar-set current-path (sidebar-get save-current-path)))
+
+(defun sidebar-switch-to-buffers ()
+  "."
+  (interactive)
+  (sidebar-save-state)
+  (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+  (sidebar-set buffers-force t)
+  (sidebar-set saved-state-files t)
+  (sidebar-set save-line nil)
+  (sidebar-open))
+
 (defun sidebar-init-mode ()
   "."
   (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
@@ -1743,6 +1783,7 @@ This function just select another window before the frame is created."
     (define-key map (kbd "C-w") 'sidebar-cut-selected)
     (define-key map (kbd "C-y") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
+    (define-key map (kbd "<tab>") 'sidebar-switch-to-buffers)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)
