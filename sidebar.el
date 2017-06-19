@@ -78,6 +78,11 @@
   "Return the line where is FILE."
   `(alist-get 'line ,file))
 
+(defmacro sidebar-writable (&rest body)
+  "Set temporarily the buffer to writable while executing BODY."
+  `(-let [buffer-read-only nil]
+     ,@body))
+
 (defcustom sidebar-adjust-auto-window-width nil
   "If activated, the sidebar's window will automatically be resize if the..
 filename on the current line is longer than the window.
@@ -709,12 +714,13 @@ FILE is a associated list created from `\\[sidebar-file-struct]'."
 It updates the associated value 'line for each file.  This is used to
 keep track of which file is on which line."
   (let ((line-number (line-number-at-pos)))
-    (--each list
-      (setf (--getline it) line-number)
-      (funcall (sidebar-get print-item) it line-number)
-      (insert "\n")
-      ;; (newline)
-      (setq line-number (1+ line-number)))))
+    (sidebar-writable
+     (--each list
+       (setf (--getline it) line-number)
+       (funcall (sidebar-get print-item) it line-number)
+       (insert "\n")
+       ;; (newline)
+       (setq line-number (1+ line-number))))))
 
 (defun sidebar-sort-files-by-line ()
   "Sort `sidebar-files' by the associated value 'line."
@@ -1098,6 +1104,13 @@ If the file is cut, you'll be ask to rename the buffers visiting it."
     (setf (--opened? file) t))
   list)
 
+(defun sidebar-init-buffer ()
+  "."
+  (delete-overlay (sidebar-get overlay))
+  (sidebar-writable
+   (erase-buffer)
+   (insert "\n")))
+
 (defun sidebar-up-directory ()
   "Go to the parent directory.
 
@@ -1130,7 +1143,7 @@ Sort the list by line number
 	 (old-dir (directory-file-name (sidebar-get current-path))))
     (if (string= old-dir new-directory)
 	(message "Sidebar: You're at the top")
-      (erase-buffer)
+      (sidebar-init-buffer)
       (sidebar-set history (add-to-list 'history new-directory nil 's-equals?))
       (sidebar-set files (sidebar-update-to-opened new-files old-dir))
       (sidebar-set current-path (file-name-as-directory new-directory))
@@ -1144,7 +1157,7 @@ Sort the list by line number
 	(sidebar-print-listfiles old-files)
 	(sidebar-set files (-concat (sidebar-get files) old-files))
 	(sidebar-sort-files-by-line)
-	(sidebar-goto-line (1+ line-to-put-old-files))))
+	(sidebar-goto-line line-to-put-old-files)))
     (sidebar-git-run)))
 
 (defun sidebar-open-directory (file)
@@ -1160,7 +1173,6 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-content]'
 	(let ((dirname (file-name-as-directory (--getpath file))))
 	  (setq files (--filter (s-starts-with? dirname (--getpath it)) (sidebar-get files))))
       (setq files (sidebar-load-content (--getpath file))))
-    (erase-buffer)
     (sidebar-set files files)
     (sidebar-set current-path (file-name-as-directory (--getpath file)))
     (setq default-directory (sidebar-get current-path))
@@ -1270,8 +1282,9 @@ Otherwise it load the dir with `\\[sidebar-load-content]'."
 
 (defun sidebar-delete-line ()
   "Delete the whole line (including \n)."
-  (delete-region (line-beginning-position) (line-end-position))
-  (delete-char 1))
+  (sidebar-writable
+   (delete-region (line-beginning-position) (line-end-position))
+   (delete-char 1)))
 
 (defun sidebar-update-closed-dirs (dir list)
   "Insert DIR at the begining of LIST."
@@ -1352,8 +1365,7 @@ with `\\[sidebar-load-content]' and print them on the sidebar at the right place
     (let ((opened-dirs (or to-expand (--filter (--opened? it) (sidebar-get files))))
 	  (current-line (line-number-at-pos)))
       (sidebar-set files (sidebar-update-from-opened-dirs (sidebar-load-content (sidebar-get current-path)) opened-dirs))
-      (erase-buffer)
-      (insert "\n")
+      (sidebar-init-buffer)
       (sidebar-print-listfiles (sidebar-get files))
       (sidebar-sort-files-by-line)
       (--each opened-dirs
@@ -1708,6 +1720,7 @@ This function just select another window before the frame is created."
   (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
 
   (setq cursor-type nil
+	buffer-read-only t
 	mode-line-format (list '(:eval (sidebar-set-modeline)))
 	header-line-format (list '(:eval (sidebar-set-header))))
 

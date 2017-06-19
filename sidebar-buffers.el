@@ -187,13 +187,13 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
   (interactive)
   (-when-let (buffers-marks (sidebar-get buffers-marks))
     (--each buffers-marks
-      (-let [buffer (car it)]
-	(when (buffer-live-p buffer)
-	  (when (member 'save it)
-	    (with-current-buffer buffer
-	      (save-buffer)))
-	  (when (member 'delete it)
-	    (kill-buffer buffer)))))
+      (-when-let* ((buffer (car it))
+		   (_ (buffer-live-p buffer)))
+	(when (member 'save it)
+	  (with-current-buffer buffer
+	    (save-buffer)))
+	(when (member 'delete it)
+	  (kill-buffer buffer))))
     (sidebar-set buffers-marks nil)
     (sidebar-refresh)))
 
