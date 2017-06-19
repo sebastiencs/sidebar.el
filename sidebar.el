@@ -928,15 +928,14 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
   "Show the current line with a background color and powerline effect.
 Resize the window if necessary (customizable)."
   (save-excursion
-    (-when-let* ((file (-> (line-number-at-pos) 1- (nth (sidebar-get files))))
-		 (sidebar-window (sidebar-get-window t))
+    (-when-let* ((sidebar-window (sidebar-get-window t))
 		 (line-begin (line-beginning-position))
 		 (line-end (line-end-position)))
       (sidebar-move-overlay line-begin line-end sidebar-window)
       (when sidebar-adjust-auto-window-width
 	(sidebar-adjust-window-width (- line-end line-begin) sidebar-window))
       (-when-let* ((_ sidebar-message-current)
-		   (path (--getpath file)))
+		   (path (--getpath (sidebar-find-file-from-line))))
 	(message path)))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
@@ -1134,7 +1133,7 @@ Sort the list by line number
 	(sidebar-print-listfiles old-files)
 	(sidebar-set files (-concat (sidebar-get files) old-files))
 	(sidebar-sort-files-by-line)
-	(sidebar-goto-line line-to-put-old-files)))
+	(sidebar-goto-line (1+ line-to-put-old-files))))
     (sidebar-git-run)))
 
 (defun sidebar-open-directory (file)
@@ -1195,8 +1194,8 @@ Only the windows non dedicated are shown."
   "Return the file on the LINE.
 Because sidebar-files is always sorted, it's easy to get it"
   (if line
-      (nth (- line 1) (sidebar-get files))
-    (nth (- (line-number-at-pos) 1) (sidebar-get files))))
+      (nth (- line 2) (sidebar-get files))
+    (nth (- (line-number-at-pos) 2) (sidebar-get files))))
 
 (defun sidebar-open-file (file)
   "Open FILE in the buffer where `\\[sidebar-open]' has been called.
@@ -1274,7 +1273,7 @@ list `\\[sidebar-closed-directories]' to reuse them later if
 the directory is re-opened"
   (setf (--opened? file) nil)
   (save-excursion
-    (let* ((dir-to-close (--getpath (nth (- (line-number-at-pos) 1) (sidebar-get files))))
+    (let* ((dir-to-close (--getpath (nth (- (line-number-at-pos) 2) (sidebar-get files))))
 	   (dir-to-close (file-name-as-directory dir-to-close))
 	   (files-to-remove (--filter (s-starts-with? dir-to-close (--getpath it)) (sidebar-get files)))
 	   (new-sidebar-files (--remove (s-starts-with? dir-to-close (--getpath it)) (sidebar-get files))))
@@ -1310,8 +1309,8 @@ if FORCE is non-nil, there is no check."
     (if force
 	(forward-line (- line (line-number-at-pos)))
       (let ((max (--getline (car (last (sidebar-get files))))))
-	(when (> line max)
-	  (setq line max))
+	(if (> line max) (setq line max)
+	  (when (< line 2) (setq line 2)))
 	(forward-line (- line (line-number-at-pos)))))))
 
 (defun sidebar-update-from-opened-dirs (list opened)
@@ -1343,6 +1342,7 @@ with `\\[sidebar-load-content]' and print them on the sidebar at the right place
 	  (current-line (line-number-at-pos)))
       (sidebar-set files (sidebar-update-from-opened-dirs (sidebar-load-content (sidebar-get current-path)) opened-dirs))
       (erase-buffer)
+      (insert "\n")
       (sidebar-print-listfiles (sidebar-get files))
       (sidebar-sort-files-by-line)
       (--each opened-dirs
