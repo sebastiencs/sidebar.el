@@ -154,7 +154,7 @@ easily usable."
 	 (icons-in-terminal icon :foreground color)))
      " "
      (s-trim name)
-     (when read-only (sidebar-buffers-insert-icon 'fa_lock))
+     (when read-only (sidebar-buffers-insert-icon 'md_lock))
      (when modified (sidebar-buffers-insert-icon 'md_whatshot))
      (sidebar-buffers-insert-marks buffer))))
 
@@ -224,9 +224,9 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 
 (defun sidebar-buffers? ()
   "Return non-nil if we have to use `sidebar-buffers-mode' on the sidebar creation."
-  ;; t)
-  (prog1 (sidebar-get buffers-force)
-    (sidebar-set buffers-force nil)))
+  nil)
+;; (prog1 (sidebar-get buffers-force)
+;;   (sidebar-set buffers-force nil)))
 
 (defun sidebar-buffers-make-header ()
   "Return the string to insert in the sidebar header."
@@ -276,7 +276,7 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 	       (line (line-number-at-pos))
 	       ((&alist 'type type) (sidebar-find-file-from-line)))
     (when (equal type 'separator)
-      (cond ((< line 3) (sidebar-goto-line 3))
+      (cond ((< line 4) (sidebar-goto-line 4))
 	    ((< pre-line line) (sidebar-buffers-jump-after line))
 	    (t (sidebar-buffers-jump-before line))))))
 

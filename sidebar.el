@@ -1720,6 +1720,8 @@ This function just select another window before the frame is created."
     (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
+  (remove-hook 'post-command-hook 'global-hl-line-highlight)
+
   )
 
 (defvar sidebar-mode-map nil
@@ -1769,8 +1771,6 @@ This function just select another window before the frame is created."
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
   (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
-
-  (remove-hook 'post-command-hook 'global-hl-line-highlight)
 
   )
 

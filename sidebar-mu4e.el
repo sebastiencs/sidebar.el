@@ -115,7 +115,7 @@ easily usable."
 	(bookmarks (sidebar-mu4e-get-bookmarks (mu4e-bookmarks))))
     (sidebar-set mu4e-bookmarks-count (length bookmarks))
     (sidebar-set mu4e-maildirs-count (length maildirs))
-    (-concat '(separator) maildirs '(separator) bookmarks)))
+    (-concat maildirs '(separator) bookmarks)))
 
 (defun sidebar-mu4e-print-item (item _)
   "Function to print ITEM in sidebar.
@@ -225,7 +225,7 @@ with mu4e."
 	       (line (line-number-at-pos))
 	       ((&alist 'type type) (sidebar-find-file-from-line)))
     (when (equal type 'separator)
-      (cond ((or (< pre-line line) (<= line 1)) (forward-line 1))
+      (cond ((< pre-line line) (forward-line 1))
 	    ((> line 1) (forward-line -1))))))
 
 (defvar sidebar-mu4e-mode-map nil
@@ -262,7 +262,6 @@ with mu4e."
   (add-hook 'pre-command-hook 'sidebar-mu4e-pre-command nil)
   (add-hook 'post-command-hook 'sidebar-mu4e-post-command nil)
   (add-hook 'post-command-hook 'sidebar-post-command t)
-  (add-hook 'pre-command-hook 'sidebar-pre-command)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
 
