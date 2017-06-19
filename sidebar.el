@@ -467,15 +467,15 @@ If it's not a file, return the home directory."
 (defsubst sidebar-cons-git-buffer-name ()
   "Construct the git buffer name from 'SIDEBAR' and the frame name.
 See `\\[sidebar-cons-buffer-name]' for more info."
-  (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
-			  (frame-parameter nil 'name))"-GIT*"))
+  (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
+			   (frame-parameter nil 'name))"-GIT*"))
 ;;;(concat "*" SIDEBAR "-" (frame-parameter nil 'name) "-GIT*"))
 
 (defsubst sidebar-cons-curl-buffer-name ()
   "Construct the curl buffer name from 'SIDEBAR' and the frame name.
 See `\\[sidebar-cons-buffer-name]' for more info."
-  (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
-			  (frame-parameter nil 'name))"-CURL*"))
+  (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
+			   (frame-parameter nil 'name))"-CURL*"))
 
 (defsubst sidebar-get-curl-buffer ()
   "Return the buffer associated to the curl buffer."
@@ -492,7 +492,7 @@ See `\\[sidebar-cons-buffer-name]' for more info."
 (defsubst sidebar-insert (str &optional face)
   "Small function to insert STR with FACE if non-nil."
   (if face
-      (insert (propertize str 'font-lock-face face))
+      (insert (propertize str 'face face))
     (insert str)))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
@@ -618,7 +618,7 @@ FILE PATH"
 
 (defsubst sidebar-insert-filename (str face)
   "Small function to insert STR with FACE if non-nil."
-  (insert (propertize str 'font-lock-face face 'mouse-face face 'keymap sidebar-button-keymap)))
+  (insert (propertize str 'face face 'mouse-face face 'keymap sidebar-button-keymap)))
 
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil.
@@ -653,7 +653,7 @@ ICONS-ON-LINE."
 	 					 (t 1)))))
 	 (icon sidebar-icon-powerline)
 	 (face 'sidebar-powerline-face))
-    (insert (propertize (s-repeat space-to-add " ") 'font-lock-face face))
+    (insert (propertize (s-repeat space-to-add " ") 'face face))
     (insert (icons-in-terminal (car icon)
 			       :raise (car (cddr icon))
 			       :height (cadr (cddr icon))
@@ -924,7 +924,7 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
 	 (icon sidebar-icon-powerline)
 	 (face 'sidebar-powerline-face))
     (concat
-     (propertize (s-repeat space-to-add " ") 'font-lock-face face)
+     (propertize (s-repeat space-to-add " ") 'face face)
      (icons-in-terminal (car icon)
 			:raise (car (cddr icon))
 			:height (cadr (cddr icon))
@@ -1173,6 +1173,7 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-content]'
 	(let ((dirname (file-name-as-directory (--getpath file))))
 	  (setq files (--filter (s-starts-with? dirname (--getpath it)) (sidebar-get files))))
       (setq files (sidebar-load-content (--getpath file))))
+    (delete-overlay (sidebar-get overlay))
     (sidebar-set files files)
     (sidebar-set current-path (file-name-as-directory (--getpath file)))
     (setq default-directory (sidebar-get current-path))

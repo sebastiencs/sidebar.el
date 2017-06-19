@@ -92,8 +92,8 @@ On Graphics ones, the name isn't unique for each frame, so we use
   (let ((name (sidebar-get buffer-name)))
     (if name
 	name
-      (setq name (concat "*SIDEBAR-" (or (frame-parameter nil 'window-id)
-					 (frame-parameter nil 'name))"*"))
+      (setq name (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
+					  (frame-parameter nil 'name))"*"))
       (sidebar-set buffer-name name)
       name)))
 
