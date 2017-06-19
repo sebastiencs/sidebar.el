@@ -1716,6 +1716,11 @@ This function just select another window before the frame is created."
   (sidebar-set save-line nil)
   (sidebar-open))
 
+(defun sidebar-kill ()
+  "Kill the sidebar's buffer."
+  (interactive)
+  (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
+
 (defun sidebar-init-mode ()
   "."
   (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
@@ -1786,6 +1791,7 @@ This function just select another window before the frame is created."
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
     (define-key map (kbd "q") 'sidebar-close)
+    (define-key map (kbd "C-q") 'sidebar-kill)
     (define-key map (kbd "SPC") 'sidebar-expand-or-close-dir)
     (define-key map (kbd "DEL") 'sidebar-up-directory)
     (define-key map (kbd "RET") 'sidebar-open-line)
