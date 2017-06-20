@@ -514,7 +514,7 @@ STATUS is the status of the FILE."
 	 (depth (sidebar-count-char "/" path-from-current))) ; TODO: Support Windows (replace '/')
     (when (> depth 0)
       (setq depth (* depth 2)))
-    (setq depth (+ depth 1))
+    (setq depth (1+ depth))
     depth))
 
 (defun sidebar-child-of-status? (file-path status)
@@ -943,6 +943,17 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
     (ov-move ov beg end)
     (ov-set ov 'after-string powerline)))
 
+(defun sidebar-update-path-on-header ()
+  "."
+  (-when-let* ((path-file (-some-> (--getpath (sidebar-find-file-from-line)) file-name-directory))
+	       (current-path (sidebar-get current-path))
+	       (suffix-path (substring path-file (1- (length current-path))))
+	       (suffix-header (sidebar-get suffix-header)))
+    (when (or (null suffix-header)
+	      (not (s-equals? suffix-path suffix-header)))
+      (sidebar-set suffix-header suffix-path)
+      (force-mode-line-update))))
+
 (defun sidebar-show-current ()
   "Show the current line with a background color and powerline effect.
 Resize the window if necessary (customizable)."
@@ -951,11 +962,12 @@ Resize the window if necessary (customizable)."
 		 (line-begin (line-beginning-position))
 		 (line-end (line-end-position)))
       (sidebar-move-overlay line-begin line-end sidebar-window)
+      (sidebar-update-path-on-header)
       (when sidebar-adjust-auto-window-width
 	(sidebar-adjust-window-width (- line-end line-begin) sidebar-window))
       (-when-let* ((_ sidebar-message-current)
 		   (path (--getpath (sidebar-find-file-from-line))))
-	(message path)))))
+	(message (abbreviate-file-name path))))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -1237,7 +1249,7 @@ If the window doesn't exists anymore, the function calls `sidebar-open-in-window
 If it's a directory, open it in the sidebar.
 If it's a file, open it on the window where `\\[sidebar-open]' has been called"
   (interactive)
-  (let* ((file (sidebar-find-file-from-line)))
+  (-when-let (file (sidebar-find-file-from-line))
     (if (--dir? file)
 	(sidebar-open-directory file)
       (sidebar-open-file file))))
@@ -1337,7 +1349,7 @@ if FORCE is non-nil, there is no check."
   (when (integerp line)
     (if force
 	(forward-line (- line (line-number-at-pos)))
-      (let ((max (--getline (car (last (sidebar-get files))))))
+      (let ((max (or (--getline (car (last (sidebar-get files)))) 2)))
 	(if (> line max) (setq line max)
 	  (when (< line 2) (setq line 2)))
 	(forward-line (- line (line-number-at-pos)))))))
@@ -1535,10 +1547,11 @@ See `sidebar-git-run' and `sidebar-refresh'"
   (let* ((project (sidebar-get root-project))
 	 (current-path (sidebar-get current-path))
 	 (project-name (or project (abbreviate-file-name current-path)))
-	 (length 0))
+	 (suffix (sidebar-get suffix-header)))
     (when project
-      (setq project-name (s-chop-suffix "/" (s-chop-prefix (file-name-directory (directory-file-name project-name))
-							   current-path))))
+      (setq project-name (--> (file-name-directory (directory-file-name project-name))
+			      (s-chop-prefix it current-path)
+			      (s-chop-suffix "/" it))))
     (concat
      " "
      (if project
@@ -1552,14 +1565,20 @@ See `sidebar-git-run' and `sidebar-refresh'"
 			  :background (face-background 'sidebar-header-line-face)
 			  :raise -0.0
 			  :height 1.3))
+;;;     (when (not (sidebar-gui?)) " ")
+     " "
      (propertize project-name 'display '(raise 0.12))
-     )))
+     (when (and suffix (> (length suffix) 1))
+       (propertize (if project suffix (substring suffix 1))
+		   'face 'sidebar-suffix-path-header-face
+		   'display '(raise 0.12)
+		   'font-lock-ignore t)))))
 
 (defun sidebar-set-header ()
   "Format the header with the string from `sidebar-make-header-function'."
   (let* ((string (funcall (sidebar-get make-header-function)))
 	 (length 0))
-    (add-face-text-property 0 (length string) 'sidebar-header-line-face nil string)
+    (add-face-text-property 0 (length string) 'sidebar-header-line-face t string)
     (setq length (- (sidebar-window-width) (1+ (length string))))
     (when (sidebar-gui?)
       (setq length (- length (cadr sidebar-icon-header-end))))
@@ -1721,11 +1740,24 @@ This function just select another window before the frame is created."
 (defun sidebar-kill ()
   "Kill the sidebar's buffer."
   (interactive)
+  (sidebar-set saved-state-files nil)
+  (sidebar-set window-start nil)
+  (sidebar-set save-line-files nil)
+  (sidebar-set save-files nil)
+  (sidebar-set save-default-width nil)
+  (sidebar-set save-root-project nil)
+  (sidebar-set save-history nil)
+  (sidebar-set save-current-path nil)
+  (sidebar-set files nil)
+  (sidebar-set default-width nil)
+  (sidebar-set root-project nil)
+  (sidebar-set history nil)
+  (sidebar-set current-path nil)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
 
 (defun sidebar-init-mode ()
   "."
-  (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "")))
+  (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "" :foreground "")))
   (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
   (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
 
@@ -1758,6 +1790,7 @@ This function just select another window before the frame is created."
 	(copy-face 'sidebar-icon-remotebranch-gui-face 'sidebar-icon-remotebranch-face)
 	(copy-face 'sidebar-icon-header-project-gui-face 'sidebar-icon-header-project-face)
 	(copy-face 'sidebar-icon-header-directory-gui-face 'sidebar-icon-header-directory-face)
+	(copy-face 'sidebar-suffix-path-header-gui-face 'sidebar-suffix-path-header-face)
 	(copy-face 'sidebar-match-gui-face 'sidebar-match-face))
     ;; (setq sidebar-status-on-directory sidebar-terminal-status-on-directory)
     ;; (setq sidebar-filename-colored sidebar-terminal-filename-colored)
@@ -1781,6 +1814,7 @@ This function just select another window before the frame is created."
     (copy-face 'sidebar-icon-remotebranch-terminal-face 'sidebar-icon-remotebranch-face)
     (copy-face 'sidebar-icon-header-project-terminal-face 'sidebar-icon-header-project-face)
     (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
+    (copy-face 'sidebar-suffix-path-header-terminal-face 'sidebar-suffix-path-header-face)
     (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
 
   (remove-hook 'post-command-hook 'global-hl-line-highlight)

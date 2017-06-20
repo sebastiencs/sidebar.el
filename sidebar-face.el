@@ -114,40 +114,46 @@
 ;;   :group 'sidebar-terminal-faces)
 
 (defface sidebar-branch-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
+  '((t :foreground "black"
+       :background "color-27"))
   "Face used on the current branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-branch-terminal-face
-  '((t :inherit 'sidebar-branch-terminal-face))
+  '((t :inherit sidebar-branch-terminal-face))
   "Face used on the icon before the current branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-remotebranch-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
+  '((t :foreground "black"
+       :background "color-27"))
   "Face used on the remote branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-remotebranch-terminal-face
-  '((t :inherit 'sidebar-remotebranch-terminal-face))
+  '((t :inherit sidebar-remotebranch-terminal-face))
   "Face used on the icon before the remote branch in the modeline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-header-line-terminal-face
-  '((t :foreground "white"
-       :background "#222222"))
+  '((t :foreground "black"
+       :background "color-27"))
   "Face used with the header line."
   :group 'sidebar-terminal-faces)
 
+(defface sidebar-suffix-path-header-terminal-face
+  '((t :foreground "grey58"))
+  "Face used with the suffix on the header line.
+The suffix is the additionnal path (if any) of the file on the current line."
+  :group 'sidebar-terminal-faces)
+
 (defface sidebar-icon-header-project-terminal-face
-  '((t :inherit 'sidebar-header-line-terminal-face))
+  '((t :inherit sidebar-header-line-terminal-face))
   "Face used with the icon before a project name in the headerline."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-icon-header-directory-terminal-face
-  '((t :inherit 'sidebar-header-line-terminal-face))
+  '((t :inherit sidebar-header-line-terminal-face))
   "Face used with the icon before a directory name in the header line."
   :group 'sidebar-terminal-faces)
 
@@ -225,7 +231,7 @@
   :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-branch-gui-face
-  '((t :inherit 'sidebar-branch-gui-face))
+  '((t :inherit sidebar-branch-gui-face))
   "Face used on the icon before the current branch in the mode line."
   :group 'sidebar-gui-faces)
 
@@ -236,7 +242,7 @@
   :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-remotebranch-gui-face
-  '((t :inherit 'sidebar-remotebranch-gui-face))
+  '((t :inherit sidebar-remotebranch-gui-face))
   "Face used on the icon before the remote branch in the mode line."
   :group 'sidebar-gui-faces)
 
@@ -245,13 +251,19 @@
   "Face used with the header line."
   :group 'sidebar-gui-faces)
 
+(defface sidebar-suffix-path-header-gui-face
+  '((t :foreground "grey58"))
+  "Face used with the suffix on the header line.
+The suffix is the additionnal path (if any) of the file on the current line."
+  :group 'sidebar-gui-faces)
+
 (defface sidebar-icon-header-project-gui-face
-  '((t :inherit 'sidebar-header-line-gui-face))
+  '((t :inherit sidebar-header-line-gui-face))
   "Face used with the icon before a project name."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-icon-header-directory-gui-face
-  '((t :inherit 'sidebar-header-line-gui-face))
+  '((t :inherit sidebar-header-line-gui-face))
   "Face used with the icon before a directory name (On the header line)."
   :group 'sidebar-gui-faces)
 
@@ -273,6 +285,7 @@
 (defface sidebar-remotebranch-face nil "" :group nil)
 (defface sidebar-icon-header-project-face nil "" :group nil)
 (defface sidebar-icon-header-directory-face nil "" :group nil)
+(defface sidebar-suffix-path-header-face nil "" :group nil)
 
 (provide 'sidebar-face)
 
