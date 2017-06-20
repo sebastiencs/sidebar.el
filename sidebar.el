@@ -1212,6 +1212,8 @@ If FILE it not opened, we load the dir with `\\[sidebar-load-content]'
 
 (defun sidebar-open-in-window ()
   "Open a file in a selected window.
+A list of windows will be shown to the user to select the one in which to
+open the buffer.
 Only the windows non dedicated are shown."
   (interactive)
   (let* ((file (sidebar-find-file-from-line))

@@ -46,6 +46,7 @@
 (declare-function sidebar-reset-window-width "ext:sidebar.el")
 
 (defvar buffers-contexts)
+(defvar sidebar-select-icon-before-window)
 
 (defgroup sidebar-buffers nil
   "Sidebar mode to view a list of buffers."
@@ -167,11 +168,37 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
       ('separator (insert (if (stringp data) data "")))
       (_ (insert (concat " " (sidebar-buffers-format-name data (buffer-name data) visiting)))))))
 
-(defun sidebar-buffers-open-line ()
-  "Open the maildir or bookmark on the current line."
+(defun sidebar-buffers-open-in-window2 (buffer)
+  "Helper function for `sidebar-buffers-open-in-window'.
+BUFFER."
   (interactive)
-  (-let* (((&alist 'data data) (sidebar-find-file-from-line)))
-    (message "Open buffer: %s" (buffer-name data))))
+  (let* ((windows-in-frame (-remove 'window-dedicated-p (window-list)))
+	 (windows-in-others-frame (sidebar-list-windows-others-frame (frame-list))))
+    (sidebar-select-make-buffer (list windows-in-frame windows-in-others-frame)
+				" Select a window "
+				" Others frames "
+				(lambda (x) (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" x))))
+				sidebar-select-icon-before-window
+				'sidebar-open-file-in-window
+				buffer)))
+
+(defun sidebar-buffers-open-in-window ()
+  "Open BUFFER in a selected window.
+A list of windows will be shown to the user to select the one in which to
+open the buffer.
+Only the windows non dedicated are shown."
+  (interactive)
+  (-let [(&alist 'data buffer) (sidebar-find-file-from-line)]
+    (sidebar-buffers-open-in-window2 buffer)))
+
+(defun sidebar-buffers-open-line ()
+  "Open the buffer on the current line."
+  (interactive)
+  (-let* (((&alist 'data buffer) (sidebar-find-file-from-line))
+	  (window (sidebar-get window-origin)))
+    (if (window-live-p window)
+	(set-window-buffer window buffer)
+      (sidebar-set window-origin (sidebar-buffers-open-in-window2 buffer)))))
 
 (defun sidebar-buffers-add-mark (buffer mark)
   "BUFFER MARK."
@@ -237,11 +264,13 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 
 (defun sidebar-buffers-make-modeline-left ()
   "Return the string to insert in the modeline (left side)."
-  " buffers")
+  nil)
 
 (defun sidebar-buffers-make-modeline-right ()
   "Return the string to insert in the modeline (right side)."
-  "Buffers")
+  (concat
+   (number-to-string (length (sidebar-get files)))
+   " Buffers"))
 
 (defun sidebar-buffers-pre-command ()
   "See `sidebar-buffers-post-command'."
@@ -290,6 +319,8 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 (unless sidebar-buffers-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
+    (define-key map (kbd "M-RET") 'sidebar-buffers-open-in-window)
+    (define-key map (kbd "RET") 'sidebar-buffers-open-line)
     (define-key map (kbd "q") 'sidebar-close)
     (define-key map (kbd "g") 'sidebar-refresh)
     (define-key map (kbd "x") 'sidebar-buffers-mark-execute)
@@ -298,7 +329,6 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
     (define-key map (kbd "s") 'sidebar-buffers-mark-save)
     (define-key map (kbd "<tab>") 'sidebar-buffers-switch-to-files)
     (define-key map (kbd "h") 'sidebar-buffers-toggle-hidden)
-    (define-key map (kbd "RET") 'sidebar-buffers-open-line)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)
