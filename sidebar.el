@@ -1120,6 +1120,7 @@ If the file is cut, you'll be ask to rename the buffers visiting it."
 
 (defun sidebar-init-buffer ()
   "."
+  (set-window-margins (sidebar-get-window t) 0 0)
   (delete-overlay (sidebar-get overlay))
   (sidebar-writable
    (erase-buffer)
