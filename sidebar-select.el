@@ -63,11 +63,6 @@
   "Face used for the headers."
   :group 'sidebar-terminal-faces)
 
-(defcustom sidebar-select-height-min 10
-  "Minimum window height of `sidebar-select'."
-  :type 'integer
-  :group 'sidebar)
-
 (defcustom sidebar-select-icon-left-header 'myicons_0006
   "Icon to use on the left of the header.
 To get a list of the icons names, you can run:
@@ -126,6 +121,8 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (defvar sidebar-select-window-width
   "")
 
+(defvar-local sidebar-select-last-line 0)
+
 (defun sidebar-select-set-header (string spaces raise height)
   "."
   (let* ((width (window-width))
@@ -144,6 +141,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 
 (defun sidebar-select-insert-buffername (name icon)
   "NAME ICON."
+  (setq sidebar-select-last-line (line-number-at-pos))
   (insert
    (s-truncate (- sidebar-select-window-width 1)
 	       (concat
@@ -169,6 +167,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
    (display-buffer (get-buffer-create sidebar-select-buffer-name)))
   (with-current-buffer sidebar-select-buffer-name
     (sidebar-select-mode)
+    (set (make-local-variable 'scroll-margin) 1)
     (set (make-local-variable 'sidebar-select-window) (get-buffer-window))
     (set (make-local-variable 'sidebar-select-mapping) nil)
     (set (make-local-variable 'sidebar-select-header) header1)
@@ -185,9 +184,8 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
       (set (make-local-variable 'sidebar-select-line-other) (line-number-at-pos))
       (sidebar-select-insert-list (car (cdr list)) func-on-string icon))
     (set (make-local-variable 'sidebar-select-windows-count) (+ (length (car list)) (length (car (cdr list)))))
-    (if (>= (+ sidebar-select-windows-count 7) sidebar-select-height-min)
-	(shrink-window-if-larger-than-buffer)
-      (window-resize nil (- sidebar-select-height-min (window-height)) nil))
+    (shrink-window-if-larger-than-buffer)
+    (window-resize nil 1 nil)
     (setq buffer-read-only t)
     (sidebar-goto-line 2)))
 
@@ -202,11 +200,12 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (let* ((current-line (line-number-at-pos))
 	 (previous (- current-line 1)))
     (cond ((= previous 1)
-	   (sidebar-goto-line 1000))
+	   (sidebar-goto-line sidebar-select-last-line t))
 	  ((and sidebar-select-line-other
 		(= previous sidebar-select-line-other))
-	   (sidebar-goto-line (- previous 3)))
-	  (t (sidebar-goto-line previous)))))
+	   (sidebar-goto-line (- previous 3) t))
+	  (t (sidebar-goto-line previous t))))
+  (set-window-start nil 0))
 
 (defun sidebar-select-next ()
   "."
@@ -214,11 +213,11 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (let* ((current-line (line-number-at-pos))
 	 (next (+ current-line 1)))
     (cond ((= next (+ sidebar-select-windows-count (if sidebar-select-line-other 5 2)))
-	   (sidebar-goto-line 2))
+	   (sidebar-goto-line 2 t))
 	  ((and sidebar-select-line-other
 		(= next (- sidebar-select-line-other 2)))
-	   (sidebar-goto-line (+ next 3)))
-	  (t (sidebar-goto-line next)))))
+	   (sidebar-goto-line (+ next 3) t))
+	  (t (sidebar-goto-line next t)))))
 
 (defun sidebar-select-select ()
   "."
