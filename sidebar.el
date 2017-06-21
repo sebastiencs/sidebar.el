@@ -1718,7 +1718,8 @@ This function just select another window before the frame is created."
 (defun sidebar-save-state ()
   "."
   (sidebar-set window-start (window-start (sidebar-get-window)))
-  (sidebar-set save-line-files (line-number-at-pos))
+  (with-current-buffer (sidebar-get-buffer)
+    (sidebar-set save-line-files (line-number-at-pos)))
   (sidebar-set save-files (sidebar-get files))
   (sidebar-set save-default-width (sidebar-get default-width))
   (sidebar-set save-root-project (sidebar-get root-project))

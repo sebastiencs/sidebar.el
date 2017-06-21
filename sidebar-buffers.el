@@ -67,6 +67,25 @@ If nil, the icon will be insert only with visited buffers."
   :type 'integer
   :group 'sidebar-buffers)
 
+(defcustom sidebar-buffers-action-after-open 'return-to-files
+  "Action to execute when a buffer has been open after `sidebar-buffers-open'.
+
+The following values are possible:
+
+- `close' Close the sidebar.
+
+- `return-to-files' If the sidebar was already open in the default
+                    mode (listing files), it will return to that state.
+                    If the sidebar wasn't open, it will close the sidebar.
+
+- `nothing' Let the sidebar open.
+
+Default: `return-to-files'."
+  :type '(choice (const :tag "Close" close)
+                 (const :tag "Return to files" return-to-files)
+                 (const :tag "Nothing" nothing))
+  :group 'sidebar-buffers)
+
 (defcustom sidebar-buffers-show-hidden nil
   "If non-nil, show the list of hidden buffers."
   :type 'boolean
@@ -198,7 +217,13 @@ Only the windows non dedicated are shown."
 	  (window (sidebar-get window-origin)))
     (if (window-live-p window)
 	(set-window-buffer window buffer)
-      (sidebar-set window-origin (sidebar-buffers-open-in-window2 buffer)))))
+      (sidebar-set window-origin (sidebar-buffers-open-in-window2 buffer))))
+  (when (sidebar-get buffers-hide)
+    (sidebar-close))
+  (when (sidebar-get buffers-return-to-files)
+    (sidebar-buffers-switch-to-files))
+  (sidebar-set buffers-return-to-files nil)
+  (sidebar-set buffers-hide nil))
 
 (defun sidebar-buffers-add-mark (buffer mark)
   "BUFFER MARK."
@@ -311,8 +336,40 @@ Only the windows non dedicated are shown."
 (defun sidebar-buffers-switch-to-files ()
   "."
   (interactive)
+  (sidebar-set buffers-hide nil)
+  (sidebar-set buffers-return-to-files nil)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
   (sidebar-open))
+
+(defun sidebar-buffers-open ()
+  "Open the sidebar with the list of buffers.
+Once a buffer has been open with `sidebar-buffers-open-line',
+it hides the sidebar or return to the files listing (customizable).
+This behavior occurs only with this function (`sidebar-buffers-open')
+followed by `sidebar-buffers-open-line'."
+  (interactive)
+  (pcase sidebar-buffers-action-after-open
+    ('close (sidebar-set buffers-hide t)))
+  (cond ((and (get-buffer (sidebar-cons-buffer-name)) (not (sidebar-get-window t)))
+	 (progn (sidebar-set buffers-hide t)
+		(sidebar-open)
+		(sidebar-switch-to-buffers)))
+	((not (sidebar-get-window t))
+	 (progn (sidebar-set buffers-force t)
+		(sidebar-set buffers-hide t)
+		(sidebar-open)))
+	((equal (sidebar-get mode-to-use) 'sidebar-buffers-mode)
+	 (sidebar-open))
+	(t (progn (pcase sidebar-buffers-action-after-open
+		    ('return-to-files (sidebar-set buffers-return-to-files t)))
+		  (sidebar-switch-to-buffers)))))
+
+(defun sidebar-buffers-close ()
+  "."
+  (interactive)
+  (sidebar-set buffers-hide nil)
+  (sidebar-set buffers-return-to-files nil)
+  (sidebar-close))
 
 (defvar sidebar-buffers-mode-map nil
   "Keymap used with sidebar-buffers-mode.")
@@ -321,7 +378,7 @@ Only the windows non dedicated are shown."
     (suppress-keymap map t)
     (define-key map (kbd "M-RET") 'sidebar-buffers-open-in-window)
     (define-key map (kbd "RET") 'sidebar-buffers-open-line)
-    (define-key map (kbd "q") 'sidebar-close)
+    (define-key map (kbd "q") 'sidebar-buffers-close)
     (define-key map (kbd "g") 'sidebar-refresh)
     (define-key map (kbd "x") 'sidebar-buffers-mark-execute)
     (define-key map (kbd "u") 'sidebar-buffers-unmark)
