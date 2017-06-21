@@ -51,14 +51,9 @@
   "Face used with directories."
   :group 'sidebar-terminal-faces)
 
-(defface sidebar-untracked-dir-terminal-face
+(defface sidebar-untracked-terminal-face
   '((t :foreground "#FF8C00"))
-  "Face used with untracked directories."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-untracked-file-terminal-face
-  '((t :foreground "#FF8C00"))
-  "Face used with untracked files."
+  "Face used with untracked files/directories."
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-ignored-dir-terminal-face
@@ -174,14 +169,9 @@ The suffix is the additionnal path (if any) of the file on the current line."
   "Face used with directories."
   :group 'sidebar-gui-faces)
 
-(defface sidebar-untracked-dir-gui-face
-  '((t :foreground "purple"))
-  "Face used with untracked directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-untracked-file-gui-face
-  '((t :foreground "purple"))
-  "Face used with untracked files."
+(defface sidebar-untracked-gui-face
+  '((t :foreground "gray31"))
+  "Face used with untracked files/directories."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-ignored-dir-gui-face
@@ -270,8 +260,7 @@ The suffix is the additionnal path (if any) of the file on the current line."
 (defface sidebar-powerline-face nil "" :group nil)
 (defface sidebar-file-face nil "" :group nil)
 (defface sidebar-dir-face nil "" :group nil)
-(defface sidebar-untracked-dir-face nil "" :group nil)
-(defface sidebar-untracked-file-face nil "" :group nil)
+(defface sidebar-untracked-face nil "" :group nil)
 (defface sidebar-ignored-dir-face nil "" :group nil)
 (defface sidebar-ignored-file-face nil "" :group nil)
 (defface sidebar-not-updated-face nil "" :group nil)

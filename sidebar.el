@@ -529,35 +529,28 @@ STATUS is the status of the FILE."
 
 (defun sidebar-color-from-status (status &optional default)
   "STATUS DEFAULT."
-  (cond
-   ((equal 'not-updated status) 'sidebar-not-updated-gui-face)
-   ((equal 'updated status) 'sidebar-updated-gui-face)
-   ((equal 'changed status) 'sidebar-changed-gui-face)
-   ((equal 'added status) 'sidebar-added-gui-face)
-   ((equal 'renamed status) 'sidebar-renamed-gui-face)
-   ((equal 'match status) 'sidebar-match-gui-face)
-   (t default)))
+  (pcase status
+    ('not-updated 'sidebar-not-updated-face)
+    ('updated 'sidebar-updated-face)
+    ('changed 'sidebar-changed-face)
+    ('added 'sidebar-added-face)
+    ('renamed 'sidebar-renamed-face)
+    ('match 'sidebar-match-face)
+    (_ default)))
 
 (defun sidebar-get-color (file path status &optional icon no-color)
   "Return the face to use for FILE.
 PATH is the path of the file relative to the project root directory
 STATUS is the status from git
-ICON
-NO-COLOR."
-  (if (not status)
-      (unless icon
-	(if (--dir? file) 'sidebar-dir-face 'sidebar-file-face))
-    (cond ((equal 'ignored status)
-	   (if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face))
-	  ((sidebar-child-of-status? path 'ignored)
-	   (if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face))
-	  ((equal 'untracked status) (not icon)
-	   (if (--dir? file) 'sidebar-untracked-dir-face 'sidebar-untracked-file-face))
-	  ((sidebar-child-of-status? path 'untracked)
-	   (if (--dir? file) 'sidebar-untracked-dir-face 'sidebar-untracked-file-face))
-	  ((--dir? file) 'sidebar-dir-face)
-	  (no-color 'sidebar-file-face)
-	  ((not icon) (sidebar-color-from-status status 'sidebar-file-face)))))
+non-nil ICON means we're getting the color for an icon.
+NO-COLOR non-nil means don't use a color."
+  (cond ((or (equal 'ignored status) (sidebar-child-of-status? path 'ignored))
+	 (if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face))
+	((and (or (equal 'untracked status) (sidebar-child-of-status? path 'untracked)) (not icon))
+	 'sidebar-untracked-face)
+	((--dir? file) 'sidebar-dir-face)
+	(no-color 'sidebar-file-face)
+	((not icon) (sidebar-color-from-status status 'sidebar-file-face))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -631,7 +624,7 @@ LINE."
   "FILE FILENAME STATUS PATH FACE."
   (if (--dir? file)
       (let ((icon (if (--opened? file) sidebar-icon-dir-opened sidebar-icon-dir-closed)))
-	(sidebar-insert-icon icon (sidebar-get-color file path status)))
+	(sidebar-insert-icon icon (sidebar-get-color file path status t)))
     (-let* (((&plist :icon icon :color color) (sidebar-filemapping-lookup filename))
 	    (partial (-partial 'icons-in-terminal icon :height 1.1)))
       (cond (face (insert (funcall partial :face face)))
@@ -675,12 +668,13 @@ ICONS-ON-LINE."
 	   (func (lambda (name)
 		   (sidebar-insert " ")
 		   (funcall 'sidebar-insert-icon name face))))
-      (cond ((equal 'not-updated status) (funcall func sidebar-icon-git-not-updated))
-	    ((equal 'updated status) (funcall func sidebar-icon-git-updated))
-	    ((equal 'changed status) (funcall func sidebar-icon-git-changed))
-	    ((equal 'added status) (funcall func sidebar-icon-git-added))
-	    ((equal 'renamed status) (funcall func sidebar-icon-git-renamed))
-	    ((equal 'match status) (funcall func sidebar-icon-git-match))))))
+      (pcase status
+	('not-updated (funcall func sidebar-icon-git-not-updated))
+	('updated (funcall func sidebar-icon-git-updated))
+	('changed (funcall func sidebar-icon-git-changed))
+	('added (funcall func sidebar-icon-git-added))
+	('renamed (funcall func sidebar-icon-git-renamed))
+	('match (funcall func sidebar-icon-git-match))))))
 
 (defun sidebar-print-file (file &optional line)
   "Insert FILE on the current LINE.
@@ -947,12 +941,12 @@ The icons are known to be characters between 0xe000 and 0xf8ff."
   "."
   (-when-let* ((path-file (-some-> (--getpath (sidebar-find-file-from-line)) file-name-directory))
 	       (current-path (sidebar-get current-path))
-	       (suffix-path (substring path-file (1- (length current-path))))
-	       (suffix-header (sidebar-get suffix-header)))
-    (when (or (null suffix-header)
-	      (not (s-equals? suffix-path suffix-header)))
-      (sidebar-set suffix-header suffix-path)
-      (force-mode-line-update))))
+	       (suffix-path (substring path-file (1- (length current-path)))))
+    (-let [suffix-header (sidebar-get suffix-header)]
+      (when (or (null suffix-header)
+		(not (s-equals? suffix-path suffix-header)))
+	(sidebar-set suffix-header suffix-path)
+	(force-mode-line-update)))))
 
 (defun sidebar-show-current ()
   "Show the current line with a background color and powerline effect.
@@ -1777,8 +1771,7 @@ This function just select another window before the frame is created."
 	(copy-face 'sidebar-powerline-gui-face 'sidebar-powerline-face)
 	(copy-face 'sidebar-file-gui-face 'sidebar-file-face)
 	(copy-face 'sidebar-dir-gui-face 'sidebar-dir-face)
-	(copy-face 'sidebar-untracked-dir-gui-face 'sidebar-untracked-dir-face)
-	(copy-face 'sidebar-untracked-file-gui-face 'sidebar-untracked-file-face)
+	(copy-face 'sidebar-untracked-gui-face 'sidebar-untracked-face)
 	(copy-face 'sidebar-ignored-dir-gui-face 'sidebar-ignored-dir-face)
 	(copy-face 'sidebar-ignored-file-gui-face 'sidebar-ignored-file-face)
 	(copy-face 'sidebar-not-updated-gui-face 'sidebar-not-updated-face)
@@ -1801,8 +1794,7 @@ This function just select another window before the frame is created."
     (copy-face 'sidebar-powerline-terminal-face 'sidebar-powerline-face)
     (copy-face 'sidebar-file-terminal-face 'sidebar-file-face)
     (copy-face 'sidebar-dir-terminal-face 'sidebar-dir-face)
-    (copy-face 'sidebar-untracked-dir-terminal-face 'sidebar-untracked-dir-face)
-    (copy-face 'sidebar-untracked-file-terminal-face 'sidebar-untracked-file-face)
+    (copy-face 'sidebar-untracked-terminal-face 'sidebar-untracked-face)
     (copy-face 'sidebar-ignored-dir-terminal-face 'sidebar-ignored-dir-face)
     (copy-face 'sidebar-ignored-file-terminal-face 'sidebar-ignored-file-face)
     (copy-face 'sidebar-not-updated-terminal-face 'sidebar-not-updated-face)
