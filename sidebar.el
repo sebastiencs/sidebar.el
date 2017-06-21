@@ -42,13 +42,23 @@
 (require 'dash)
 (require 'dash-functional)
 (require 'ov)
-(require 'icons-in-terminal)
 (require 'sidebar-filemapping)
 (require 'sidebar-select)
 (require 'sidebar-utils)
 (require 'sidebar-face)
 (require 'sidebar-mu4e)
 (require 'sidebar-buffers)
+
+(defvar sidebar-insert-fileicon-function 'sidebar-insert-fileicon)
+
+(when (null (require 'icons-in-terminal nil t))
+  (defun icons-in-terminal (&rest _)
+    "")
+  (defun sidebar-insert-fileicon-rescue (file _1 _2 _3 face)
+    "FILE FACE."
+    (when (--dir? file)
+      (insert (propertize (if (--opened? file) "-" "+") 'face face))))
+  (setq sidebar-insert-fileicon-function 'sidebar-insert-fileicon-rescue))
 
 (eval-after-load 'dash '(dash-enable-font-lock))
 
@@ -657,7 +667,7 @@ ICONS-ON-LINE."
 
 (defun sidebar-gui-insert-icon-filename (file filename status path)
   "FILE FILENAME STATUS PATH."
-  (sidebar-insert-fileicon file filename status path (sidebar-get-color file path status t))
+  (funcall sidebar-insert-fileicon-function file filename status path (sidebar-get-color file path status t))
   (sidebar-insert " ")
   (sidebar-insert-filename filename (sidebar-get-color file path status nil (not sidebar-filename-colored))))
 

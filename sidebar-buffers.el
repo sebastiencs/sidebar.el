@@ -35,7 +35,7 @@
 (require 'dash)
 (require 'sidebar-utils)
 (require 'sidebar-filemapping)
-(require 'icons-in-terminal)
+(require 'icons-in-terminal nil t)
 (require 's)
 
 (declare-function sidebar-find-file-from-line "ext:sidebar.el")

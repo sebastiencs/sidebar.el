@@ -32,7 +32,7 @@
 
 (require 's)
 (require 'dash)
-(require 'icons-in-terminal)
+(require 'icons-in-terminal nil t)
 (require 'sidebar-utils)
 
 (defface sidebar-select-line-gui-face

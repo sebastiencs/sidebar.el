@@ -34,7 +34,7 @@
 
 (require 'dash)
 (require 'sidebar-utils)
-(require 'icons-in-terminal)
+(require 'icons-in-terminal nil t)
 
 (declare-function mu4e-get-maildirs "ext:mu4e-utils.el")
 (declare-function mu4e~headers-jump-to-maildir "ext:mu4e-headers.el")
