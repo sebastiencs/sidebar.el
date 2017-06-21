@@ -35,6 +35,7 @@ Add those lines in your emacs init file:
 (add-to-list 'load-path "PATH-TO-SIDEBAR-DIRECTORY")
 (require 'sidebar)
 (global-set-key (kbd "C-x C-f") 'sidebar-open)
+(global-set-key (kbd "C-x C-a") 'sidebar-buffers-open)
 ```
 
 `sidebar` require some packages: `dash`, `dash-functional`, `s`, `ov` and `projectile`.  
@@ -72,7 +73,8 @@ You can install them through melpa.
 | `s`       | `sidebar-buffers-mark-save`      | Mark the buffer to be save                              |
 | `u`       | `sidebar-buffers-unmark`         | Unmark the buffer                                       |
 | `x`       | `sidebar-buffers-mark-execute`   | Execute the action(s) on marked buffer(s)               |
-| `q`       | `sidebar-close`                  | Close sidebar                                           |
+| `q`       | `sidebar-buffers-close`          | Close sidebar                                           |
+| `g`       | `sidebar-refresh`                | Refresh the content of the sidebar                      |
 | `<tab>`   | `sidebar-switch-to-files         | Switch to the list of files                             |
 | `h`       | `sidebar-buffers-toggle-hidden`  | Show/hide the hidden buffers (starting with a space)    |
 | `<right>` | `sidebar-adjust-window-width`    | Adjust the window width if the filename is too long     |
