@@ -51,6 +51,14 @@
 
 (defvar sidebar-insert-fileicon-function 'sidebar-insert-fileicon)
 
+(defmacro --dir? (file)
+  "Return non-nil if FILE is a directory."
+  `(alist-get 'dir ,file))
+
+(defmacro --opened? (file)
+  "Return non-nil if FILE is opened.  Open means extended (only directory can be open)."
+  `(alist-get 'opened ,file))
+
 (when (null (require 'icons-in-terminal nil t))
   (defun icons-in-terminal (&rest _)
     "")
@@ -75,14 +83,6 @@
 (defmacro --getpath (file)
   "Return the path from FILE."
   `(alist-get 'path ,file))
-
-(defmacro --dir? (file)
-  "Return non-nil if FILE is a directory."
-  `(alist-get 'dir ,file))
-
-(defmacro --opened? (file)
-  "Return non-nil if FILE is opened.  Open means extended (only directory can be open)."
-  `(alist-get 'opened ,file))
 
 (defmacro --getline (file)
   "Return the line where is FILE."
@@ -1386,8 +1386,8 @@ For each directory in the list previously saved, it reload the dir
 with `\\[sidebar-load-content]' and print them on the sidebar at the right place."
   (interactive)
   (with-current-buffer (sidebar-get-buffer)
-    (let ((opened-dirs (or to-expand (--filter (--opened? it) (sidebar-get files))))
-	  (current-line (line-number-at-pos)))
+    (let ((current-line (line-number-at-pos))
+	  (opened-dirs (or to-expand (--filter (--opened? it) (sidebar-get files)))))
       (sidebar-set files (sidebar-update-from-opened-dirs (sidebar-load-content (sidebar-get current-path)) opened-dirs))
       (sidebar-init-buffer)
       (sidebar-print-listfiles (sidebar-get files))
