@@ -2,7 +2,7 @@
 
 ## Overview
 
-`sidebar` is a customizable file explorer with git integration.  
+`sidebar` is a customizable file explorer with git integration, but not only that. You can also get the list of buffers and your maildirs with mu4e.  
 
 I had few problems with others similar projects, so I wrote this one:  
 - With the others, we're limited to 1 instance per emacs instance, it's annoying when we're using emacs daemon.  
@@ -13,9 +13,14 @@ Everything is customizable.
 The icons are available on both GUI and terminal versions.  
 Please give me your feedback and open issue for bugs.  
 
+## Dependencies
+
+- `emacs 24.4`
+- `icons-in-terminal` Optional but recommended (for both GUI and terminal)
+
 ## Installation
 
-Your first need to install [icons-in-terminal](https://github.com/sebastiencs/icons-in-terminal) (for both GUI and terminal).  
+Please install [icons-in-terminal](https://github.com/sebastiencs/icons-in-terminal).  
 Follow the instructions for emacs integration.  
 
 `sidebar` is not yet available on [MELPA](https://melpa.org/).  
@@ -52,10 +57,27 @@ You can install them through melpa.
 | `R`       | `sidebar-rename-selected`     | Rename the file                                         |
 | `g`       | `sidebar-refresh`             | Refresh the content of the sidebar                      |
 | `q`       | `sidebar-close`               | Close sidebar                                           |
-| `<tab>`   | `sidebar-switch-to-buffers    | Show the list of buffers                                |
+| `<tab>`   | `sidebar-switch-to-buffers    | Switch to the list of buffers                           |
 | `DEL`     | `sidebar-up-directory`        | Change the current directory to its parent (Backspace)  |
 | `<right>` | `sidebar-adjust-window-width` | Adjust the window width if the filename is too long     |
 | `<left>`  | `sidebar-reset-window-width`  | Reset the window width to the default value             |
+
+## Commands with sidebar-buffers
+
+| Key       | Command                          | Note                                                    |
+| ----------|----------------------------------|---------------------------------------------------------|
+| `RET`     | `sidebar-buffers-open-line`      | Open the buffer                                         |
+| `M-RET`   | `sidebar-buffers-open-in-window` | Open the buffer in a selected window                    |
+| `d`       | `sidebar-buffers-mark-delete`    | Mark the buffer to be delete                            |
+| `s`       | `sidebar-buffers-mark-save`      | Mark the buffer to be save                              |
+| `u`       | `sidebar-buffers-unmark`         | Unmark the buffer                                       |
+| `x`       | `sidebar-buffers-mark-execute`   | Execute the action(s) on marked buffer(s)               |
+| `q`       | `sidebar-close`                  | Close sidebar                                           |
+| `<tab>`   | `sidebar-switch-to-files         | Switch to the list of files                             |
+| `h`       | `sidebar-buffers-toggle-hidden`  | Show/hide the hidden buffers (starting with a space)    |
+| `<right>` | `sidebar-adjust-window-width`    | Adjust the window width if the filename is too long     |
+| `<left>`  | `sidebar-reset-window-width`     | Reset the window width to the default value             |
+| `?`       | `sidebar-help`                   | Open `describe-mode`                                    |
 
 ## Commands with sidebar-mu4e
 
@@ -79,6 +101,12 @@ To customize the colors in terminals:
 `M-x customize-group [RET] sidebar-terminal-faces [RET]`  
 
 I made 2 differents groups of faces because on terminals, emacs doesn't support true colors [yet](http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=e463e57)
+
+To customize sidebar-buffers:  
+`M-x customize-group [RET] sidebar-buffers [RET]`   
+
+To customize sidebar-mu4e:  
+`M-x customize-group [RET] sidebar-mu4e [RET]`   
 
 ## Screenshots
 
