@@ -148,9 +148,10 @@ user advise it and easily access the parameter BOOKMARK."
   "Open the maildir or bookmark on the current line."
   (interactive)
   (-let* (((&alist 'data data 'type type) (sidebar-find-file-from-line)))
-    (pcase type
-      ('maildir  (sidebar-mu4e-open-maildir data))
-      ('bookmark (sidebar-mu4e-open-bookmark (cadr data))))))
+    (with-current-buffer (window-buffer (sidebar-get window-origin))
+      (pcase type
+	('maildir  (sidebar-mu4e-open-maildir data))
+	('bookmark (sidebar-mu4e-open-bookmark (cadr data)))))))
 
 (defun sidebar-mu4e? ()
   "Return non-nil if we have to use `sidebar-mu4e-mode' on the sidebar creation."
@@ -204,6 +205,7 @@ Refresh the content of the sidebar (maildirs and bookmarks)."
 (defun sidebar-mu4e-quit (&rest _)
   "Function called when mu4e quits.
 It removes the sidebar."
+  (interactive)
   (advice-remove 'mu4e-context-switch 'sidebar-mu4e-context-switch)
   (advice-remove 'mu4e-quit 'sidebar-mu4e-quit)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
@@ -213,7 +215,7 @@ It removes the sidebar."
 with mu4e."
   (when sidebar-mu4e-autostart
     (sidebar-set mu4e-force t)
-    (sidebar-open)))
+    (run-with-timer 1 nil 'sidebar-open)))
 
 (defun sidebar-mu4e-pre-command ()
   "See `sidebar-mu4e-post-command'."

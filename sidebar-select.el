@@ -297,9 +297,9 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (add-hook 'buffer-list-update-hook 'sidebar-select-on-change)
   (add-hook 'pre-command-hook 'sidebar-select-pre-command)
   (add-hook 'focus-out-hook 'sidebar-select-focus-out)
-  (face-remap-add-relative 'mode-line '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
-  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-header-face :foreground "" :background "" :box nil)))
-  (face-remap-add-relative 'header-line '((:inherit sidebar-header-face :background "" :box nil)))
+  (face-remap-add-relative 'mode-line '((:inherit sidebar-empty-face :foreground "" :background "" :box nil)))
+  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-empty-face :foreground "" :background "" :box nil)))
+  (face-remap-add-relative 'header-line '((:inherit sidebar-empty-face :background "" :box nil)))
   (hl-line-mode))
 
 (provide 'sidebar-select)
