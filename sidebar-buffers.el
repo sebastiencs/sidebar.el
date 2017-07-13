@@ -38,12 +38,12 @@
 (require 'icons-in-terminal nil t)
 (require 's)
 
-(declare-function sidebar-find-file-from-line "ext:sidebar.el")
-(declare-function sidebar-refresh "ext:sidebar.el")
-(declare-function sidebar-init-mode "ext:sidebar.el")
-(declare-function sidebar-open "ext:sidebar.el")
-(declare-function sidebar-adjust-window-width "ext:sidebar.el")
-(declare-function sidebar-reset-window-width "ext:sidebar.el")
+(declare-function sidebar-find-file-from-line 'sidebar)
+(declare-function sidebar-refresh 'sidebar)
+(declare-function sidebar-init-mode 'sidebar)
+(declare-function sidebar-open 'sidebar)
+(declare-function sidebar-adjust-window-width 'sidebar)
+(declare-function sidebar-reset-window-width 'sidebar)
 
 (defvar buffers-contexts)
 (defvar sidebar-select-icon-before-window)
@@ -97,14 +97,6 @@ Default: `return-to-files'."
   "Face used with headers."
   :group 'sidebar-buffers)
 
-;; (defcustom sidebar-buffers-bookmark-icon 'fa_bookmark
-;;   "Icon to use with bookmarks.
-;; To get a list of the icons names, you can run:
-;;  `~/.local/share/icons-in-terminal/print_icons.sh --names'
-;; More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
-;;   :type 'symbol
-;;   :group 'sidebar-buffers)
-
 (defun sidebar-buffers-item-builder (item)
   "Return an association list from ITEM.
 Function similar to `sidebar-file-struct' adapted for buffers data."
@@ -146,11 +138,8 @@ easily usable."
        (-concat (sidebar-buffers-separator "Hidden buffers")
 		hidden)))))
 
-;; (setq sidebar-buffers-show-hidden t)
-;; get-buffer-process
-
 (defun sidebar-buffers-insert-icon (&rest props)
-  "PROPS."
+  "Return icon with PROPS."
   (concat " " (apply 'icons-in-terminal props)))
 
 (defun sidebar-buffers-insert-marks (buffer)
@@ -371,6 +360,27 @@ followed by `sidebar-buffers-open-line'."
   (sidebar-set buffers-return-to-files nil)
   (sidebar-close))
 
+(defmacro sidebar-buffers-protect (name time &rest body)
+  "NAME TIME BODY."
+  (declare (indent 2))
+  (let ((n (intern (format "sidebar-repet-%s" name))))
+    `(progn
+       (unless (sidebar-get ,n)
+	 (sidebar-set ,n t)
+	 (run-at-time ,time nil (lambda ()
+				  (sidebar-set ,n nil)
+				  (progn ,@body)))))))
+
+(defun sidebar-buffers-list-update ()
+  "."
+  (interactive)
+  (sidebar-buffers-protect buffers-list-update 2
+    (-when-let* ((_ (sidebar-get-window t))
+		 (sidebar-buffer (get-buffer (sidebar-cons-buffer-name))))
+      (with-current-buffer sidebar-buffer
+	(when (equal major-mode 'sidebar-buffers-mode)
+	  (sidebar-refresh nil t))))))
+
 (defvar sidebar-buffers-mode-map nil
   "Keymap used with sidebar-buffers-mode.")
 (unless sidebar-buffers-mode-map
@@ -406,6 +416,7 @@ followed by `sidebar-buffers-open-line'."
   (add-hook 'post-command-hook 'sidebar-post-command t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
+  (add-hook 'buffer-list-update-hook 'sidebar-buffers-list-update)
 
   (remove-hook 'post-command-hook 'global-hl-line-highlight)
 
