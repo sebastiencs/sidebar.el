@@ -1377,8 +1377,11 @@ files/directories to expand."
   "Function called when a buffer is saved, it refreshes the sidebar.
 I'm using a timer because, with my config, flycheck write a temporary
 file in the current directory (I don't know why) and it appears in the sidebar.
-So I'm just waiting for it to be delete :/"
-  (run-with-idle-timer 2 nil 'sidebar-refresh-on-save-after-timer))
+So I'm just waiting for it to be delete :/
+It doesn't refresh the sidebar when using the sidebar over tramp."
+  (unless (sidebar-tramp?)
+    (sidebar-protect-repetition on-save 2
+      (run-with-timer 2 nil 'sidebar-refresh-on-save-after-timer))))
 
 (defun sidebar-delete-buffer-on-kill (frame)
   "When the FRAME is deleted, this function kill the Sidebar buffer associated to it."
@@ -1477,6 +1480,10 @@ CHANGE is unused"
 	    (sidebar-refresh))))
       (set-window-start (sidebar-get-window) start)
       (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
+
+(defun sidebar-tramp? ()
+  "Return non-nil if we're browsing a remote directory."
+  (file-remote-p (sidebar-get current-path)))
 
 (defun sidebar-git-run (&optional force)
   "Run git status in the current directory.
