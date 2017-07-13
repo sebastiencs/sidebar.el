@@ -1650,6 +1650,35 @@ This function just select another window before the frame is created."
       (let ((other-window (--first (not (equal sidebar-window it)) windows-in-frame)))
 	(set-frame-selected-window nil other-window)))))
 
+(defun sidebar-debug-vars (&optional all)
+  "Print all sidebar's variables in a buffer.
+Only 'closed-directories', 'files' and 'save-files' are not printed.
+If ALL is non-nil, it print everything."
+  (interactive)
+  (let (variables)
+    (--each (frame-parameters)
+      (let ((var (symbol-name (car it))))
+	(when (s-starts-with? "sidebar-" var)
+	  (push `(,(substring var 8) ,(cdr it)) variables))))
+    (unless all
+      (setq variables (--remove (or (s-equals? "closed-directories" (car it))
+				    (s-equals? "files" (car it))
+				    (s-equals? "save-files" (car it)))
+				variables)))
+    (-let [buffer (get-buffer-create "sidebar-debug")]
+      (with-current-buffer buffer
+	(setq buffer-read-only nil)
+	(erase-buffer)
+	(insert (format "%s\n" (propertize (format-time-string "= %A %H:%M:%S =")
+					   'face '(:foreground "red"))))
+	(--each (--sort (string< (car it) (car other)) variables)
+	  (insert (format "%s: %s\n"
+			  (propertize (car it) 'face '(:foreground "yellow"))
+			  (cadr it))))
+	(setq buffer-read-only t)
+	(goto-char 1))
+      (display-buffer buffer '(display-buffer-in-side-window . ((side . right) (window-width . 0.40)))))))
+
 (defun sidebar-history-open (dir)
   "Callback called when the user has selected a DIR to open in the history."
   (select-window (sidebar-get-window))
