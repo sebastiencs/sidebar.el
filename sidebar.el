@@ -911,6 +911,7 @@ Resize the window if necessary (customizable)."
 		 (line-begin (line-beginning-position))
 		 (line-end (line-end-position)))
       (sidebar-move-overlay line-begin line-end sidebar-window)
+      (set-window-fringes (sidebar-get-window t) nil nil nil)
       (sidebar-update-path-on-header)
       (when sidebar-adjust-auto-window-width
 	(sidebar-adjust-window-width (- line-end line-begin) sidebar-window))
@@ -1073,6 +1074,7 @@ If the file is cut, you'll be ask to rename the buffers visiting it."
 (defun sidebar-init-buffer ()
   "Intialize the buffer before inserting anything in it."
   (set-window-margins (sidebar-get-window t) 0 0)
+  (set-window-fringes (sidebar-get-window t) nil nil nil)
   (delete-overlay (sidebar-get overlay))
   (sidebar-writable
    (erase-buffer)
