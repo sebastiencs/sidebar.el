@@ -172,7 +172,7 @@ user advise it and easily access the parameter BOOKMARK."
      " "
      (icons-in-terminal 'oct_mail
 			:face 'sidebar-icon-header-project-face
-			:background (face-background 'sidebar-header-line-face)
+			:background (face-background 'sidebar-header-line-face nil t)
 			:raise -0.07
 			:height 1.3)
      " "

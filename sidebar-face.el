@@ -41,6 +41,14 @@
   :group 'sidebar
   :group 'faces)
 
+(defface sidebar-primary-color-terminal
+  '((t :background "#005fff"
+       :foreground "black"))
+  "Primary color of the sidebar.
+This face is inherited by `sidebar-branch-terminal-face',
+`sidebar-remotebranch-terminal-face', `sidebar-header-line-terminal-face'
+and `sidebar-powerline-terminal-face'")
+
 (defface sidebar-file-terminal-face
   '((t :foreground "grey"))
   "Face used with files."
@@ -97,20 +105,12 @@
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-powerline-terminal-face
-  '((t :background "#005fff"
-       :foreground "black"))
+  '((t :inherit sidebar-primary-color-terminal))
   "Face used for the powerline."
   :group 'sidebar-terminal-faces)
 
-;; (defface sidebar-mode-line-terminal-face
-;;   '((t :foreground "white"
-;;        :background "#222222"))
-;;   "Face used with the mode line."
-;;   :group 'sidebar-terminal-faces)
-
 (defface sidebar-branch-terminal-face
-  '((t :foreground "black"
-       :background "color-27"))
+  '((t :inherit sidebar-primary-color-terminal))
   "Face used on the current branch in the modeline."
   :group 'sidebar-terminal-faces)
 
@@ -120,8 +120,7 @@
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-remotebranch-terminal-face
-  '((t :foreground "black"
-       :background "color-27"))
+  '((t :inherit sidebar-primary-color-terminal))
   "Face used on the remote branch in the modeline."
   :group 'sidebar-terminal-faces)
 
@@ -131,8 +130,7 @@
   :group 'sidebar-terminal-faces)
 
 (defface sidebar-header-line-terminal-face
-  '((t :foreground "black"
-       :background "color-27"))
+  '((t :inherit sidebar-primary-color-terminal))
   "Face used with the header line."
   :group 'sidebar-terminal-faces)
 
@@ -152,10 +150,16 @@ The suffix is the additionnal path (if any) of the file on the current line."
   "Face used with the icon before a directory name in the header line."
   :group 'sidebar-terminal-faces)
 
-(defface sidebar-powerline-gui-face
-;;;  '((t :background "#005fff"
+(defface sidebar-primary-color-gui
   '((t :background "#1A237E"
        :foreground "white"))
+  "Primary color of the sidebar.
+This face is inherited by `sidebar-branch-gui-face',
+`sidebar-remotebranch-gui-face', `sidebar-header-line-gui-face'
+and `sidebar-powerline-gui-face'")
+
+(defface sidebar-powerline-gui-face
+  '((t :inherit sidebar-primary-color-gui))
   "Face used for the powerline."
   :group 'sidebar-gui-faces)
 
@@ -215,8 +219,7 @@ The suffix is the additionnal path (if any) of the file on the current line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-branch-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
+  '((t :inherit sidebar-primary-color-gui))
   "Face used on the current branch in the mode line."
   :group 'sidebar-gui-faces)
 
@@ -226,8 +229,7 @@ The suffix is the additionnal path (if any) of the file on the current line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-remotebranch-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"))
+  '((t :inherit sidebar-primary-color-gui))
   "Face used on the remote branch in the mode line."
   :group 'sidebar-gui-faces)
 
@@ -237,7 +239,7 @@ The suffix is the additionnal path (if any) of the file on the current line."
   :group 'sidebar-gui-faces)
 
 (defface sidebar-header-line-gui-face
-  '((t :background "#1A237E"))
+  '((t :inherit sidebar-primary-color-gui))
   "Face used with the header line."
   :group 'sidebar-gui-faces)
 

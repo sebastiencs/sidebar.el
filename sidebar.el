@@ -867,7 +867,7 @@ N-CHARACTERS is total number of characters already inserted on the line."
      (icons-in-terminal (car icon)
 			:raise (car (cddr icon))
 			:height (cadr (cddr icon))
-			:foreground (face-background face))
+			:foreground (face-background face nil t))
      (unless (or (sidebar-gui?) (= (cadr icon) 0)) " "))))
 
 (defun sidebar-move-overlay (beg end window)
@@ -1532,12 +1532,12 @@ See `sidebar-git-run' and `sidebar-refresh'"
      (if project
 	 (icons-in-terminal sidebar-icon-header-project
 			    :face 'sidebar-icon-header-project-face
-			    :background (face-background 'sidebar-header-line-face)
+			    :background (face-background 'sidebar-header-line-face nil t)
 			    :raise -0.07
 			    :height 1.3)
        (icons-in-terminal sidebar-icon-header-directory
 			  :face 'sidebar-icon-header-directory-face
-			  :background (face-background 'sidebar-header-line-face)
+			  :background (face-background 'sidebar-header-line-face nil t)
 			  :raise -0.0
 			  :height 1.3))
 ;;;     (when (not (sidebar-gui?)) " ")
@@ -1562,7 +1562,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
      (propertize (concat (s-repeat length " "))
 		 'face 'sidebar-header-line-face 'display '(raise 0.12))
      (icons-in-terminal (car sidebar-icon-header-end)
-			:foreground (face-background 'sidebar-header-line-face)
+			:foreground (face-background 'sidebar-header-line-face nil t)
 			:height sidebar-header-line-height))))
 
 (defun sidebar-make-modeline-left ()
@@ -1574,12 +1574,12 @@ not in a git project."
        " "
        (icons-in-terminal sidebar-icon-branch
 			  :face 'sidebar-icon-branch-face
-			  :background (face-background 'sidebar-branch-face)
+			  :background (face-background 'sidebar-branch-face nil t)
 			  :raise -0.1
 			  :height 1.3)
        (when (not (sidebar-gui?)) " ")
        (propertize (car (sidebar-get git-branches))
-		   'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face))
+		   'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face nil t))
 		   'display '(raise 0.1)))
     (concat " "
 	    (number-to-string sidebar-files-number)
@@ -1594,7 +1594,7 @@ if we're not in a git project."
 	(concat
 	 (icons-in-terminal sidebar-icon-remotebranch
 			    :face 'sidebar-icon-remotebranch-face
-			    :background (face-background 'sidebar-remotebranch-face)
+			    :background (face-background 'sidebar-remotebranch-face nil t)
 			    :raise -0.1
 			    :height 1.3)
 	 (when (not (sidebar-gui?)) " ")
@@ -1614,13 +1614,13 @@ if we're not in a git project."
       (when (> (length left) 1)
 	(add-face-text-property 0 (length left) 'sidebar-branch-face nil left)
 	(setq left (concat left (icons-in-terminal (car sidebar-icons-modeline)
-						   :foreground (face-background 'sidebar-branch-face)
+						   :foreground (face-background 'sidebar-branch-face nil t)
 						   :raise -0.1
 						   :height sidebar-mode-line-height))))
       (when (> (length right) 1)
 	(add-face-text-property 0 (length right) 'sidebar-remotebranch-face nil right)
 	(setq right (concat (icons-in-terminal (cadr sidebar-icons-modeline)
-					       :foreground (face-background 'sidebar-remotebranch-face)
+					       :foreground (face-background 'sidebar-remotebranch-face nil t)
 					       :raise -0.1
 					       :height sidebar-mode-line-height)
 			    right)))
