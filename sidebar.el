@@ -410,7 +410,7 @@ If it's not a project, return the file's directory.
 If it's not a file, return the home directory."
   (or (sidebar-get-root-project)
       (when buffer-file-name (file-name-directory buffer-file-name))
-      (expand-file-name "~")))
+      (file-name-as-directory (expand-file-name "~"))))
 
 (defsubst sidebar-cons-git-buffer-name ()
   "Construct the git buffer name from 'SIDEBAR' and the frame name.
