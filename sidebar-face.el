@@ -34,7 +34,7 @@
   :group 'sidebar
   :group 'faces)
 
-(defgroup sidebar-gui-face nil
+(defgroup sidebar-gui-faces nil
   "Faces uses in sidebar with gui."
   :prefix "sidebar-"
   :link '(info-link "(sidebar) Frames and Faces")
@@ -47,7 +47,8 @@
   "Primary color of the sidebar.
 This face is inherited by `sidebar-branch-terminal-face',
 `sidebar-remotebranch-terminal-face', `sidebar-header-line-terminal-face'
-and `sidebar-powerline-terminal-face'")
+and `sidebar-powerline-terminal-face'"
+  :group 'sidebar-terminal-faces)
 
 (defface sidebar-file-terminal-face
   '((t :foreground "grey"))
@@ -156,7 +157,8 @@ The suffix is the additionnal path (if any) of the file on the current line."
   "Primary color of the sidebar.
 This face is inherited by `sidebar-branch-gui-face',
 `sidebar-remotebranch-gui-face', `sidebar-header-line-gui-face'
-and `sidebar-powerline-gui-face'")
+and `sidebar-powerline-gui-face'"
+  :group 'sidebar-gui-faces)
 
 (defface sidebar-powerline-gui-face
   '((t :inherit sidebar-primary-color-gui))
