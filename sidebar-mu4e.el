@@ -57,6 +57,7 @@
   "Sidebar mode to view its maildirs and bookmarks."
   :group 'tools
   :group 'convenience
+  :group 'sidebar
   :link '(custom-manual "(sidebar-mu4e) Top")
   :link '(info-link "(sidebar-mu4e) Customizing"))
 

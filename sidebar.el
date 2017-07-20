@@ -479,12 +479,12 @@ This is used to know if a file is a subfile of an untracked/ignored directory."
   "Return the face associated to the git STATUS.
 If there is no status, return DEFAULT."
   (pcase status
-    ('not-updated 'sidebar-not-updated-face)
-    ('updated 'sidebar-updated-face)
-    ('changed 'sidebar-changed-face)
-    ('added 'sidebar-added-face)
-    ('renamed 'sidebar-renamed-face)
-    ('match 'sidebar-match-face)
+    ('not-updated 'sidebar-not-updated)
+    ('updated 'sidebar-updated)
+    ('changed 'sidebar-changed)
+    ('added 'sidebar-added)
+    ('renamed 'sidebar-renamed)
+    ('match 'sidebar-match)
     (_ default)))
 
 (defun sidebar-get-color (file path status &optional icon no-color)
@@ -494,12 +494,12 @@ STATUS is the status from git
 non-nil ICON means we're getting the color for an icon.
 NO-COLOR non-nil means don't use a color."
   (cond ((or (equal 'ignored status) (sidebar-child-of-status? path 'ignored))
-	 (if (--dir? file) 'sidebar-ignored-dir-face 'sidebar-ignored-file-face))
+	 (if (--dir? file) 'sidebar-ignored-dir 'sidebar-ignored-file))
 	((and (or (equal 'untracked status) (sidebar-child-of-status? path 'untracked)) (not icon))
-	 'sidebar-untracked-face)
-	((--dir? file) 'sidebar-dir-face)
-	(no-color 'sidebar-file-face)
-	((not icon) (sidebar-color-from-status status 'sidebar-file-face))))
+	 'sidebar-untracked)
+	((--dir? file) 'sidebar-dir)
+	(no-color 'sidebar-file)
+	((not icon) (sidebar-color-from-status status 'sidebar-file))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
@@ -788,7 +788,7 @@ PROJECT-PATH-ROOT."
     (sidebar-set default-width sidebar-width)
     (sidebar-set files (sidebar-load-content project-path-root))
     (unless (sidebar-get overlay)
-      (sidebar-set overlay (ov (point-min) (point-min) 'face 'sidebar-powerline-face)))))
+      (sidebar-set overlay (ov (point-min) (point-min) 'face 'sidebar-powerline)))))
 
 (defun sidebar-open ()
   "Open or create a sidebar for the current frame."
@@ -861,7 +861,7 @@ N-CHARACTERS is total number of characters already inserted on the line."
   (let* ((space-to-add (- window-width (1+ n-characters)
 			  (if (sidebar-gui?) (+ n-icons (cadr sidebar-icon-powerline)) 1)))
 	 (icon sidebar-icon-powerline)
-	 (face 'sidebar-powerline-face))
+	 (face 'sidebar-powerline))
     (concat
      (propertize (s-repeat space-to-add " ") 'face face)
      (icons-in-terminal (car icon)
@@ -1533,13 +1533,13 @@ See `sidebar-git-run' and `sidebar-refresh'"
      " "
      (if project
 	 (icons-in-terminal sidebar-icon-header-project
-			    :face 'sidebar-icon-header-project-face
-			    :background (face-background 'sidebar-header-line-face nil t)
+			    :face 'sidebar-icon-header-project
+			    :background (face-background 'sidebar-header-line nil t)
 			    :raise -0.07
 			    :height 1.3)
        (icons-in-terminal sidebar-icon-header-directory
-			  :face 'sidebar-icon-header-directory-face
-			  :background (face-background 'sidebar-header-line-face nil t)
+			  :face 'sidebar-icon-header-directory
+			  :background (face-background 'sidebar-header-line nil t)
 			  :raise -0.0
 			  :height 1.3))
 ;;;     (when (not (sidebar-gui?)) " ")
@@ -1547,7 +1547,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
      (propertize project-name 'display '(raise 0.12))
      (when (and suffix (> (length suffix) 1))
        (propertize (if project suffix (substring suffix 1))
-		   'face 'sidebar-suffix-path-header-face
+		   'face 'sidebar-suffix-path-header
 		   'display '(raise 0.12)
 		   'font-lock-ignore t)))))
 
@@ -1555,16 +1555,16 @@ See `sidebar-git-run' and `sidebar-refresh'"
   "Format the header with the string from `sidebar-make-header-function'."
   (let* ((string (funcall (sidebar-get make-header-function)))
 	 (length 0))
-    (add-face-text-property 0 (length string) 'sidebar-header-line-face t string)
-    (setq length (- (sidebar-window-width) (1+ (length string))))
+    (add-face-text-property 0 (length string) 'sidebar-header-line t string)
+    (setq length (- window-width (1+ (length string))))
     (when (sidebar-gui?)
       (setq length (- length (cadr sidebar-icon-header-end))))
     (concat
      string
      (propertize (concat (s-repeat length " "))
-		 'face 'sidebar-header-line-face 'display '(raise 0.12))
+		 'face 'sidebar-header-line 'display '(raise 0.12))
      (icons-in-terminal (car sidebar-icon-header-end)
-			:foreground (face-background 'sidebar-header-line-face nil t)
+			:foreground (face-background 'sidebar-header-line nil t)
 			:height sidebar-header-line-height))))
 
 (defun sidebar-make-modeline-left ()
@@ -1575,13 +1575,13 @@ not in a git project."
       (concat
        " "
        (icons-in-terminal sidebar-icon-branch
-			  :face 'sidebar-icon-branch-face
-			  :background (face-background 'sidebar-branch-face nil t)
+			  :face 'sidebar-icon-branch
+			  :background (face-background 'sidebar-branch nil t)
 			  :raise -0.1
 			  :height 1.3)
        (when (not (sidebar-gui?)) " ")
        (propertize (car (sidebar-get git-branches))
-		   'face `(:inherit sidebar-branch-face :background ,(face-background 'sidebar-branch-face nil t))
+		   'face `(:inherit sidebar-branch :background ,(face-background 'sidebar-branch nil t))
 		   'display '(raise 0.1)))
     (concat " "
 	    (number-to-string sidebar-files-number)
@@ -1595,8 +1595,8 @@ if we're not in a git project."
       (let ((str-branch-distant (s-split " \\[\\|\\]" (cadr (sidebar-get git-branches)))))
 	(concat
 	 (icons-in-terminal sidebar-icon-remotebranch
-			    :face 'sidebar-icon-remotebranch-face
-			    :background (face-background 'sidebar-remotebranch-face nil t)
+			    :face 'sidebar-icon-remote-branch
+			    :background (face-background 'sidebar-remote-branch nil t)
 			    :raise -0.1
 			    :height 1.3)
 	 (when (not (sidebar-gui?)) " ")
@@ -1614,15 +1614,15 @@ if we're not in a git project."
 	  (sidebar-width (sidebar-window-width))
 	  (space-to-add 0))
       (when (> (length left) 1)
-	(add-face-text-property 0 (length left) 'sidebar-branch-face nil left)
+	(add-face-text-property 0 (length left) 'sidebar-branch nil left)
 	(setq left (concat left (icons-in-terminal (car sidebar-icons-modeline)
-						   :foreground (face-background 'sidebar-branch-face nil t)
+						   :foreground (face-background 'sidebar-branch nil t)
 						   :raise -0.1
 						   :height sidebar-mode-line-height))))
       (when (> (length right) 1)
-	(add-face-text-property 0 (length right) 'sidebar-remotebranch-face nil right)
+	(add-face-text-property 0 (length right) 'sidebar-remote-branch nil right)
 	(setq right (concat (icons-in-terminal (cadr sidebar-icons-modeline)
-					       :foreground (face-background 'sidebar-remotebranch-face nil t)
+					       :foreground (face-background 'sidebar-remote-branch nil t)
 					       :raise -0.1
 					       :height sidebar-mode-line-height)
 			    right)))
@@ -1634,7 +1634,7 @@ if we're not in a git project."
       (concat left
 	      (s-repeat space-to-add " ")
 	      right
-	      (propertize "    " 'face 'sidebar-remotebranch-face)))))
+	      (propertize "    " 'face 'sidebar-remote-branch)))))
 
 (defun sidebar-post-command()
   "Function called after every command.
@@ -1775,67 +1775,19 @@ If ALL is non-nil, it print everything."
 
 (defun sidebar-init-mode ()
   "Initialize the sidebar modes."
-  (face-remap-add-relative 'header-line '((:inherit sidebar-empty-face :background "" :foreground "")))
-  (face-remap-add-relative 'mode-line '((:inherit sidebar-empty-face :foreground "" :background "" :box nil)))
-  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-empty-face :foreground "" :background "" :box nil)))
+
+  (set (make-local-variable 'face-remapping-alist)
+       '((header-line sidebar-empty-face)
+	 (header-line-inactive sidebar-empty-face)
+	 (mode-line sidebar-empty-face)
+	 (mode-line-inactive sidebar-empty-face)))
 
   (setq cursor-type nil
 	buffer-read-only t
 	mode-line-format (list '(:eval (sidebar-set-modeline)))
 	header-line-format (list '(:eval (sidebar-set-header))))
 
-  (if (sidebar-gui?)
-      (progn
-	;; (setq sidebar-status-on-directory sidebar-gui-status-on-directory)
-	;; (setq sidebar-filename-colored sidebar-gui-filename-colored)
-	;; (setq sidebar-status-on-file sidebar-gui-status-on-file)
-	(copy-face 'sidebar-powerline-gui-face 'sidebar-powerline-face)
-	(copy-face 'sidebar-file-gui-face 'sidebar-file-face)
-	(copy-face 'sidebar-dir-gui-face 'sidebar-dir-face)
-	(copy-face 'sidebar-untracked-gui-face 'sidebar-untracked-face)
-	(copy-face 'sidebar-ignored-dir-gui-face 'sidebar-ignored-dir-face)
-	(copy-face 'sidebar-ignored-file-gui-face 'sidebar-ignored-file-face)
-	(copy-face 'sidebar-not-updated-gui-face 'sidebar-not-updated-face)
-	(copy-face 'sidebar-updated-gui-face 'sidebar-updated-face)
-	(copy-face 'sidebar-changed-gui-face 'sidebar-changed-face)
-	(copy-face 'sidebar-added-gui-face 'sidebar-added-face)
-	(copy-face 'sidebar-renamed-gui-face 'sidebar-renamed-face)
-	(copy-face 'sidebar-header-line-gui-face 'sidebar-header-line-face)
-	(copy-face 'sidebar-branch-gui-face 'sidebar-branch-face)
-	(copy-face 'sidebar-remotebranch-gui-face 'sidebar-remotebranch-face)
-	(copy-face 'sidebar-icon-branch-gui-face 'sidebar-icon-branch-face)
-	(copy-face 'sidebar-icon-remotebranch-gui-face 'sidebar-icon-remotebranch-face)
-	(copy-face 'sidebar-icon-header-project-gui-face 'sidebar-icon-header-project-face)
-	(copy-face 'sidebar-icon-header-directory-gui-face 'sidebar-icon-header-directory-face)
-	(copy-face 'sidebar-suffix-path-header-gui-face 'sidebar-suffix-path-header-face)
-	(copy-face 'sidebar-match-gui-face 'sidebar-match-face))
-    ;; (setq sidebar-status-on-directory sidebar-terminal-status-on-directory)
-    ;; (setq sidebar-filename-colored sidebar-terminal-filename-colored)
-    ;; (setq sidebar-status-on-file sidebar-terminal-status-on-file)
-    (copy-face 'sidebar-powerline-terminal-face 'sidebar-powerline-face)
-    (copy-face 'sidebar-file-terminal-face 'sidebar-file-face)
-    (copy-face 'sidebar-dir-terminal-face 'sidebar-dir-face)
-    (copy-face 'sidebar-untracked-terminal-face 'sidebar-untracked-face)
-    (copy-face 'sidebar-ignored-dir-terminal-face 'sidebar-ignored-dir-face)
-    (copy-face 'sidebar-ignored-file-terminal-face 'sidebar-ignored-file-face)
-    (copy-face 'sidebar-not-updated-terminal-face 'sidebar-not-updated-face)
-    (copy-face 'sidebar-updated-terminal-face 'sidebar-updated-face)
-    (copy-face 'sidebar-changed-terminal-face 'sidebar-changed-face)
-    (copy-face 'sidebar-added-terminal-face 'sidebar-added-face)
-    (copy-face 'sidebar-renamed-terminal-face 'sidebar-renamed-face)
-    (copy-face 'sidebar-header-line-terminal-face 'sidebar-header-line-face)
-    (copy-face 'sidebar-branch-terminal-face 'sidebar-branch-face)
-    (copy-face 'sidebar-remotebranch-terminal-face 'sidebar-remotebranch-face)
-    (copy-face 'sidebar-icon-branch-terminal-face 'sidebar-icon-branch-face)
-    (copy-face 'sidebar-icon-remotebranch-terminal-face 'sidebar-icon-remotebranch-face)
-    (copy-face 'sidebar-icon-header-project-terminal-face 'sidebar-icon-header-project-face)
-    (copy-face 'sidebar-icon-header-directory-terminal-face 'sidebar-icon-header-directory-face)
-    (copy-face 'sidebar-suffix-path-header-terminal-face 'sidebar-suffix-path-header-face)
-    (copy-face 'sidebar-match-terminal-face 'sidebar-match-face))
-
-  (remove-hook 'post-command-hook 'global-hl-line-highlight)
-
-  )
+  (remove-hook 'post-command-hook 'global-hl-line-highlight))
 
 (defvar sidebar-mode-map nil
   "Keymap uses with sidebar-mode.")
@@ -1871,10 +1823,11 @@ If ALL is non-nil, it print everything."
 \\{sidebar-mode-map}"
   ::group sidebar
 
+  (make-local-variable 'post-command-hook)
+
   (sidebar-init-mode)
   (add-to-list 'display-buffer-alist '(" SIDEBAR-SELECT" display-buffer-in-side-window (side . left) (slot . 1)))
 
-  (make-local-variable 'post-command-hook)
   (add-hook 'post-command-hook 'sidebar-post-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)

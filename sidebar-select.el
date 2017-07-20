@@ -35,33 +35,39 @@
 (require 'icons-in-terminal nil t)
 (require 'sidebar-utils)
 
-(defface sidebar-select-line-gui-face
-  '((t :foreground "white"
-       :box nil
-       :background "#1A237E"))
-  "Face used for the current line."
-  :group 'sidebar-gui-faces)
+(defface sidebar-select-line
+  '((((min-colors 16777216))
+     :foreground "white"
+     :box nil
+     :background "#1A237E")
+    (((min-colors 256))
+     :foreground "white"
+     :box nil
+     :background "#005fff")
+    (t
+     :foreground "black"
+     :box nil
+     :background "white"))
+  "Face used for the current line with `sidebar-select'."
+  :group 'sidebar-faces)
 
-(defface sidebar-select-header-gui-face
-  '((t :foreground "white"
-       :background "#1A237E"
-       :overline "#1A237E"))
-  "Face used for the headers."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-select-line-terminal-face
-  '((t :foreground "white"
-       :box nil
-       :background "#005fff"))
-  "Face used for the current line."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-select-header-terminal-face
-  '((t :foreground "white"
-       :background "#005fff"
-       :overline "#005fff"))
-  "Face used for the headers."
-  :group 'sidebar-terminal-faces)
+(defface sidebar-select-header
+  '((((min-colors 16777216))
+     :foreground "white"
+     :box nil
+     :overline "#1A237E"
+     :background "#1A237E")
+    (((min-colors 256))
+     :foreground "white"
+     :box nil
+     :overline "#005fff"
+     :background "#005fff")
+    (t
+     :foreground "black"
+     :box nil
+     :background "white"))
+  "Face used for the headers with `sidebar-select'."
+  :group 'sidebar-faces)
 
 (defcustom sidebar-select-icon-left-header 'myicons_0006
   "Icon to use on the left of the header.
@@ -129,14 +135,14 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 	 (space-to-add (- (/ width 2) spaces))
 	 (space-at-the-end (- (/ width 2) spaces)))
     (concat
-     (propertize (s-repeat space-to-add " ") 'face `(:overline ,(face-background 'sidebar-select-header-face nil t)))
-     (icons-in-terminal sidebar-select-icon-left-header :foreground (face-background 'sidebar-select-header-face nil t)
-			:overline (face-background 'sidebar-select-header-face nil t) :raise raise :height height)
+     (propertize (s-repeat space-to-add " ") 'face `(:overline ,(face-background 'sidebar-select-header nil t)))
+     (icons-in-terminal sidebar-select-icon-left-header :foreground (face-background 'sidebar-select-header nil t)
+			:overline (face-background 'sidebar-select-header nil t) :raise raise :height height)
      (propertize string 'display '(raise 0.25)
-		 'face '(:inherit sidebar-select-header-face :height 1.0))
-     (icons-in-terminal sidebar-select-icon-right-header :foreground (face-background 'sidebar-select-header-face nil t)
-			:overline (face-background 'sidebar-select-header-face nil t) :raise raise :height height)
-     (propertize (s-repeat space-at-the-end " ") 'face `(:overline ,(face-background 'sidebar-select-header-face nil t))))
+		 'face '(:inherit sidebar-select-header :height 1.0))
+     (icons-in-terminal sidebar-select-icon-right-header :foreground (face-background 'sidebar-select-header nil t)
+			:overline (face-background 'sidebar-select-header nil t) :raise raise :height height)
+     (propertize (s-repeat space-at-the-end " ") 'face `(:overline ,(face-background 'sidebar-select-header nil t))))
     ))
 
 (defun sidebar-select-insert-buffername (name icon)
@@ -284,22 +290,16 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 	buffer-read-only nil)
   (sidebar-set select-active t)
   (internal-show-cursor nil nil)
-
-  (if (sidebar-gui?)
-      (progn
-	(copy-face 'sidebar-select-header-gui-face 'sidebar-select-header-face)
-	(copy-face 'sidebar-select-line-gui-face 'sidebar-select-line-face))
-    (copy-face 'sidebar-select-header-terminal-face 'sidebar-select-header-face)
-    (copy-face 'sidebar-select-line-terminal-face 'sidebar-select-line-face))
-
-  (face-remap-add-relative 'hl-line 'sidebar-select-line-face)
+  (face-remap-add-relative 'hl-line 'sidebar-select-line)
   (add-hook 'kill-buffer-hook 'sidebar-select-killed-hook)
   (add-hook 'buffer-list-update-hook 'sidebar-select-on-change)
   (add-hook 'pre-command-hook 'sidebar-select-pre-command)
   (add-hook 'focus-out-hook 'sidebar-select-focus-out)
-  (face-remap-add-relative 'mode-line '((:inherit sidebar-empty-face :foreground "" :background "" :box nil)))
-  (face-remap-add-relative 'mode-line-inactive '((:inherit sidebar-empty-face :foreground "" :background "" :box nil)))
-  (face-remap-add-relative 'header-line '((:inherit sidebar-empty-face :background "" :box nil)))
+  (set (make-local-variable 'face-remapping-alist)
+       '((header-line sidebar-empty-face)
+	 (header-line-inactive sidebar-empty-face)
+	 (mode-line sidebar-empty-face)
+	 (mode-line-inactive sidebar-empty-face)))
   (hl-line-mode))
 
 (provide 'sidebar-select)

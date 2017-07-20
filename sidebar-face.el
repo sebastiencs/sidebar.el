@@ -27,258 +27,168 @@
 
 ;;; Code:
 
-(defgroup sidebar-terminal-face nil
-  "Faces uses in sidebar on terminals."
+(defgroup sidebar-faces nil
+  "Faces uses in Sidebar."
   :prefix "sidebar-"
-  :link '(info-link "(sidebar) Frames and Faces")
   :group 'sidebar
   :group 'faces)
 
-(defgroup sidebar-gui-faces nil
-  "Faces uses in sidebar with gui."
-  :prefix "sidebar-"
-  :link '(info-link "(sidebar) Frames and Faces")
-  :group 'sidebar
-  :group 'faces)
-
-(defface sidebar-primary-color-terminal
-  '((t :background "#005fff"
-       :foreground "black"))
+(defface sidebar-primary-color
+  '((((min-colors 16777216))
+     :background "#1A237E" :foreground "white")
+    (((min-colors 256))
+     :background "#005fff" :foreground "black")
+    (t
+     :background "white" :foreground "black"))
   "Primary color of the sidebar.
-This face is inherited by `sidebar-branch-terminal-face',
-`sidebar-remotebranch-terminal-face', `sidebar-header-line-terminal-face'
-and `sidebar-powerline-terminal-face'"
-  :group 'sidebar-terminal-faces)
+This face is inherited by `sidebar-branch',
+`sidebar-remotebranch', `sidebar-header-line'
+and `sidebar-powerline'"
+  :group 'sidebar-faces)
 
-(defface sidebar-file-terminal-face
-  '((t :foreground "grey"))
+(defface sidebar-file
+  '((((min-colors 256))
+     :foreground "grey")
+    (t
+     :foreground "white"))
   "Face used with files."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-dir-terminal-face
-  '((t :foreground "#005fff"))
+(defface sidebar-dir
+  '((((min-colors 256))
+     :foreground "#005fff")
+    (t
+     :foreground "white"))
   "Face used with directories."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-untracked-terminal-face
-  '((t :foreground "#FF8C00"))
+(defface sidebar-untracked
+  '((((min-colors 16777216))
+     :foreground "gray31")
+    (((min-colors 256))
+     :foreground "#ff8c00")
+    (t
+     :foreground "white"))
   "Face used with untracked files/directories."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-ignored-dir-terminal-face
-  '((t :foreground "#3f3f3f"))
+(defface sidebar-ignored-dir
+  '((((min-colors 256))
+     :foreground "#3f3f3f")
+    (t
+     :foreground "white"))
   "Face used with ignored directories."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-ignored-file-terminal-face
-  '((t :foreground "#3f3f3f"))
+(defface sidebar-ignored-file
+  '((((min-colors 256))
+     :foreground "#3f3f3f")
+    (t
+     :foreground "white"))
   "Face used with ignored files."
-  :group 'sidebar-terminal-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-not-updated-terminal-face
-  '((t :foreground "red"))
-  "Face used with icon or filename for files not updated."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-updated-terminal-face
-  '((t :foreground "green"))
-  "Face used with icon or filename for updated files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-changed-terminal-face
-  '((t :foreground "orange"))
-  "Face used with icon or filename for changed files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-added-terminal-face
-  '((t :foreground "green"))
-  "Face used with icon or filename for added files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-renamed-terminal-face
-  '((t :foreground "orange"))
-  "Face used with icon or filename for renamed files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-match-terminal-face
-  '((t :foreground "green"))
-  "Face used with icon or filename for matched files."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-powerline-terminal-face
-  '((t :inherit sidebar-primary-color-terminal))
-  "Face used for the powerline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-branch-terminal-face
-  '((t :inherit sidebar-primary-color-terminal))
-  "Face used on the current branch in the modeline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-icon-branch-terminal-face
-  '((t :inherit sidebar-branch-terminal-face))
-  "Face used on the icon before the current branch in the modeline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-remotebranch-terminal-face
-  '((t :inherit sidebar-primary-color-terminal))
-  "Face used on the remote branch in the modeline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-icon-remotebranch-terminal-face
-  '((t :inherit sidebar-remotebranch-terminal-face))
-  "Face used on the icon before the remote branch in the modeline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-header-line-terminal-face
-  '((t :inherit sidebar-primary-color-terminal))
-  "Face used with the header line."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-suffix-path-header-terminal-face
-  '((t :foreground "grey58"))
-  "Face used with the suffix on the header line.
-The suffix is the additionnal path (if any) of the file on the current line."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-icon-header-project-terminal-face
-  '((t :inherit sidebar-header-line-terminal-face))
-  "Face used with the icon before a project name in the headerline."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-icon-header-directory-terminal-face
-  '((t :inherit sidebar-header-line-terminal-face))
-  "Face used with the icon before a directory name in the header line."
-  :group 'sidebar-terminal-faces)
-
-(defface sidebar-primary-color-gui
-  '((t :background "#1A237E"
-       :foreground "white"))
-  "Primary color of the sidebar.
-This face is inherited by `sidebar-branch-gui-face',
-`sidebar-remotebranch-gui-face', `sidebar-header-line-gui-face'
-and `sidebar-powerline-gui-face'"
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-powerline-gui-face
-  '((t :inherit sidebar-primary-color-gui))
-  "Face used for the powerline."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-file-gui-face
-  '((t :foreground "grey"))
-  "Face used with files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-dir-gui-face
-  '((t :foreground "#005fff"))
-  "Face used with directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-untracked-gui-face
-  '((t :foreground "gray31"))
-  "Face used with untracked files/directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-ignored-dir-gui-face
-  '((t :foreground "#3f3f3f"))
-  "Face used with ignored directories."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-ignored-file-gui-face
-  '((t :foreground "#3f3f3f"))
-  "Face used with ignored files."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-not-updated-gui-face
-  '((t :foreground "brown"))
+(defface sidebar-not-updated
+  '((((min-colors 16777216))
+     :foreground "red")
+    (((min-colors 256))
+     :foreground "brown")
+    (t
+     :foreground "white"))
   "Face used for files not updated."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-updated-gui-face
-  '((t :foreground "forest green"))
+(defface sidebar-updated
+  '((((min-colors 16777216))
+     :foreground "forest green")
+    (((min-colors 256))
+     :foreground "green")
+    (t
+     :foreground "white"))
   "Face used for updated files."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-changed-gui-face
-  '((t :foreground "orange"))
+(defface sidebar-changed
+  '((((min-colors 256))
+     :foreground "orange")
+    (t
+     :foreground "white"))
   "Face used for changed files."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-added-gui-face
-  '((t :foreground "green"))
+(defface sidebar-added
+  '((((min-colors 16777216))
+     :foreground "forest green")
+    (((min-colors 256))
+     :foreground "green")
+    (t
+     :foreground "white"))
   "Face used for added files."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-renamed-gui-face
-  '((t :foreground "orange"))
+(defface sidebar-renamed
+  '((((min-colors 256))
+     :foreground "orange")
+    (t
+     :foreground "white"))
   "Face used for renamed files."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-match-gui-face
-  '((t :foreground "forest green"))
+(defface sidebar-match
+  '((((min-colors 16777216))
+     :foreground "forest green")
+    (((min-colors 256))
+     :foreground "green")
+    (t
+     :foreground "white"))
   "Face used for matched files."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-branch-gui-face
-  '((t :inherit sidebar-primary-color-gui))
+(defface sidebar-powerline
+  '((t :inherit sidebar-primary-color))
+  "Face used with the current line."
+  :group 'sidebar-faces)
+
+(defface sidebar-branch
+  '((t :inherit sidebar-primary-color))
   "Face used on the current branch in the mode line."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-icon-branch-gui-face
-  '((t :inherit sidebar-branch-gui-face))
+(defface sidebar-icon-branch
+  '((t :inherit sidebar-branch))
   "Face used on the icon before the current branch in the mode line."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-remotebranch-gui-face
-  '((t :inherit sidebar-primary-color-gui))
+(defface sidebar-remote-branch
+  '((t :inherit sidebar-primary-color))
   "Face used on the remote branch in the mode line."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-icon-remotebranch-gui-face
-  '((t :inherit sidebar-remotebranch-gui-face))
+(defface sidebar-icon-remote-branch
+  '((t :inherit sidebar-remote-branch))
   "Face used on the icon before the remote branch in the mode line."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-header-line-gui-face
-  '((t :inherit sidebar-primary-color-gui))
-  "Face used with the header line."
-  :group 'sidebar-gui-faces)
+(defface sidebar-header-line
+  '((t :inherit sidebar-primary-color))
+  "Face used on the header line."
+  :group 'sidebar-faces)
 
-(defface sidebar-suffix-path-header-gui-face
+(defface sidebar-suffix-path-header
   '((t :foreground "grey58"))
   "Face used with the suffix on the header line.
 The suffix is the additionnal path (if any) of the file on the current line."
-  :group 'sidebar-gui-faces)
+  :group 'sidebar-faces)
 
-(defface sidebar-icon-header-project-gui-face
-  '((t :inherit sidebar-header-line-gui-face))
-  "Face used with the icon before a project name."
-  :group 'sidebar-gui-faces)
+(defface sidebar-icon-header-project
+  '((t :inherit sidebar-header-line))
+  "Face used on the header line."
+  :group 'sidebar-faces)
 
-(defface sidebar-icon-header-directory-gui-face
-  '((t :inherit sidebar-header-line-gui-face))
-  "Face used with the icon before a directory name (On the header line)."
-  :group 'sidebar-gui-faces)
-
-(defface sidebar-powerline-face nil "" :group nil)
-(defface sidebar-file-face nil "" :group nil)
-(defface sidebar-dir-face nil "" :group nil)
-(defface sidebar-untracked-face nil "" :group nil)
-(defface sidebar-ignored-dir-face nil "" :group nil)
-(defface sidebar-ignored-file-face nil "" :group nil)
-(defface sidebar-not-updated-face nil "" :group nil)
-(defface sidebar-updated-face nil "" :group nil)
-(defface sidebar-changed-face nil "" :group nil)
-(defface sidebar-added-face nil "" :group nil)
-(defface sidebar-renamed-face nil "" :group nil)
-(defface sidebar-match-face nil "" :group nil)
-(defface sidebar-header-line-face nil "" :group nil)
-(defface sidebar-branch-face nil "" :group nil)
-(defface sidebar-remotebranch-face nil "" :group nil)
-(defface sidebar-icon-header-project-face nil "" :group nil)
-(defface sidebar-icon-header-directory-face nil "" :group nil)
-(defface sidebar-suffix-path-header-face nil "" :group nil)
+(defface sidebar-icon-header-directory
+  '((t :inherit sidebar-header-line))
+  "Face used on the header line."
+  :group 'sidebar-faces)
 
 (provide 'sidebar-face)
 

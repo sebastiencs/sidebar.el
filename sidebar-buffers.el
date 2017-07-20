@@ -51,6 +51,7 @@
   "Sidebar mode to view a list of buffers."
   :group 'tools
   :group 'convenience
+  :group 'sidebar
   :link '(custom-manual "(sidebar-buffers) Top")
   :link '(info-link "(sidebar-buffers) Customizing"))
 
