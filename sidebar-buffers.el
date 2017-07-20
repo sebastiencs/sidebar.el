@@ -45,7 +45,6 @@
 (declare-function sidebar-adjust-window-width 'sidebar)
 (declare-function sidebar-reset-window-width 'sidebar)
 
-(defvar buffers-contexts)
 (defvar sidebar-select-icon-before-window)
 
 (defgroup sidebar-buffers nil
