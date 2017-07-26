@@ -149,10 +149,10 @@ user advise it and easily access the parameter BOOKMARK."
   "Open the maildir or bookmark on the current line."
   (interactive)
   (-let* (((&alist 'data data 'type type) (sidebar-find-file-from-line)))
-    (with-current-buffer (window-buffer (sidebar-get window-origin))
-      (pcase type
-	('maildir  (sidebar-mu4e-open-maildir data))
-	('bookmark (sidebar-mu4e-open-bookmark (cadr data)))))))
+    (select-window (sidebar-get window-origin))
+    (pcase type
+      ('maildir  (sidebar-mu4e-open-maildir data))
+      ('bookmark (sidebar-mu4e-open-bookmark (cadr data))))))
 
 (defun sidebar-mu4e? ()
   "Return non-nil if we have to use `sidebar-mu4e-mode' on the sidebar creation."
@@ -173,7 +173,7 @@ user advise it and easily access the parameter BOOKMARK."
      " "
      (icons-in-terminal 'oct_mail
 			:face 'sidebar-icon-header-project-face
-			:background (face-background 'sidebar-header-line-face nil t)
+			:background (face-background 'sidebar-header-line nil t)
 			:raise -0.07
 			:height 1.3)
      " "
@@ -216,7 +216,7 @@ It removes the sidebar."
 with mu4e."
   (when sidebar-mu4e-autostart
     (sidebar-set mu4e-force t)
-    (run-with-timer 1 nil 'sidebar-open)))
+    (sidebar-open)))
 
 (defun sidebar-mu4e-pre-command ()
   "See `sidebar-mu4e-post-command'."
