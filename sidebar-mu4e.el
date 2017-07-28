@@ -212,8 +212,8 @@ It removes the sidebar."
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
 
 (defun sidebar-mu4e-autostart (&rest _)
-  "If `sidebar-mu4e-autostart' is non-nil, sidebar-mu4e is open automatically..
-with mu4e."
+  "If variable `sidebar-mu4e-autostart' is non-nil, sidebar-mu4e is open ..
+automatically with mu4e."
   (when sidebar-mu4e-autostart
     (sidebar-set mu4e-force t)
     (sidebar-open)))
@@ -232,7 +232,7 @@ with mu4e."
 	    ((> line 1) (forward-line -1))))))
 
 (defvar sidebar-mu4e-mode-map nil
-  "Keymap used with sidebar-mu4e-mode.")
+  "Keymap used with ‘sidebar-mu4e-mode’.")
 (unless sidebar-mu4e-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)

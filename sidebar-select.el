@@ -248,7 +248,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (select-window (sidebar-get-window)))
 
 (defvar sidebar-select-mode-map nil
-  "Keymap use with sidebar-select-mode.")
+  "Keymap use with ‘sidebar-select-mode’.")
 (unless sidebar-select-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)

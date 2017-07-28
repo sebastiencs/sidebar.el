@@ -48,7 +48,7 @@
 (declare-function sidebar-list-windows-others-frame 'sidebar)
 (declare-function sidebar-close 'sidebar)
 (declare-function sidebar-switch-to-buffers 'sidebar)
-(declare-function --getline 'sidebar)
+(declare-function sidebar--getline 'sidebar)
 
 (defvar sidebar-select-icon-before-window)
 
@@ -387,7 +387,7 @@ followed by `sidebar-buffers-open-line'."
 	  (sidebar-refresh nil t))))))
 
 (defvar sidebar-buffers-mode-map nil
-  "Keymap used with sidebar-buffers-mode.")
+  "Keymap used with ‘sidebar-buffers-mode’.")
 (unless sidebar-buffers-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)

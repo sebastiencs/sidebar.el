@@ -731,7 +731,7 @@ PATH ACCUM."
       (sidebar-split-path-helper dir (cons name accum)))))
 
 (defun sidebar-check-setup ()
-  "Check if the font icons-in-terminal is installed.
+  "Check if the font ‘icons-in-terminal’ is installed.
 TODO: Check with terminals too (now it checks only with GUI), `font-info'
 returns an error on terminals."
   (when (and (sidebar-gui?) (not (font-info "icons-in-terminal")))
@@ -1820,7 +1820,7 @@ If ALL is non-nil, it print everything."
   (remove-hook 'post-command-hook 'global-hl-line-highlight))
 
 (defvar sidebar-mode-map nil
-  "Keymap uses with sidebar-mode.")
+  "Keymap uses with ‘sidebar-mode’.")
 (unless sidebar-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
