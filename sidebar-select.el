@@ -4,9 +4,9 @@
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; URL: https://github.com/sebastiencs/sidebar.el
-;; Keywords: project, sidebar, projectile, file explorer
+;; Keywords: files, convenience, frames
 ;; Version: 0.0.1
-;; Package-Requires: ((dash "2.13.0") (projectile "0.11.0"))
+;; Package-Requires: ((emacs "25") (dash "2.11.0") (projectile "0.10.0"))
 
 ;;; License
 ;;
@@ -27,6 +27,8 @@
 
 ;;; Commentary:
 ;;
+;; sidebar-select is the small window below the sidebar when we
+;; have to select another window
 
 ;;; Code:
 
@@ -130,7 +132,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (defvar-local sidebar-select-last-line 0)
 
 (defun sidebar-select-set-header (string spaces raise height)
-  "."
+  "STRING SPACES RAISE HEIGHT."
   (let* ((width (window-width))
 	 (space-to-add (- (/ width 2) spaces))
 	 (space-at-the-end (- (/ width 2) spaces)))

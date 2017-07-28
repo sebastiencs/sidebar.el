@@ -4,9 +4,9 @@
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; URL: https://github.com/sebastiencs/sidebar.el
-;; Keywords: project, sidebar, projectile, file explorer
+;; Keywords: files, convenience, frames
 ;; Version: 0.0.1
-;; Package-Requires: ((dash "2.13.0") (projectile "0.11.0"))
+;; Package-Requires: ((emacs "25" )(dash "2.11.0") (projectile "0.10.0"))
 
 ;;; License
 ;;
@@ -27,6 +27,7 @@
 
 ;;; Commentary:
 ;;
+;; files mapping
 
 ;;; Code:
 
@@ -73,7 +74,7 @@
     (dark_silver "#616161")
     (blue_grey "#607D8B")))
 
-(defmacro --add (table data &rest extensions)
+(defmacro sidebar--add (table data &rest extensions)
   "TABLE DATA EXTENSIONS."
   (let ((result nil)
 	(ext (-flatten extensions)))
@@ -81,51 +82,51 @@
       (push `(puthash ,it ',data ,table) result))
     `(progn ,@result)))
 
-(defmacro --add-to-hashtable (table &rest items)
+(defmacro sidebar--add-to-hashtable (table &rest items)
   "TABLE ITEMS."
   (let ((resultat nil))
     (--each items
       (if (macrop (car it))
 	  (let ((elems (macroexpand-all it)))
 	    (--each elems
-	      (push `(--add ,table ,(car it) ,(cdr it)) resultat)))
-	(push `(--add ,table ,(car it) ,(cdr it)) resultat)))
+	      (push `(sidebar--add ,table ,(car it) ,(cdr it)) resultat)))
+	(push `(sidebar--add ,table ,(car it) ,(cdr it)) resultat)))
     `(progn ,@resultat)))
 
-(defmacro --with-icon (icon &rest items)
+(defmacro sidebar--with-icon (icon &rest items)
   "ICON ITEMS."
   (let ((result nil))
     (--each items
       (push `(,(-concat (car it) `(:icon ,icon)) ,(cdr it)) result))
     result))
 
-(defmacro --add-to-extensions (&rest items)
+(defmacro sidebar--add-to-extensions (&rest items)
   "ITEMS."
-  `(--add-to-hashtable
+  `(sidebar--add-to-hashtable
     sidebar-filemapping-extension-hashtable
     ,@items))
 
-(defmacro --add-to-full (&rest items)
+(defmacro sidebar--add-to-full (&rest items)
   "ITEMS."
-  `(--add-to-hashtable
+  `(sidebar--add-to-hashtable
     sidebar-filemapping-full-hashtable
     ,@items))
 
-(defmacro --add-to-prefix (&rest items)
+(defmacro sidebar--add-to-prefix (&rest items)
   "ITEMS."
-  `(--add-to-hashtable
+  `(sidebar--add-to-hashtable
     sidebar-filemapping-prefix-hashtable
     ,@items))
 
-(defmacro --add-to-suffix (&rest items)
+(defmacro sidebar--add-to-suffix (&rest items)
   "ITEMS."
-  `(--add-to-hashtable
+  `(sidebar--add-to-hashtable
     sidebar-filemapping-suffix-hashtable
     ,@items))
 
 ;;;(clrhash sidebar-filemapping-extension-hashtable)
 
-(--add-to-extensions
+(sidebar--add-to-extensions
  ((:icon file_video :color red) "mpeg" "mpg")
  ((:icon file_video :color dark_blue) "webm")
  ((:icon file_video :color red) "flv")
@@ -291,7 +292,7 @@
  ((:icon oct_database :color green) "cache")
  )
 
-(--add-to-suffix
+(sidebar--add-to-suffix
  ((:icon mfizz_html5 :color red) "html.erb")
  ((:icon file_test_js :color orange) "test.js" "test.node" "test._js" "test.es6" "test.es")
  ((:icon dev_bower :color yellow) "bower.json")
@@ -302,7 +303,7 @@
  ((:icon mfizz_reactjs :color blue) "react.js")
  )
 
-(--add-to-full
+(sidebar--add-to-full
  ((:icon file_tag :color blue) "CTAGS" "TAGS")
  ((:icon file_tag :color blue) "ctags" "tags")
  ((:icon oct_file_binary :color dark_green) "a.out")
@@ -348,7 +349,7 @@
  ((:icon oct_checklist :color yellow) "TODO")
  )
 
-(--add-to-prefix
+(sidebar--add-to-prefix
  ((:icon file_diff :color green) "*magit-diff:")
  ((:icon fa_git :color green) "*magit:")
  ((:icon md_vpn_key :color red) "id_rsa")

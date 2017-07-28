@@ -4,9 +4,9 @@
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; URL: https://github.com/sebastiencs/sidebar.el
-;; Keywords: project, sidebar, projectile, file explorer
+;; Keywords: files, convenience, frames
 ;; Version: 0.0.1
-;; Package-Requires: ((dash "2.13.0") (projectile "0.11.0"))
+;; Package-Requires: ((emacs "25") (dash "2.11.0") (projectile "0.10.0"))
 
 ;;; License
 ;;
@@ -34,6 +34,7 @@
 
 (require 'dash)
 (require 'sidebar-utils)
+(require 'sidebar-select)
 (require 'sidebar-filemapping)
 (require 'icons-in-terminal nil t)
 (require 's)
@@ -44,6 +45,10 @@
 (declare-function sidebar-open 'sidebar)
 (declare-function sidebar-adjust-window-width 'sidebar)
 (declare-function sidebar-reset-window-width 'sidebar)
+(declare-function sidebar-list-windows-others-frame 'sidebar)
+(declare-function sidebar-close 'sidebar)
+(declare-function sidebar-switch-to-buffers 'sidebar)
+(declare-function --getline 'sidebar)
 
 (defvar sidebar-select-icon-before-window)
 
@@ -296,15 +301,15 @@ Only the windows non dedicated are shown."
 
 (defun sidebar-buffers-jump-after (line)
   "LINE."
-  (sidebar-goto-line (-some->> (--remove (<= (--getline it) line) (sidebar-get files))
+  (sidebar-goto-line (-some->> (--remove (<= (sidebar--getline it) line) (sidebar-get files))
 			       (-first 'sidebar-buffers-not-sep?)
-			       (--getline))))
+			       (sidebar--getline))))
 
 (defun sidebar-buffers-jump-before (line)
   "LINE."
-  (sidebar-goto-line (-some->> (--remove (>= (--getline it) line) (sidebar-get files))
+  (sidebar-goto-line (-some->> (--remove (>= (sidebar--getline it) line) (sidebar-get files))
 			       (-last 'sidebar-buffers-not-sep?)
-			       (--getline))))
+			       (sidebar--getline))))
 
 (defun sidebar-buffers-toggle-hidden ()
   "."

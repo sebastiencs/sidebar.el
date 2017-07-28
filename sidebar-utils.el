@@ -4,9 +4,9 @@
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; URL: https://github.com/sebastiencs/sidebar.el
-;; Keywords: project, sidebar, projectile, file explorer
+;; Keywords: files, convenience, frames
 ;; Version: 0.0.1
-;; Package-Requires: ((dash "2.13.0") (projectile "0.11.0"))
+;; Package-Requires: ((emacs "25") (dash "2.11.0") (projectile "0.10.0"))
 
 ;;; License
 ;;

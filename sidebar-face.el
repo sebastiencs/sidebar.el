@@ -4,6 +4,7 @@
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; URL: https://github.com/sebastiencs/sidebar.el
+;; Version: 0.0.1
 
 ;;; License
 ;;
@@ -24,6 +25,7 @@
 
 ;;; Commentary:
 ;;
+;; Faces used by sidebar
 
 ;;; Code:
 
