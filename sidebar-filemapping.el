@@ -287,6 +287,7 @@
  ((:icon mfizz_cplusplus :color purple) "hh" "hpp" "hxx")
  ((:icon mfizz_c :color blue) "c")
  ((:icon mfizz_c :color purple) "h")
+ ((:icon mfizz_rust :color maroon) "rs")
  ((:icon file_powerpoint :color light_pink) "ppt" "pps" "ppsx" "pptx")
  ((:icon fa_file_text_o :color blue) "txt" "text")
  ((:icon oct_database :color green) "cache")
