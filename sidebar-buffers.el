@@ -111,7 +111,7 @@ Function similar to `sidebar-file-struct' adapted for buffers data."
 	(cons 'visiting (and (-> item bufferp) (-> item buffer-file-name)))
 	(cons 'line 0)))
 
-(defsubst sidebar-buffers-hidden? (buffer)
+(defsubst sidebar-buffers-hidden-p (buffer)
   "Return non-nil if the BUFFER is hidden (start with a space)."
   (-> buffer buffer-name string-to-char (equal (elt " " 0))))
 
@@ -129,8 +129,8 @@ The list will be mapped with `sidebar-buffers-item-builder' to make them
 easily usable."
   (let* ((buffers (buffer-list))
 	 (visiting (-filter 'buffer-file-name buffers))
-	 (others (->> buffers (-remove 'buffer-file-name) (-remove 'sidebar-buffers-hidden?)))
-	 (hidden (-filter 'sidebar-buffers-hidden? buffers)))
+	 (others (->> buffers (-remove 'buffer-file-name) (-remove 'sidebar-buffers-hidden-p)))
+	 (hidden (-filter 'sidebar-buffers-hidden-p buffers)))
     (-concat
      (when (> (length visiting) 0)
        (-concat (sidebar-buffers-separator "Visiting buffers" t)

@@ -67,7 +67,7 @@ ARGS is the function body with an optional doc."
 	 ,doc
 	 (-map (sidebar-get item-builder-function) (progn ,@body))))))
 
-(defun sidebar-gui? ()
+(defun sidebar-gui-p ()
   "Return non-nil if we're on a graphic instance."
   (display-graphic-p))
 
