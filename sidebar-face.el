@@ -57,7 +57,7 @@ and `sidebar-powerline'"
   :group 'sidebar-faces)
 
 (defface sidebar-dir
-  '((t :inherit dired-directory-face))
+  '((t :inherit dired-directory))
   "Face used with directories."
   :group 'sidebar-faces)
 
