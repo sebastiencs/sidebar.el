@@ -455,14 +455,13 @@ See `sidebar-cons-buffer-name' for more info."
 
 (defun sidebar-calc-depth (file status)
   "Calcul the depth of FILE from the current directory point of view.
-This is uses to count the number of space to insert before the filename.
+This is used to count the number of space to insert before the filename.
 STATUS is the status of the FILE."
   (let* ((path-from-current (s-chop-prefix (sidebar-get current-path) (sidebar--getpath file)))
 	 (depth (sidebar-count-char "/" path-from-current))) ; TODO: Support Windows (replace '/')
-    (when (> depth 0)
-      (setq depth (* depth 2)))
-    (setq depth (1+ depth))
-    depth))
+    (if (> depth 0)
+	(1+ (* depth 2))
+      (1+ depth))))
 
 (defun sidebar-child-of-status? (file-path status)
   "Return non-nil if FILE-PATH is a child of a STATUS directory.

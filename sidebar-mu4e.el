@@ -172,7 +172,7 @@ user advise it and easily access the parameter BOOKMARK."
     (concat
      " "
      (icons-in-terminal 'oct_mail
-			:face 'sidebar-icon-header-project-face
+			:face 'sidebar-icon-header-project
 			:background (face-background 'sidebar-header-line nil t)
 			:raise -0.07
 			:height 1.3)
@@ -216,7 +216,8 @@ It removes the sidebar."
 automatically with mu4e."
   (when sidebar-mu4e-autostart
     (sidebar-set mu4e-force t)
-    (sidebar-open)))
+    (run-with-timer 0.1 nil #'sidebar-open)))
+;;    (sidebar-open)))
 
 (defun sidebar-mu4e-pre-command ()
   "See `sidebar-mu4e-post-command'."
