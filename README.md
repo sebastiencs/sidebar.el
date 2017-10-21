@@ -97,18 +97,14 @@ You can install them through melpa.
 
 To customize icons and behaviours of sidebar:  
 `M-x customize-group [RET] sidebar [RET]`   
-To customize the colors in GUI:  
-`M-x customize-group [RET] sidebar-gui-faces [RET]`  
-To customize the colors in terminals:  
-`M-x customize-group [RET] sidebar-terminal-faces [RET]`  
-
-I made 2 differents groups of faces because on terminals, emacs doesn't support true colors [yet](http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=e463e57)
-
+To customize the colors:  
+`M-x customize-group [RET] sidebar-faces [RET]`  
 To customize sidebar-buffers:  
 `M-x customize-group [RET] sidebar-buffers [RET]`   
-
 To customize sidebar-mu4e:  
 `M-x customize-group [RET] sidebar-mu4e [RET]`   
+
+You will likely want to customize `sidebar-primary-color`, most of the faces inherit from it.
 
 ## Screenshots
 
