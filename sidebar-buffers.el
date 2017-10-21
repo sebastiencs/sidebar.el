@@ -406,7 +406,7 @@ followed by `sidebar-buffers-open-line'."
     (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-buffers-mode-map map)))
 
-(define-derived-mode sidebar-buffers-mode nil "Sidebar-buffers"
+(define-derived-mode sidebar-buffers-mode special-mode "Sidebar-buffers"
   "Major mode for Sidebar-buffers.
 
 \\{sidebar-buffers-mode-map}"

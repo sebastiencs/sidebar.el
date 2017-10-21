@@ -1846,7 +1846,7 @@ If ALL is non-nil, it print everything."
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
-(define-derived-mode sidebar-mode nil "Sidebar"
+(define-derived-mode sidebar-mode special-mode "Sidebar"
   "Major mode for Sidebar.
 
 \\{sidebar-mode-map}"

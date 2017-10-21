@@ -282,7 +282,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (when (equal this-command 'handle-switch-frame)
     (sidebar-select-cancel)))
 
-(define-derived-mode sidebar-select-mode nil "Sidebar"
+(define-derived-mode sidebar-select-mode special-mode "Sidebar"
   "Major mode for Sidebar select.
 \\{sidebar-select-mode-map}"
   ::group sidebar-select

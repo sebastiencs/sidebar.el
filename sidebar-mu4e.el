@@ -247,7 +247,7 @@ automatically with mu4e."
 
 (advice-add 'mu4e :after 'sidebar-mu4e-autostart)
 
-(define-derived-mode sidebar-mu4e-mode nil "Sidebar-mu4e"
+(define-derived-mode sidebar-mu4e-mode special-mode "Sidebar-mu4e"
   "Major mode for Sidebar-mu4e.
 
 \\{sidebar-mu4e-mode-map}"
