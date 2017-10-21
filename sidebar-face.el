@@ -57,10 +57,7 @@ and `sidebar-powerline'"
   :group 'sidebar-faces)
 
 (defface sidebar-dir
-  '((((min-colors 256))
-     :foreground "#005fff")
-    (t
-     :foreground "white"))
+  '((t :inherit dired-directory-face))
   "Face used with directories."
   :group 'sidebar-faces)
 
