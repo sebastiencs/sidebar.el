@@ -49,11 +49,11 @@ You can install them through melpa.
 | `M-RET`   | `sidebar-open-line-in-window` | Open file in a selected window                          |
 | `C-d`     | `sidebar-deleted-selected`    | Delete the file                                         |
 | `C-h`     | `sidebar-history`             | Open the history of visited directory                   |
-| `C-n`     | `sidebar-create-directory`    | Create a directory                                      |
+| `i`     | `sidebar-create-directory`    | Create a directory                                      |
 | `n`       | `sidebar-create-file`         | Create a file                                           |
-| `C-w`     | `sidebar-cut-selected`        | Cut the file                                            |
-| `M-w`     | `sidebar-copy-selected`       | Copy the file                                           |
-| `C-y`     | `sidebar-paste`               | Paste the file                                          |
+| `C-C`     | `sidebar-cut-selected`        | Cut the file                                            |
+| `C`     | `sidebar-copy-selected`       | Copy the file                                           |
+| `P`     | `sidebar-paste`               | Paste the file                                          |
 | `?`       | `sidebar-help`                | Open `describe-mode`                                    |
 | `R`       | `sidebar-rename-selected`     | Rename the file                                         |
 | `g`       | `sidebar-refresh`             | Refresh the content of the sidebar                      |

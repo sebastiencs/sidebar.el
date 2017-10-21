@@ -1780,7 +1780,7 @@ If ALL is non-nil, it print everything."
   (sidebar-open))
 
 (defun sidebar-kill ()
-  "Kill the sidebar's buffer."
+  "Close the sidebar and its buffer."
   (interactive)
   (sidebar-set saved-state-files nil)
   (sidebar-set window-start nil)
@@ -1832,11 +1832,11 @@ If ALL is non-nil, it print everything."
     (define-key map (kbd "g") 'sidebar-refresh-cmd)
     (define-key map (kbd "C-h") 'sidebar-history)
     (define-key map (kbd "n") 'sidebar-create-file)
-    (define-key map (kbd "C-n") 'sidebar-create-directory)
+    (define-key map (kbd "i") 'sidebar-create-directory)
     (define-key map (kbd "C-d") 'sidebar-delete-selected)
-    (define-key map (kbd "M-w") 'sidebar-copy-selected)
-    (define-key map (kbd "C-w") 'sidebar-cut-selected)
-    (define-key map (kbd "C-y") 'sidebar-paste)
+    (define-key map (kbd "C") 'sidebar-copy-selected)
+    (define-key map (kbd "C-C") 'sidebar-cut-selected)
+    (define-key map (kbd "P") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
     (define-key map (kbd "<tab>") 'sidebar-switch-to-buffers)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
