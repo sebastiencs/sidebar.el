@@ -1,4 +1,4 @@
-![sidebar](images/sidebar.jpg)
+![sidebar](images/sidebar.png)
 
 ## Overview
 
