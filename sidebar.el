@@ -1835,7 +1835,7 @@ If ALL is non-nil, it print everything."
     (define-key map (kbd "i") 'sidebar-create-directory)
     (define-key map (kbd "C-d") 'sidebar-delete-selected)
     (define-key map (kbd "C") 'sidebar-copy-selected)
-    (define-key map (kbd "C-C") 'sidebar-cut-selected)
+    (define-key map (kbd "M-C") 'sidebar-cut-selected)
     (define-key map (kbd "P") 'sidebar-paste)
     (define-key map (kbd "R") 'sidebar-rename-selected)
     (define-key map (kbd "<tab>") 'sidebar-switch-to-buffers)
