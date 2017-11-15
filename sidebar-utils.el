@@ -112,7 +112,8 @@ If NO-CREATION is non-nil, the window is not created."
   (let ((sidebar-window (get-buffer-window (sidebar-cons-buffer-name))))
     (unless (or sidebar-window no-creation)
       (setq sidebar-window (sidebar-set-window))
-      (set-window-dedicated-p sidebar-window t))
+      (set-window-dedicated-p sidebar-window t)
+      (set-window-parameter sidebar-window 'no-delete-other-windows t))
     sidebar-window))
 
 (defun sidebar-file-struct (file)
