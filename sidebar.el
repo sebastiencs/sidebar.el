@@ -1559,15 +1559,11 @@ See `sidebar-git-run' and `sidebar-refresh'"
   (let* ((window-width (sidebar-window-width))
 	     (string (-some-> (funcall (sidebar-get make-header-function))
 			              (sidebar-truncate (1- window-width))))
-	     (length 0))
+         (len-icon (if (sidebar-gui-p) (cadr sidebar-icon-header-end) 1)))
     (add-face-text-property 0 (length string) 'sidebar-header-line t string)
-    (setq length (- window-width (1+ (length string))))
-    (when (sidebar-gui-p)
-      (setq length (- length (cadr sidebar-icon-header-end))))
     (concat
      string
-     (propertize (concat (make-string length ?\s))
-		         'face 'sidebar-header-line 'display '(raise 0.12))
+     (propertize " " 'face 'sidebar-header-line 'display `(space :align-to (- right-fringe 1 ,len-icon)))
      (icons-in-terminal (car sidebar-icon-header-end)
 			            :foreground (face-background 'sidebar-header-line nil t)
 			            :height sidebar-header-line-height))))
@@ -1614,10 +1610,9 @@ if we're not in a git project."
 (defun sidebar-set-modeline ()
   "Construct the mode-line."
   (when (not (sidebar-get select-active))
-    (let ((left (concat (funcall (sidebar-get make-modeline-left-function)) " "))
-	      (right (concat " " (funcall (sidebar-get make-modeline-right-function))))
-	      (sidebar-width (sidebar-window-width))
-	      (space-to-add 0))
+    (let* ((left (concat (funcall (sidebar-get make-modeline-left-function)) " "))
+	       (right (concat " " (funcall (sidebar-get make-modeline-right-function))))
+           (align-to (+ (length right) (if (sidebar-gui-p) (car (cddr sidebar-icons-modeline)) 0))))
       (when (> (length left) 1)
 	    (add-face-text-property 0 (length left) 'sidebar-branch nil left)
 	    (setq left (concat left (icons-in-terminal (car sidebar-icons-modeline)
@@ -1631,15 +1626,10 @@ if we're not in a git project."
 					                           :raise -0.1
 					                           :height sidebar-mode-line-height)
 			                right)))
-      (setq space-to-add (- sidebar-width (+ (length left) (length right))))
-      (when (sidebar-gui-p)
-	    (setq space-to-add (- (+ (- space-to-add 3)
-				                 (* sidebar-mode-line-height 2))
-			                  (car (cddr sidebar-icons-modeline)))))
       (concat left
-	          (s-repeat space-to-add " ")
+              (propertize " " 'display `(space :align-to (- right-margin ,align-to)))
 	          right
-	          (propertize "    " 'face 'sidebar-remote-branch)))))
+              (propertize " " 'face 'sidebar-remote-branch 'display `(space :align-to (right-margin)))))))
 
 (defun sidebar-post-command()
   "Function called after every command.
