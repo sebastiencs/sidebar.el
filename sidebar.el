@@ -839,35 +839,19 @@ SIDEBAR-WINDOW is sidebar's window."
   (interactive)
   (sidebar-set-window))
 
-(defun sidebar-count-icons (string)
-  "Count the numbers of icons in STRING.
-The icons are known to be characters between 0xe000 and 0xf8ff."
-  (let ((n 0))
-    (--dotimes (length string)
-      (let ((c (elt string it)))
-	(when (and (>= c #xe000) (<= c #xf8ff))
-	  (setq n (1+ n)))))
-    n))
-
-(defun sidebar-make-powerline (window-width n-icons n-characters)
+(defun sidebar-make-powerline ()
   "Return a string to make a poweline effect.
 The effect is made by inserting space with a colored background
 and an icon at the end.
-See `sidebar-move-overlay'.
-WINDOW-WIDTH is the window's width.
-N-ICONS is the number of icons already inserted on the line.
-N-CHARACTERS is total number of characters already inserted on the line."
-  (let* ((space-to-add (- window-width (1+ n-characters)
-			  (if (sidebar-gui-p) (+ n-icons (cadr sidebar-icon-powerline)) 1)))
-	 (icon sidebar-icon-powerline)
-	 (face 'sidebar-powerline))
+See `sidebar-move-overlay'."
+  (let* ((icon sidebar-icon-powerline)
+	     (face 'sidebar-powerline))
     (concat
-     (propertize (s-repeat space-to-add " ") 'face face)
+     (propertize " " 'face face 'display `(space :align-to (- right-fringe ,(if (sidebar-gui?) 2 3))))
      (icons-in-terminal (car icon)
-			:raise (car (cddr icon))
-			:height (cadr (cddr icon))
-			:foreground (face-background face nil t))
-     (unless (or (sidebar-gui-p) (= (cadr icon) 0)) " "))))
+		                :raise (car (cddr icon))
+		                :height (cadr (cddr icon))
+		                :foreground (face-background face nil t)))))
 
 (defun sidebar-move-overlay (beg end window)
   "Move the overlay that make the powerline effect.
@@ -880,13 +864,10 @@ width and the window.
 BEG is the position at the beginning of the line.
 END is the position at the end of the line.
 WINDOW is the sidebar's window."
-  (let* ((ov (sidebar-get overlay))
-	 (window-width (window-width window))
-	 (n-icons (sidebar-count-icons (buffer-substring beg end)))
-	 (n-characters (- end beg))
-	 (powerline (sidebar-make-powerline window-width n-icons n-characters)))
+  (let* ((ov (sidebar-get overlay)))
     (ov-move ov beg end)
-    (ov-set ov 'after-string powerline)))
+    (unless (ov-val ov 'after-string)
+      (ov-set ov 'after-string (sidebar-make-powerline)))))
 
 (defun sidebar-update-path-on-header ()
   "Function that update the suffix on the header.
