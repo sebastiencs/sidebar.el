@@ -596,7 +596,9 @@ FACE is the face to use for the icons."
 STATUS is its git status.
 PATH is the file path."
   (funcall sidebar-insert-fileicon-function file filename status path (sidebar-get-color file path status t))
-  (sidebar-insert " ")
+  ;; Tabulations are stretched characters
+  ;; this fix the alignement, tab-width needs to be 1
+  (sidebar-insert "\t")
   (sidebar-insert-filename filename (sidebar-get-color file path status nil (not sidebar-filename-colored))))
 
 (defun sidebar-insert-status (file path status &optional dir)
@@ -1793,6 +1795,7 @@ If ALL is non-nil, it print everything."
 	     (mode-line-inactive sidebar-empty-face)))
 
   (setq cursor-type nil
+        tab-width 1
 	    buffer-read-only t
 	    mode-line-format (list '(:eval (sidebar-set-modeline)))
 	    header-line-format (list '(:eval (sidebar-set-header))))
