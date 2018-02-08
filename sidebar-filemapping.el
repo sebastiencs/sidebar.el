@@ -77,7 +77,7 @@
 (defmacro sidebar--add (table data &rest extensions)
   "TABLE DATA EXTENSIONS."
   (let ((result nil)
-	(ext (-flatten extensions)))
+	    (ext (-flatten extensions)))
     (--each ext
       (push `(puthash ,it ',data ,table) result))
     `(progn ,@result)))
@@ -87,10 +87,10 @@
   (let ((resultat nil))
     (--each items
       (if (macrop (car it))
-	  (let ((elems (macroexpand-all it)))
-	    (--each elems
-	      (push `(sidebar--add ,table ,(car it) ,(cdr it)) resultat)))
-	(push `(sidebar--add ,table ,(car it) ,(cdr it)) resultat)))
+	      (let ((elems (macroexpand-all it)))
+	        (--each elems
+	          (push `(sidebar--add ,table ,(car it) ,(cdr it)) resultat)))
+	    (push `(sidebar--add ,table ,(car it) ,(cdr it)) resultat)))
     `(progn ,@resultat)))
 
 (defmacro sidebar--with-icon (icon &rest items)
@@ -379,23 +379,23 @@
   "FILENAME."
   (catch 'stop-map
     (maphash (lambda (key val)
-	       (when (s-starts-with? key filename)
-		 (throw 'stop-map val)))
-	     sidebar-filemapping-prefix-hashtable)))
+	           (when (s-starts-with? key filename)
+		         (throw 'stop-map val)))
+	         sidebar-filemapping-prefix-hashtable)))
 
 (defun sidebar-filemapping-find-suffix (filename)
   "FILENAME."
   (catch 'stop-map
     (maphash (lambda (key val)
-	       (when (s-ends-with? key filename)
-		 (throw 'stop-map val)))
-	     sidebar-filemapping-suffix-hashtable)))
+	           (when (s-ends-with? key filename)
+		         (throw 'stop-map val)))
+	         sidebar-filemapping-suffix-hashtable)))
 
 (defun sidebar-filemapping-emacs-buffers (filename)
   "FILENAME."
   (let ((c (elt "*" 0)))
     (when (and (eq (elt filename 0) c)
-	       (eq (elt filename (1- (length filename))) c))
+	           (eq (elt filename (1- (length filename))) c))
       '(:icon file_emacs :color blue_grey))))
 
 (defun sidebar-filemapping-dotfile (filename)
@@ -409,14 +409,14 @@
   (or (sidebar-filemapping-get-in-cache filename)
       (sidebar-filemapping-put-in-cache
        (-let (((&plist :icon icon :color color)
-	       (or (gethash filename sidebar-filemapping-full-hashtable)
-		   (sidebar-filemapping-find-prefix filename)
-		   (sidebar-filemapping-find-suffix filename)
-		   (gethash (file-name-extension filename) sidebar-filemapping-extension-hashtable)
-		   (sidebar-filemapping-emacs-buffers filename)
-		   (sidebar-filemapping-dotfile filename)
-		   '(:icon fa_file_o))))
-	 `(:icon ,icon :color ,(sidebar-filemapping-getcolor color)))
+	           (or (gethash filename sidebar-filemapping-full-hashtable)
+		           (sidebar-filemapping-find-prefix filename)
+		           (sidebar-filemapping-find-suffix filename)
+		           (gethash (file-name-extension filename) sidebar-filemapping-extension-hashtable)
+		           (sidebar-filemapping-emacs-buffers filename)
+		           (sidebar-filemapping-dotfile filename)
+		           '(:icon fa_file_o))))
+	     `(:icon ,icon :color ,(sidebar-filemapping-getcolor color)))
        filename)))
 
 (provide 'sidebar-filemapping)

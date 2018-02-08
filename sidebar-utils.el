@@ -59,13 +59,13 @@ display in the sidebar.
 ARGS is the function body with an optional doc."
   (declare (doc-string 3) (indent 2))
   (let* ((doc (when (stringp (car args))
-		(prog1 (car args)
-		  (setq args (cdr args)))))
-	 (body args))
+		        (prog1 (car args)
+		          (setq args (cdr args)))))
+	     (body args))
     `(progn
        (defun ,(intern (format "sidebar-content-%s" name)) ,arglist
-	 ,doc
-	 (-map (sidebar-get item-builder-function) (progn ,@body))))))
+	     ,doc
+	     (-map (sidebar-get item-builder-function) (progn ,@body))))))
 
 (defun sidebar-gui-p ()
   "Return non-nil if we're on a graphic instance."
@@ -80,7 +80,7 @@ if FORCE is non-nil, there is no check."
       (forward-line (- line (line-number-at-pos)))
     (let ((max (count-lines (point-min) (point-max))))
       (when (> line max)
-	(setq line max))
+	    (setq line max))
       (forward-line (- line (line-number-at-pos))))))
 
 (defun sidebar-cons-buffer-name ()
@@ -91,9 +91,9 @@ On Graphics ones, the name isn't unique for each frame, so we use
 `window-id' that isn't available on terminals instance."
   (let ((name (sidebar-get buffer-name)))
     (if name
-	name
+	    name
       (setq name (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
-					  (frame-parameter nil 'name))"*"))
+					                      (frame-parameter nil 'name))"*"))
       (sidebar-set buffer-name name)
       name)))
 
@@ -104,7 +104,7 @@ On Graphics ones, the name isn't unique for each frame, so we use
 It can also be used to resize the window with WIDTH."
   (let ((w (or width (sidebar-get default-width) sidebar-width)))
     (display-buffer (sidebar-get-buffer)
-		    `(display-buffer-in-side-window . ((side . left) (window-width . ,w))))))
+		            `(display-buffer-in-side-window . ((side . left) (window-width . ,w))))))
 
 (defun sidebar-get-window (&optional no-creation)
   "Return the created/existing window displaying the sidebar buffer.
@@ -128,9 +128,9 @@ object using this structure.
 
 Example: (('path . \"/tmp/dir1/dir2\") ('dir . t) ('line . 8) ('opened . nil))"
   (list (cons 'path file)
-	(cons 'dir (file-directory-p file))
-	(cons 'line 0)
-	(cons 'opened nil)))
+	    (cons 'dir (file-directory-p file))
+	    (cons 'line 0)
+	    (cons 'opened nil)))
 
 (defun sidebar-get-buffer ()
   "Return the existing/created sidebar buffer for the current frame."

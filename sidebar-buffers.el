@@ -106,10 +106,10 @@ Default: `return-to-files'."
   "Return an association list from ITEM.
 Function similar to `sidebar-file-struct' adapted for buffers data."
   (list (cons 'data item)
-	(cons 'type (cond ((bufferp item) 'buffer)
-			  (t 'separator)))
-	(cons 'visiting (and (-> item bufferp) (-> item buffer-file-name)))
-	(cons 'line 0)))
+	    (cons 'type (cond ((bufferp item) 'buffer)
+			              (t 'separator)))
+	    (cons 'visiting (and (-> item bufferp) (-> item buffer-file-name)))
+	    (cons 'line 0)))
 
 (defsubst sidebar-buffers-hidden-p (buffer)
   "Return non-nil if the BUFFER is hidden (start with a space)."
@@ -120,28 +120,28 @@ Function similar to `sidebar-file-struct' adapted for buffers data."
 if FIRST is non-nil, do not insert a separator before the header."
   (-flatten
    (list (unless first 'separator)
-	 (propertize name 'face 'sidebar-buffers-headers-face)
-	 'separator)))
+	     (propertize name 'face 'sidebar-buffers-headers-face)
+	     'separator)))
 
 (sidebar-content-provider buffers (&rest _)
   "Return a list of buffers to print in the sidebar.
 The list will be mapped with `sidebar-buffers-item-builder' to make them
 easily usable."
   (let* ((buffers (buffer-list))
-	 (visiting (-filter 'buffer-file-name buffers))
-	 (others (->> buffers (-remove 'buffer-file-name) (-remove 'sidebar-buffers-hidden-p)))
-	 (hidden (-filter 'sidebar-buffers-hidden-p buffers)))
+	     (visiting (-filter 'buffer-file-name buffers))
+	     (others (->> buffers (-remove 'buffer-file-name) (-remove 'sidebar-buffers-hidden-p)))
+	     (hidden (-filter 'sidebar-buffers-hidden-p buffers)))
     (-concat
      (when (> (length visiting) 0)
        (-concat (sidebar-buffers-separator "Visiting buffers" t)
-		visiting))
+		        visiting))
      (when (> (length others) 0)
        (-concat (sidebar-buffers-separator "Others buffers" (= (length visiting) 0))
-		others))
+		        others))
      (when (and sidebar-buffers-show-hidden
-		(> (length hidden) 0))
+		        (> (length hidden) 0))
        (-concat (sidebar-buffers-separator "Hidden buffers")
-		hidden)))))
+		        hidden)))))
 
 (defun sidebar-buffers-insert-icon (&rest props)
   "Return icon with PROPS."
@@ -159,13 +159,13 @@ easily usable."
 (defun sidebar-buffers-format-name (buffer name visiting)
   "BUFFER NAME VISITING."
   (let ((read-only (with-current-buffer buffer buffer-read-only))
-	(modified (and (buffer-modified-p buffer)
-		       (or visiting sidebar-buffers-modified-icon-all))))
+	    (modified (and (buffer-modified-p buffer)
+		               (or visiting sidebar-buffers-modified-icon-all))))
     (concat
      (if (not visiting)
-	 (icons-in-terminal 'file_emacs :foreground "#607D8B")
+	     (icons-in-terminal 'file_emacs :foreground "#607D8B")
        (-let (((&plist :icon icon :color color) (sidebar-filemapping-lookup name)))
-	 (icons-in-terminal icon :foreground color)))
+	     (icons-in-terminal icon :foreground color)))
      " "
      (s-trim name)
      (when read-only (sidebar-buffers-insert-icon 'md_lock))
@@ -193,14 +193,14 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
 BUFFER."
   (interactive)
   (let* ((windows-in-frame (-remove 'window-dedicated-p (window-list)))
-	 (windows-in-others-frame (sidebar-list-windows-others-frame (frame-list))))
+	     (windows-in-others-frame (sidebar-list-windows-others-frame (frame-list))))
     (sidebar-select-make-buffer (list windows-in-frame windows-in-others-frame)
-				" Select a window "
-				" Others frames "
-				(lambda (x) (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" x))))
-				sidebar-select-icon-before-window
-				'sidebar-open-file-in-window
-				buffer)))
+				                " Select a window "
+				                " Others frames "
+				                (lambda (x) (s-chop-suffix ">" (s-replace "#<window " "#" (format "%s" x))))
+				                sidebar-select-icon-before-window
+				                'sidebar-open-file-in-window
+				                buffer)))
 
 (defun sidebar-buffers-open-in-window ()
   "Open BUFFER in a selected window.
@@ -215,9 +215,9 @@ Only the windows non dedicated are shown."
   "Open the buffer on the current line."
   (interactive)
   (-let* (((&alist 'data buffer) (sidebar-find-file-from-line))
-	  (window (sidebar-get window-origin)))
+	      (window (sidebar-get window-origin)))
     (if (window-live-p window)
-	(set-window-buffer window buffer)
+	    (set-window-buffer window buffer)
       (sidebar-set window-origin (sidebar-buffers-open-in-window2 buffer))))
   (when (sidebar-get buffers-hide)
     (sidebar-close))
@@ -241,12 +241,12 @@ Only the windows non dedicated are shown."
   (-when-let (buffers-marks (sidebar-get buffers-marks))
     (--each buffers-marks
       (-when-let* ((buffer (car it))
-		   (_ (buffer-live-p buffer)))
-	(when (member 'save it)
-	  (with-current-buffer buffer
-	    (save-buffer)))
-	(when (member 'delete it)
-	  (kill-buffer buffer))))
+		           (_ (buffer-live-p buffer)))
+	    (when (member 'save it)
+	      (with-current-buffer buffer
+	        (save-buffer)))
+	    (when (member 'delete it)
+	      (kill-buffer buffer))))
     (sidebar-set buffers-marks nil)
     (sidebar-refresh)))
 
@@ -270,7 +270,7 @@ Only the windows non dedicated are shown."
   "."
   (interactive)
   (-let* (((&alist 'data data) (sidebar-find-file-from-line))
-	  (list-marks (sidebar-get buffers-marks)))
+	      (list-marks (sidebar-get buffers-marks)))
     (sidebar-set buffers-marks (--remove (equal data (car it)) list-marks))
     (sidebar-refresh)
     (forward-line)))
@@ -286,7 +286,7 @@ Only the windows non dedicated are shown."
    " "
    (icons-in-terminal 'fa_list_ul :raise 0.12)
    (propertize " Buffers list"
-	       'display '(raise 0.12))))
+	           'display '(raise 0.12))))
 
 (defun sidebar-buffers-make-modeline-left ()
   "Return the string to insert in the modeline (left side)."
@@ -309,14 +309,14 @@ Only the windows non dedicated are shown."
 (defun sidebar-buffers-jump-after (line)
   "LINE."
   (sidebar-goto-line (-some->> (--remove (<= (sidebar--getline it) line) (sidebar-get files))
-			       (-first 'sidebar-buffers-not-sep?)
-			       (sidebar--getline))))
+			                   (-first 'sidebar-buffers-not-sep?)
+			                   (sidebar--getline))))
 
 (defun sidebar-buffers-jump-before (line)
   "LINE."
   (sidebar-goto-line (-some->> (--remove (>= (sidebar--getline it) line) (sidebar-get files))
-			       (-last 'sidebar-buffers-not-sep?)
-			       (sidebar--getline))))
+			                   (-last 'sidebar-buffers-not-sep?)
+			                   (sidebar--getline))))
 
 (defun sidebar-buffers-toggle-hidden ()
   "."
@@ -327,12 +327,12 @@ Only the windows non dedicated are shown."
 (defun sidebar-buffers-post-command ()
   "Function to ensure that the cursor is never on a separator."
   (-when-let* ((pre-line (sidebar-get buffers-pre-line))
-	       (line (line-number-at-pos))
-	       ((&alist 'type type) (sidebar-find-file-from-line)))
+	           (line (line-number-at-pos))
+	           ((&alist 'type type) (sidebar-find-file-from-line)))
     (when (equal type 'separator)
       (cond ((< line 4) (sidebar-goto-line 4))
-	    ((< pre-line line) (sidebar-buffers-jump-after line))
-	    (t (sidebar-buffers-jump-before line))))))
+	        ((< pre-line line) (sidebar-buffers-jump-after line))
+	        (t (sidebar-buffers-jump-before line))))))
 
 (defun sidebar-buffers-switch-to-files ()
   "."
@@ -352,18 +352,18 @@ followed by `sidebar-buffers-open-line'."
   (pcase sidebar-buffers-action-after-open
     ('close (sidebar-set buffers-hide t)))
   (cond ((and (get-buffer (sidebar-cons-buffer-name)) (not (sidebar-get-window t)))
-	 (progn (sidebar-set buffers-hide t)
-		(sidebar-open)
-		(sidebar-switch-to-buffers)))
-	((not (sidebar-get-window t))
-	 (progn (sidebar-set buffers-force t)
-		(sidebar-set buffers-hide t)
-		(sidebar-open)))
-	((equal (sidebar-get mode-to-use) 'sidebar-buffers-mode)
-	 (sidebar-open))
-	(t (progn (pcase sidebar-buffers-action-after-open
-		    ('return-to-files (sidebar-set buffers-return-to-files t)))
-		  (sidebar-switch-to-buffers)))))
+	     (progn (sidebar-set buffers-hide t)
+		        (sidebar-open)
+		        (sidebar-switch-to-buffers)))
+	    ((not (sidebar-get-window t))
+	     (progn (sidebar-set buffers-force t)
+		        (sidebar-set buffers-hide t)
+		        (sidebar-open)))
+	    ((equal (sidebar-get mode-to-use) 'sidebar-buffers-mode)
+	     (sidebar-open))
+	    (t (progn (pcase sidebar-buffers-action-after-open
+		            ('return-to-files (sidebar-set buffers-return-to-files t)))
+		          (sidebar-switch-to-buffers)))))
 
 (defun sidebar-buffers-close ()
   "."
@@ -378,20 +378,20 @@ followed by `sidebar-buffers-open-line'."
   (let ((n (intern (format "sidebar-repet-%s" name))))
     `(progn
        (unless (sidebar-get ,n)
-	 (sidebar-set ,n t)
-	 (run-at-time ,time nil (lambda ()
-				  (sidebar-set ,n nil)
-				  (progn ,@body)))))))
+	     (sidebar-set ,n t)
+	     (run-at-time ,time nil (lambda ()
+				                  (sidebar-set ,n nil)
+				                  (progn ,@body)))))))
 
 (defun sidebar-buffers-list-update ()
   "."
   (interactive)
   (sidebar-buffers-protect buffers-list-update 2
     (-when-let* ((_ (sidebar-get-window t))
-		 (sidebar-buffer (get-buffer (sidebar-cons-buffer-name))))
+		         (sidebar-buffer (get-buffer (sidebar-cons-buffer-name))))
       (with-current-buffer sidebar-buffer
-	(when (equal major-mode 'sidebar-buffers-mode)
-	  (sidebar-refresh nil t))))))
+	    (when (equal major-mode 'sidebar-buffers-mode)
+	      (sidebar-refresh nil t))))))
 
 (defvar sidebar-buffers-mode-map nil
   "Keymap used with ‘sidebar-buffers-mode’.")

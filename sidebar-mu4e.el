@@ -92,10 +92,10 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   "Return an association list from ITEM.
 Function similar to `sidebar-file-struct' adapted for mu4e data."
   (list (cons 'data item)
-	(cons 'type (cond ((listp item) 'bookmark)
-			  ((stringp item)'maildir)
-			  (t 'separator)))
-	(cons 'line 0)))
+	    (cons 'type (cond ((listp item) 'bookmark)
+			              ((stringp item)'maildir)
+			              (t 'separator)))
+	    (cons 'line 0)))
 
 (defun sidebar-mu4e-get-maildirs ()
   "Return a list of maildirs.
@@ -106,14 +106,14 @@ It can be advised to modify the list."
   "Return a list of BOOKMARKS.
 It can be advised to modify the list."
   (--map `(,(mu4e-bookmark-name it) ,(mu4e-bookmark-query it))
-	 bookmarks))
+	     bookmarks))
 
 (sidebar-content-provider mu4e (&rest _)
   "Return a list of maildirs and bookmarks to print in the sidebar.
 The list will be mapped with `sidebar-mu4e-item-builder' to make them
 easily usable."
   (let ((maildirs (sidebar-mu4e-get-maildirs))
-	(bookmarks (sidebar-mu4e-get-bookmarks (mu4e-bookmarks))))
+	    (bookmarks (sidebar-mu4e-get-bookmarks (mu4e-bookmarks))))
     (sidebar-set mu4e-bookmarks-count (length bookmarks))
     (sidebar-set mu4e-maildirs-count (length maildirs))
     (-concat maildirs '(separator) bookmarks)))
@@ -126,12 +126,12 @@ ITEM is an object created with `sidebar-mu4e-item-builder'."
     (unless (equal type 'separator)
       (insert " ")
       (pcase type
-	('bookmark (insert (icons-in-terminal sidebar-mu4e-bookmark-icon :height 1.1)))
-	('maildir  (insert (icons-in-terminal sidebar-mu4e-maildir-icon :height 1.1))))
+	    ('bookmark (insert (icons-in-terminal sidebar-mu4e-bookmark-icon :height 1.1)))
+	    ('maildir  (insert (icons-in-terminal sidebar-mu4e-maildir-icon :height 1.1))))
       (insert " ")
       (pcase type
-	('bookmark (insert (car data)))
-	('maildir  (insert data))))))
+	    ('bookmark (insert (car data)))
+	    ('maildir  (insert data))))))
 
 (defun sidebar-mu4e-open-maildir (maildir)
   "Open MAILDIR.
@@ -158,24 +158,24 @@ user advise it and easily access the parameter BOOKMARK."
   "Return non-nil if we have to use `sidebar-mu4e-mode' on the sidebar creation."
   (prog1
       (with-selected-window (sidebar-get window-origin)
-	(or (sidebar-get mu4e-force)
-	    (derived-mode-p 'mu4e-compose-mode
-			    'mu4e-main-mode
-			    'mu4e-headers-mode)))
+	    (or (sidebar-get mu4e-force)
+	        (derived-mode-p 'mu4e-compose-mode
+			                'mu4e-main-mode
+			                'mu4e-headers-mode)))
     (sidebar-set mu4e-force nil)))
 
 (defun sidebar-mu4e-make-header ()
   "Return the string to insert in the sidebar header."
   (let* ((context (or (and mu4e-contexts
-			   (mu4e-context-name (mu4e-context-current)))
-		      "mu4e")))
+			               (mu4e-context-name (mu4e-context-current)))
+		              "mu4e")))
     (concat
      " "
      (icons-in-terminal 'oct_mail
-			:face 'sidebar-icon-header-project
-			:background (face-background 'sidebar-header-line nil t)
-			:raise -0.07
-			:height 1.3)
+			            :face 'sidebar-icon-header-project
+			            :background (face-background 'sidebar-header-line nil t)
+			            :raise -0.07
+			            :height 1.3)
      " "
      (propertize
       (concat (upcase (substring context 0 1)) (substring context 1))
@@ -226,11 +226,11 @@ automatically with mu4e."
 (defun sidebar-mu4e-post-command ()
   "Function to ensure that the cursor is never on a separator."
   (-when-let* ((pre-line (sidebar-get mu4e-pre-line))
-	       (line (line-number-at-pos))
-	       ((&alist 'type type) (sidebar-find-file-from-line)))
+	           (line (line-number-at-pos))
+	           ((&alist 'type type) (sidebar-find-file-from-line)))
     (when (equal type 'separator)
       (cond ((< pre-line line) (forward-line 1))
-	    ((> line 1) (forward-line -1))))))
+	        ((> line 1) (forward-line -1))))))
 
 (defvar sidebar-mu4e-mode-map nil
   "Keymap used with ‘sidebar-mu4e-mode’.")
