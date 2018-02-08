@@ -179,7 +179,14 @@ ITEM is an object created with `sidebar-buffers-item-builder'."
   (-let (((&alist 'data data 'type type 'visiting visiting) item))
     (pcase type
       ('separator (insert (if (stringp data) data "")))
-      (_ (insert (concat " " (sidebar-buffers-format-name data (buffer-name data) visiting)))))))
+      (_ (insert (concat " " (sidebar-buffers-format-name
+                              data
+                              (with-current-buffer data
+                                (or (and (bound-and-true-p lsp--cur-workspace)
+                                         (fboundp 'lsp-ui--workspace-path)
+                                         (lsp-ui--workspace-path (buffer-file-name data)))
+                                    (buffer-name data)))
+                              visiting)))))))
 
 (defun sidebar-buffers-open-in-window2 (buffer)
   "Helper function for `sidebar-buffers-open-in-window'.
