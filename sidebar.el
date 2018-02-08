@@ -847,7 +847,7 @@ See `sidebar-move-overlay'."
   (let* ((icon sidebar-icon-powerline)
 	     (face 'sidebar-powerline))
     (concat
-     (propertize " " 'face face 'display `(space :align-to (- right-fringe ,(if (sidebar-gui?) 2 3))))
+     (propertize " " 'face face 'display `(space :align-to (- right-fringe ,(if (sidebar-gui-p) 2 3))))
      (icons-in-terminal (car icon)
 		                :raise (car (cddr icon))
 		                :height (cadr (cddr icon))
