@@ -1836,7 +1836,6 @@ If ALL is non-nil, it print everything."
   (make-local-variable 'post-command-hook)
 
   (sidebar-init-mode)
-  (add-to-list 'display-buffer-alist '(" SIDEBAR-SELECT" display-buffer-in-side-window (side . left) (slot . 1)))
 
   (add-hook 'post-command-hook 'sidebar-post-command)
   (add-hook 'after-save-hook 'sidebar-refresh-on-save t)

@@ -1,4 +1,4 @@
-;;; sidebar-select.el --- sidebar-select
+;;; sidebar-select.el --- sidebar-select -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Sebastien Chapuis
 
@@ -172,7 +172,8 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (defun sidebar-select-make-buffer (list header1 header2 func-on-string icon callback &rest args)
   "LIST HEADER1 HEADER2 FUNC-ON-STRING ICON CALLBACK ARGS."
   (select-window
-   (display-buffer (get-buffer-create sidebar-select-buffer-name)))
+   (display-buffer-in-side-window (get-buffer-create sidebar-select-buffer-name)
+                                  '((side . left) (slot . 1))))
   (with-current-buffer sidebar-select-buffer-name
     (sidebar-select-mode)
     (set (make-local-variable 'scroll-margin) 1)
