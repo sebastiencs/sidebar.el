@@ -412,25 +412,13 @@ If it's not a file, return the home directory."
       (when buffer-file-name (file-name-directory buffer-file-name))
       (file-name-as-directory (expand-file-name "~"))))
 
-(defsubst sidebar-cons-git-buffer-name ()
-  "Construct the git buffer name from 'SIDEBAR' and the frame name.
-See `sidebar-cons-buffer-name' for more info."
-  (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
-			               (frame-parameter nil 'name))"-GIT*"))
-
-(defsubst sidebar-cons-curl-buffer-name ()
-  "Construct the curl buffer name from 'SIDEBAR' and the frame name.
-See `sidebar-cons-buffer-name' for more info."
-  (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
-			               (frame-parameter nil 'name))"-CURL*"))
-
 (defsubst sidebar-get-curl-buffer ()
   "Return the buffer associated to the curl buffer for the current frame."
-  (get-buffer-create (sidebar-cons-curl-buffer-name)))
+  (get-buffer-create (sidebar-cons-buffer-name "-CURL")))
 
 (defsubst sidebar-get-git-buffer ()
   "Return the existing/created sidebar git buffer for the current frame."
-  (get-buffer-create (sidebar-cons-git-buffer-name)))
+  (get-buffer-create (sidebar-cons-buffer-name "-GIT")))
 
 (defsubst sidebar-exists-p ()
   "Check if a sidebar for the frame exists."

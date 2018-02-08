@@ -40,10 +40,13 @@
     `(frame-parameter nil ',var-name)))
 
 (defmacro sidebar-set (var val)
-  "Set VAR to VAL in the current frame."
+  "Set VAR to VAL in the current frame.
+Return VAL."
   (declare (indent 1))
   (let ((var-name (intern (format "sidebar-%s" var))))
-    `(set-frame-parameter nil ',var-name ,val)))
+    `(let ((value ,val))
+       (set-frame-parameter nil ',var-name value)
+       value)))
 
 (defmacro sidebar-set1 (var val)
   "Set VAR to VAL in the current frame.
@@ -83,19 +86,20 @@ if FORCE is non-nil, there is no check."
 	    (setq line max))
       (forward-line (- line (line-number-at-pos))))))
 
-(defun sidebar-cons-buffer-name ()
+(defvar it)
+
+(defun sidebar-cons-buffer-name (&optional suffix)
   "Construct the buffer name from 'SIDEBAR' and the frame name.
 The return value should be unique for each frame.
 On terminals instance, we use the frame parameter `name'
 On Graphics ones, the name isn't unique for each frame, so we use
-`window-id' that isn't available on terminals instance."
-  (let ((name (sidebar-get buffer-name)))
-    (if name
-	    name
-      (setq name (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
-					                      (frame-parameter nil 'name))"*"))
-      (sidebar-set buffer-name name)
-      name)))
+`window-id' that isn't available on terminals instance.
+SUFFIX is an optional string to append."
+  (or (unless suffix (sidebar-get buffer-name))
+      (--> (concat " *SIDEBAR-" (or (frame-parameter nil 'window-id)
+					                (frame-parameter nil 'name))
+                   suffix "*")
+           (if suffix it (sidebar-set buffer-name it)))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
