@@ -70,6 +70,20 @@ ARGS is the function body with an optional doc."
 	     ,doc
 	     (-map (sidebar-get item-builder-function) (progn ,@body))))))
 
+(defmacro sidebar-print-function (name arglist &rest args)
+  "NAME ARGLIST ARGS."
+  (declare (doc-string 3) (indent 2))
+  (let* ((doc (when (stringp (car args))
+		        (prog1 (car args)
+		          (setq args (cdr args)))))
+	     (body args))
+    `(progn
+       (defun ,(intern (format "sidebar-print-%s" name)) ,arglist
+	     ,doc
+         (-when-let (line (progn ,@body))
+           (add-text-properties 0 (length line) (list 'sidebar-item ,(car arglist)) line)
+           (insert (concat line "\n")))))))
+
 (defun sidebar-gui-p ()
   "Return non-nil if we're on a graphic instance."
   (display-graphic-p))

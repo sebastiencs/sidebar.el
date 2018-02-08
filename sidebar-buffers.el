@@ -118,10 +118,8 @@ Function similar to `sidebar-file-struct' adapted for buffers data."
 (defsubst sidebar-buffers-separator (name &optional first)
   "Return the header NAME between two separators.
 if FIRST is non-nil, do not insert a separator before the header."
-  (-flatten
-   (list (unless first 'separator)
-	     (propertize name 'face 'sidebar-buffers-headers-face)
-	     'separator)))
+  (list
+   (propertize name 'face 'sidebar-buffers-headers-face 'first first)))
 
 (sidebar-content-provider buffers (&rest _)
   "Return a list of buffers to print in the sidebar.
@@ -172,21 +170,25 @@ easily usable."
      (when modified (sidebar-buffers-insert-icon 'md_whatshot))
      (sidebar-buffers-insert-marks buffer))))
 
-(defun sidebar-buffers-print-item (item _)
-  "Function to print ITEM in sidebar.
-It doesn't print anything if ITEM is a separator.
-ITEM is an object created with `sidebar-buffers-item-builder'."
-  (-let (((&alist 'data data 'type type 'visiting visiting) item))
-    (pcase type
-      ('separator (insert (if (stringp data) data "")))
-      (_ (insert (concat " " (sidebar-buffers-format-name
-                              data
-                              (with-current-buffer data
-                                (or (and (bound-and-true-p lsp--cur-workspace)
-                                         (fboundp 'lsp-ui--workspace-path)
-                                         (lsp-ui--workspace-path (buffer-file-name data)))
-                                    (buffer-name data)))
-                              visiting)))))))
+(defun sidebar-buffers--buffer-name (data)
+  "DATA."
+  (or (with-current-buffer data
+        (and (bound-and-true-p lsp--cur-workspace)
+             (fboundp 'lsp-ui--workspace-path)
+             (lsp-ui--workspace-path (buffer-file-name data))))
+      (buffer-name data)))
+
+(sidebar-print-function buffers (item _)
+  "Function call to print a line.
+ITEM is the object to print."
+  (-let* (((&alist 'data data 'type type 'visiting visiting) item))
+    (if (eq type 'separator)
+        (let ((first (get-text-property 0 'first data)))
+          (not (overlay-put (make-overlay (point) (point))
+                            'after-string (concat (unless first "\n") data "\n\n"))))
+      (concat " " (sidebar-buffers-format-name data
+                                               (sidebar-buffers--buffer-name data)
+                                               visiting)))))
 
 (defun sidebar-buffers-open-in-window2 (buffer)
   "Helper function for `sidebar-buffers-open-in-window'.
@@ -324,16 +326,6 @@ Only the windows non dedicated are shown."
   (setq sidebar-buffers-show-hidden (not sidebar-buffers-show-hidden))
   (sidebar-refresh))
 
-(defun sidebar-buffers-post-command ()
-  "Function to ensure that the cursor is never on a separator."
-  (-when-let* ((pre-line (sidebar-get buffers-pre-line))
-	           (line (line-number-at-pos))
-	           ((&alist 'type type) (sidebar-find-file-from-line)))
-    (when (equal type 'separator)
-      (cond ((< line 4) (sidebar-goto-line 4))
-	        ((< pre-line line) (sidebar-buffers-jump-after line))
-	        (t (sidebar-buffers-jump-before line))))))
-
 (defun sidebar-buffers-switch-to-files ()
   "."
   (interactive)
@@ -424,7 +416,6 @@ followed by `sidebar-buffers-open-line'."
   (sidebar-init-mode)
 
   (add-hook 'pre-command-hook 'sidebar-buffers-pre-command nil)
-  (add-hook 'post-command-hook 'sidebar-buffers-post-command nil)
   (add-hook 'post-command-hook 'sidebar-post-command t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
