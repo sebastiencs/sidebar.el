@@ -498,7 +498,7 @@ STATUS is use to know which icon to insert
 NUMBER is the number to insert
 FILE PATH"
   (sidebar-insert-status file path status t)
-  (sidebar-insert " ")
+  (sidebar-insert "\t")
   (sidebar-insert (number-to-string number)))
 
 (defun sidebar-status-subfiles (path)
@@ -552,9 +552,7 @@ PATH is the path of FILE."
 
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil."
-  (if face
-      (insert (icons-in-terminal icon :face face :height 1.15))
-    (insert (icons-in-terminal icon :height 1.15))))
+  (insert (icons-in-terminal icon :face face :height 1.15)))
 
 (defun sidebar-insert-fileicon (file filename status path face)
   "Insert the icon associated to FILE.
@@ -597,7 +595,7 @@ DIR is non-nil if it's a directory."
   (when (or sidebar-status-on-file dir)
     (let* ((face (sidebar-color-from-status status nil))
 	       (func (lambda (name)
-		           (sidebar-insert " ")
+		           (sidebar-insert "\t")
 		           (funcall 'sidebar-insert-icon name face))))
       (pcase status
 	    ('not-updated (funcall func sidebar-icon-git-not-updated))
@@ -626,7 +624,7 @@ FILE is an alist created from `sidebar-file-struct'."
 	     (status (-some->> git-hashtable (gethash path-fixed-dirname)))
 	     (depth (sidebar-calc-depth file status))
 	     (line-number (or line (line-number-at-pos))))
-    (sidebar-insert (s-repeat depth " "))
+    (sidebar-insert (make-string depth ?\s))
     (sidebar-insert-icon-filename file filename status path-fixed-dirname)
     (sidebar-insert-status file path-fixed-dirname status)
     (sidebar-insert-status-subfiles file path-fixed-dirname)))
@@ -1561,7 +1559,7 @@ See `sidebar-git-run' and `sidebar-refresh'"
       (setq length (- length (cadr sidebar-icon-header-end))))
     (concat
      string
-     (propertize (concat (s-repeat length " "))
+     (propertize (concat (make-string length ?\s))
 		         'face 'sidebar-header-line 'display '(raise 0.12))
      (icons-in-terminal (car sidebar-icon-header-end)
 			            :foreground (face-background 'sidebar-header-line nil t)
