@@ -404,11 +404,18 @@ Default: non-nil."
   "Return the project directory, nil if there is no project."
   (ignore-errors (projectile-project-root)))
 
+(defsubst sidebar-get-lsp-root ()
+  "Return the lsp root directory, or nil."
+  (and (bound-and-true-p lsp--cur-workspace)
+       (fboundp 'lsp--workspace-root)
+       (lsp--workspace-root lsp--cur-workspace)))
+
 (defsubst sidebar-project-root ()
   "Return the project root using projectile.
 If it's not a project, return the file's directory.
 If it's not a file, return the home directory."
-  (or (sidebar-get-root-project)
+  (or (sidebar-get-lsp-root)
+      (sidebar-get-root-project)
       (when buffer-file-name (file-name-directory buffer-file-name))
       (file-name-as-directory (expand-file-name "~"))))
 
