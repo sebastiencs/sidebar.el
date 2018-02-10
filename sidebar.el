@@ -859,8 +859,8 @@ The suffix represents the path of the file pointed by the
 cursor (current line).
 The header is asked to be update only when the suffix change."
   (-when-let* ((path-file (-some-> (sidebar--getpath (sidebar-find-file-from-line)) file-name-directory))
-	           (current-path (sidebar-get current-path))
-	           (suffix-path (when (> (length path-file) (length current-path))
+	           (current-path default-directory)
+	           (suffix-path (when (>= (length path-file) (length current-path))
                               (substring path-file (1- (length current-path))))))
     (-let [suffix-header (sidebar-get suffix-header)]
       (when (or (null suffix-header)
