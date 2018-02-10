@@ -1591,7 +1591,7 @@ not in a git project."
 			              :raise -0.1
 			              :height 1.3)
        (when (not (sidebar-gui-p)) " ")
-       (propertize (car (sidebar-get git-branches))
+       (propertize (or (car (sidebar-get git-branches)) "")
 		           'face `(:inherit sidebar-branch :background ,(face-background 'sidebar-branch nil t))
 		           'display '(raise 0.1)))
     (concat " "
@@ -1602,20 +1602,21 @@ not in a git project."
   "Return the string to insert in the modeline (right side).
 It returns the git remote branch or the number of directories in the sidebar
 if we're not in a git project."
-  (if (and (sidebar-get root-project) (sidebar-get git-branches))
-      (let ((str-branch-distant (s-split " \\[\\|\\]" (cadr (sidebar-get git-branches)))))
-	    (concat
-	     (icons-in-terminal sidebar-icon-remotebranch
-			                :face 'sidebar-icon-remote-branch
-			                :background (face-background 'sidebar-remote-branch nil t)
-			                :raise -0.1
-			                :height 1.3)
-	     (when (not (sidebar-gui-p)) " ")
-	     (propertize (car str-branch-distant) 'display '(raise 0.1))
-	     "  "))
-    (concat (number-to-string sidebar-directories-number)
-	        (if (> sidebar-directories-number 1) " directories" " directory"))
-    ))
+  (let* ((branches (sidebar-get git-branches))
+         (distant (cadr branches)))
+    (if (and (sidebar-get root-project) branches)
+        (let ((str-branch-distant (and distant (s-split " \\[\\|\\]" distant))))
+	      (concat
+	       (icons-in-terminal sidebar-icon-remotebranch
+	  		                  :face 'sidebar-icon-remote-branch
+	  		                  :background (face-background 'sidebar-remote-branch nil t)
+	  		                  :raise -0.1
+	  		                  :height 1.3)
+	       (when (not (sidebar-gui-p)) " ")
+	       (propertize (or (car str-branch-distant) "") 'display '(raise 0.1))
+	       "  "))
+      (concat (number-to-string sidebar-directories-number)
+	          (if (> sidebar-directories-number 1) " directories" " directory")))))
 
 (defun sidebar-set-modeline ()
   "Construct the mode-line."
