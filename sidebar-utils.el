@@ -1,4 +1,4 @@
-;;; sidebar-utils.el --- sidebar-utils
+;;; sidebar-utils.el --- sidebar-utils  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Sebastien Chapuis
 
@@ -33,6 +33,33 @@
 ;;; Code:
 
 (defvar sidebar-width)
+
+;; (defmacro sidebar-get (var)
+;;   "Get VAR in the current frame."
+;;   (let ((var-name (intern (format "sidebar-%s" var))))
+;;     `(or
+;;       (bound-and-true-p ,var-name)
+;;       (setq-local ,var-name
+;;                   (frame-parameter nil ',var-name)))))
+
+;; (defmacro sidebar-set (var val)
+;;   "Set VAR to VAL in the current frame.
+;; Return VAL."
+;;   (declare (indent 1))
+;;   (let ((var-name (intern (format "sidebar-%s" var))))
+;;     `(let ((value ,val))
+;;        (set-frame-parameter nil ',var-name value)
+;;        ;; value
+;;        (set (make-local-variable ',var-name) value)
+;;        ;;(setq-local ,var-name value)
+;;        )))
+
+;; (defmacro sidebar-set1 (var val)
+;;   "Set VAR to VAL in the current frame.
+;; The difference with `sidebar-set' is that the var parameter is
+;; evaluated.
+;; VAR need to be prefixed with 'sidebar-'."
+;;   `(set-frame-parameter nil ,var ,val))
 
 (defmacro sidebar-get (var)
   "Get VAR in the current frame."
@@ -72,7 +99,8 @@ ARGS is the function body with an optional doc."
 
 (defmacro sidebar-print-function (name arglist &rest args)
   "NAME ARGLIST ARGS."
-  (declare (doc-string 3) (indent 2))
+  (declare (doc-string 3) (indent 2)
+           (debug (form args)))
   (let* ((doc (when (stringp (car args))
 		        (prog1 (car args)
 		          (setq args (cdr args)))))
@@ -82,7 +110,7 @@ ARGS is the function body with an optional doc."
 	     ,doc
          (-when-let (line (progn ,@body))
            (add-text-properties 0 (length line) (list 'sidebar-item ,(car arglist)) line)
-           (insert (concat line "\n")))))))
+           (insert line))))))
 
 (defun sidebar-gui-p ()
   "Return non-nil if we're on a graphic instance."

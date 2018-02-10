@@ -1,4 +1,4 @@
-;;; sidebar.el --- Sidebar major mode
+;;; sidebar.el --- Sidebar major mode  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Sebastien Chapuis
 
@@ -431,45 +431,45 @@ If it's not a file, return the home directory."
   "Check if a sidebar for the frame exists."
   (get-buffer (sidebar-cons-buffer-name)))
 
-(defsubst sidebar-insert (str &optional face)
-  "Small function to insert STR with FACE if non-nil."
-  (if face
-      (insert (propertize str 'face face))
-    (insert str)))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
-
 (defun sidebar-count-char (char s)
   "Count the occurence of CHAR in string S."
-  (let ((n 0)
-	    (c (elt char 0)))
-    (--dotimes (length s)
-      (when (eq (elt s it) c)
-	    (setq n (1+ n))))
-    n))
+  (let ((n 0))
+    (dotimes (it (length s) n)
+      (when (eq (elt s it) char)
+	    (setq n (1+ n))))))
 
-(defun sidebar-calc-depth (file status)
+(defun sidebar-calc-depth (path status)
   "Calcul the depth of FILE from the current directory point of view.
 This is used to count the number of space to insert before the filename.
 STATUS is the status of the FILE."
-  (let* ((path-from-current (s-chop-prefix (sidebar-get current-path) (sidebar--getpath file)))
-	     (depth (sidebar-count-char "/" path-from-current))) ; TODO: Support Windows (replace '/')
+  (let* ((path-from-current (s-chop-prefix default-directory path))
+         (depth (sidebar-count-char ?\/ path-from-current))) ; TODO: Support Windows (replace '/')
     (if (> depth 0)
-	    (1+ (* depth 2))
+        (1+ (* depth 2))
       (1+ depth))))
+
+(defmacro measure-time (&rest body)
+  "Measure the time it takes to evaluate BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (message "%.06f" (float-time (time-since time)))))
+
+(defvar-local sidebar--root-project nil)
+(defvar-local sidebar--git-hashtable nil)
 
 (defun sidebar-child-of-status-p (file-path status)
   "Return non-nil if FILE-PATH is a child of a STATUS directory.
 This is used to know if a file is a subfile of an untracked/ignored directory."
-  (when (sidebar-get git-hashtable)
+  ;;(when (sidebar-get git-hashtable)
+  (when sidebar--git-hashtable
     (catch 'stop-map
       (maphash (lambda (key value)
 		         (when (equal value status)
 		           (when (and (s-starts-with? key file-path) (not (string= key file-path)))
 		             (throw 'stop-map t))))
-	           (sidebar-get git-hashtable)))))
+	           sidebar--git-hashtable))))
 
-(defun sidebar-color-from-status (status &optional default)
+(defsubst sidebar-color-from-status (status &optional default)
   "Return the face associated to the git STATUS.
 If there is no status, return DEFAULT."
   (pcase status
@@ -481,32 +481,27 @@ If there is no status, return DEFAULT."
     ('match 'sidebar-match)
     (_ default)))
 
-(defun sidebar-get-color (file path status &optional icon no-color)
+(defsubst sidebar-get-color (file path status &optional icon no-color)
   "Return the face to use for FILE.
 PATH is the path of the file relative to the project root directory
 STATUS is the status from git
 non-nil ICON means we're getting the color for an icon.
 NO-COLOR non-nil means don't use a color."
-  (cond ((or (equal 'ignored status) (sidebar-child-of-status-p path 'ignored))
+  (cond ((or (eq 'ignored status) (sidebar-child-of-status-p path 'ignored))
 	     (if (sidebar--dir-p file) 'sidebar-ignored-dir 'sidebar-ignored-file))
-	    ((and (or (equal 'untracked status) (sidebar-child-of-status-p path 'untracked)) (not icon))
+	    ((and (or (eq 'untracked status) (sidebar-child-of-status-p path 'untracked)) (not icon))
 	     'sidebar-untracked)
-	    ((sidebar--dir-p file) 'sidebar-dir)
-	    (no-color 'sidebar-file)
-	    ((not icon) (sidebar-color-from-status status 'sidebar-file))))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+	    ((sidebar--dir-p file) 'sidebar-dir)))
 
 (defun sidebar-insert-status-subfiles-helper (status number file path)
   "Insert the icon and numbers after a directory.
 STATUS is use to know which icon to insert
 NUMBER is the number to insert
 FILE PATH"
-  (sidebar-insert-status file path status t)
-  (sidebar-insert "\t")
-  (sidebar-insert (number-to-string number)))
+  (concat
+   (sidebar-insert-status file path status t)
+   "\t"
+   (number-to-string number)))
 
 (defun sidebar-status-subfiles (path)
   "Return the numbers of git status in the subfiles of directory PATH."
@@ -542,24 +537,25 @@ PATH is the path of FILE."
 		            'match match)
 	        (sidebar-status-subfiles path))
 	       (func 'sidebar-insert-status-subfiles-helper))
-      (when (> not-updated 0)
-	    (funcall func 'not-updated not-updated file path))
-      (when (> updated 0)
-	    (funcall func 'updated updated file path))
-      (when (> changed 0)
-	    (funcall func 'changed changed file path))
-      (when (> added 0)
-	    (funcall func 'added added file path))
-      (when (> match 0)
-	    (funcall func 'match match file path)))))
+      (concat
+       (when (> not-updated 0)
+	     (funcall func 'not-updated not-updated file path))
+       (when (> updated 0)
+	     (funcall func 'updated updated file path))
+       (when (> changed 0)
+	     (funcall func 'changed changed file path))
+       (when (> added 0)
+	     (funcall func 'added added file path))
+       (when (> match 0)
+	     (funcall func 'match match file path))))))
 
 (defsubst sidebar-insert-filename (str face)
   "Small function to insert STR with FACE if non-nil."
-  (insert (propertize str 'face face 'mouse-face face 'keymap sidebar-button-keymap)))
+  (propertize str 'face face 'mouse-face face 'keymap sidebar-button-keymap))
 
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil."
-  (insert (icons-in-terminal icon :face face :height 1.15)))
+  (icons-in-terminal icon :face face :height 1.15))
 
 (defun sidebar-insert-fileicon (file filename status path face)
   "Insert the icon associated to FILE.
@@ -571,14 +567,12 @@ PATH its path.
 FACE is the face to use for the icons."
   (if (sidebar--dir-p file)
       (let ((icon (if (sidebar--open-p file) sidebar-icon-dir-opened sidebar-icon-dir-closed)))
-	    (sidebar-insert-icon icon (sidebar-get-color file path status t)))
-    (-let* (((&plist :icon icon :color color) (sidebar-filemapping-lookup filename))
+	    (sidebar-insert-icon icon face))
+    (-let* (((icon . color) (sidebar-filemapping-lookup filename))
 	        (partial (-partial 'icons-in-terminal icon :height 1.1)))
-      (cond (face (insert (funcall partial :face face)))
-	        (color (insert (funcall partial :foreground color)))
-	        (t (insert (funcall partial)))))))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+      (cond (face (funcall partial :face face))
+	        (color (funcall partial :foreground color))
+	        (t (funcall partial))))))
 
 (defsubst sidebar-window-width ()
   "Return the sidebar's window width."
@@ -588,11 +582,17 @@ FACE is the face to use for the icons."
   "Insert the icon associated to FILE followed by its FILENAME.
 STATUS is its git status.
 PATH is the file path."
-  (funcall sidebar-insert-fileicon-function file filename status path (sidebar-get-color file path status t))
-  ;; Tabulations are stretched characters
-  ;; this fix the alignement, tab-width needs to be 1
-  (sidebar-insert "\t")
-  (sidebar-insert-filename filename (sidebar-get-color file path status nil (not sidebar-filename-colored))))
+  (let* ((color (sidebar-get-color file path status t))
+         (file-color (or color
+                         (and sidebar-filename-colored
+                              (sidebar-color-from-status status 'sidebar-file))
+                         'sidebar-file)))
+    (concat
+     (funcall sidebar-insert-fileicon-function file filename status path color)
+     ;; Tabulations are stretched characters
+     ;; this fix the alignement, tab-width needs to be 1
+     "\t"
+     (sidebar-insert-filename filename file-color))))
 
 (defun sidebar-insert-status (file path status &optional dir)
   "Insert the icons associated to the git status of FILE.
@@ -602,8 +602,8 @@ DIR is non-nil if it's a directory."
   (when (or sidebar-status-on-file dir)
     (let* ((face (sidebar-color-from-status status nil))
 	       (func (lambda (name)
-		           (sidebar-insert "\t")
-		           (funcall 'sidebar-insert-icon name face))))
+		           (concat "\t"
+		                   (funcall 'sidebar-insert-icon name face)))))
       (pcase status
 	    ('not-updated (funcall func sidebar-icon-git-not-updated))
 	    ('updated (funcall func sidebar-icon-git-updated))
@@ -612,7 +612,7 @@ DIR is non-nil if it's a directory."
 	    ('renamed (funcall func sidebar-icon-git-renamed))
 	    ('match (funcall func sidebar-icon-git-match))))))
 
-(defun sidebar-print-file (file &optional line)
+(sidebar-print-function file (file &optional no-newline)
   "Insert FILE's filename on the current LINE.
 
 First, it inserts ' ' x times, depending on the file depth (relative to
@@ -624,44 +624,34 @@ If FILE is a directory and closed (not expanded), it inserts the icons of
  all the files it contains just after its name, still on the same line.
 
 FILE is an alist created from `sidebar-file-struct'."
-  (let* ((filename (-some-> file sidebar--getpath file-name-nondirectory))
-	     (path-in-project (s-chop-prefix (sidebar-get root-project) (sidebar--getpath file)))
+  (let* ((path (sidebar--getpath file))
+         (filename (when path (file-name-nondirectory path)))
+	     (path-in-project (s-chop-prefix sidebar--root-project path))
 	     (path-fixed-dirname (if (sidebar--dir-p file) (file-name-as-directory path-in-project) path-in-project))
-	     (git-hashtable (sidebar-get git-hashtable))
-	     (status (-some->> git-hashtable (gethash path-fixed-dirname)))
-	     (depth (sidebar-calc-depth file status))
-	     (line-number (or line (line-number-at-pos))))
-    (sidebar-insert (make-string depth ?\s))
-    (sidebar-insert-icon-filename file filename status path-fixed-dirname)
-    (sidebar-insert-status file path-fixed-dirname status)
-    (sidebar-insert-status-subfiles file path-fixed-dirname)))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+	     (git-hashtable sidebar--git-hashtable)
+	     (status (when git-hashtable (gethash path-fixed-dirname git-hashtable)))
+	     (depth (sidebar-calc-depth path status)))
+    (concat
+     (make-string depth ?\s)
+     (sidebar-insert-icon-filename file filename status path-fixed-dirname)
+     (sidebar-insert-status file path-fixed-dirname status)
+     (sidebar-insert-status-subfiles file path-fixed-dirname)
+     (unless no-newline "\n"))))
 
 (defun sidebar-print-listfiles (list)
   "Insert all files in LIST from the current line.
 It updates the associated value `line' for each file.  This is used to
 keep track of which file is on which line."
-  (let ((line-number (line-number-at-pos)))
-    (sidebar-writable
-     (--each list
-       (setf (sidebar--getline it) line-number)
-       (funcall (sidebar-get print-item) it line-number)
-       (insert "\n")
-       (setq line-number (1+ line-number))))))
-
-(defun sidebar-sort-files-by-line ()
-  "Sort `sidebar-files' by their line number."
-  (->> (sidebar-get files)
-       (--sort (< (sidebar--getline it) (sidebar--getline other)))
-       (sidebar-set files)))
+  (sidebar-writable
+   (let ((fn (sidebar-get print-item))
+         (sidebar--root-project (sidebar-get root-project))
+         (sidebar--git-hashtable (sidebar-get git-hashtable)))
+     (mapc fn list))))
 
 (defun sidebar-dots-file (file)
   "Return t if FILE is '.' or '..'."
   (let ((file (file-name-nondirectory file)))
     (or (string= "." file) (string= ".." file))))
-
-;;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (sidebar-content-provider files (path)
   "Return a list of files/directories in PATH.
@@ -670,8 +660,8 @@ Sort the directories first
 The list returned is a list of association list for each file created
 with `\\[sidebar-file-struct]'"
   (let* ((files-and-dirs (--> path (directory-files it t) (-remove 'sidebar-dots-file it)))
-	     (dirs-sorted (--sort (string< it other) (-filter 'file-directory-p files-and-dirs)))
-	     (files-sorted (--sort (string< it other) (--filter (-> it file-directory-p not) files-and-dirs))))
+	     (dirs-sorted (-filter 'file-directory-p files-and-dirs))
+	     (files-sorted (--filter (not (file-directory-p it)) files-and-dirs)))
     (-concat dirs-sorted files-sorted)))
 
 (defsubst sidebar-load-content (path)
@@ -680,14 +670,12 @@ It varies for files, buffers or mu4e.
 PATH is used only for files, it represents the path where to load new files."
   (funcall (sidebar-get load-content-function) path))
 
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
-
 (defun sidebar-goto-buffername (buffer-name)
   "This function jump the cursor to BUFFER-NAME (string) in the sidebar.
 If there is no filename equal to the BUFFER-NAME, it put the cursor
 on the frame parameter `sidebar-line-to-start'.
 This is use when the sidebar is created."
-  (let* ((file (when buffer-name (--first (string= (sidebar--getpath it) buffer-name) (sidebar-get files))))
+  (let* ((file (and buffer-name (sidebar--find-file buffer-name)))
 	     (line (or (sidebar-get save-line) (sidebar--getline file) (sidebar-get line-to-start))))
     (sidebar-goto-line line)
     (sidebar-show-current)
@@ -761,7 +749,7 @@ returns an error on terminals."
      (sidebar-make-modeline-right-function . sidebar-buffers-make-modeline-right)
      (sidebar-item-builder-function        . sidebar-buffers-item-builder)
      (sidebar-restore-function             . nil)
-     (sidebar-print-item                   . sidebar-buffers-print-item)
+     (sidebar-print-item                   . sidebar-print-buffers)
      (sidebar-line-to-start                . 4))
     )
   "Variable storing the functions to call according to the mode used.")
@@ -779,8 +767,9 @@ PROJECT-PATH-ROOT."
     (sidebar-set root-project (sidebar-get-root-project))
     (sidebar-set history (list project-path-root))
     (sidebar-set current-path project-path-root)
+    (setq default-directory project-path-root)
     (sidebar-set default-width sidebar-width)
-    (sidebar-set files (sidebar-load-content project-path-root))
+    ;; (sidebar-set files (sidebar-load-content project-path-root))
     (unless (sidebar-get overlay)
       (sidebar-set overlay (ov (point-min) (point-min) 'face 'sidebar-powerline)))))
 
@@ -871,7 +860,8 @@ cursor (current line).
 The header is asked to be update only when the suffix change."
   (-when-let* ((path-file (-some-> (sidebar--getpath (sidebar-find-file-from-line)) file-name-directory))
 	           (current-path (sidebar-get current-path))
-	           (suffix-path (substring path-file (1- (length current-path)))))
+	           (suffix-path (when (> (length path-file) (length current-path))
+                              (substring path-file (1- (length current-path))))))
     (-let [suffix-header (sidebar-get suffix-header)]
       (when (or (null suffix-header)
 		        (not (s-equals? suffix-path suffix-header)))
@@ -1055,7 +1045,9 @@ If the file is cut, you'll be ask to rename the buffers visiting it."
   (delete-overlay (sidebar-get overlay))
   (sidebar-writable
    (erase-buffer)
-   (insert "\n")))
+   (remove-overlays)
+   (overlay-put (make-overlay (point) (point))
+                'after-string "\n")))
 
 (defun sidebar-up-directory ()
   "Go to the parent directory.
@@ -1084,27 +1076,26 @@ Sort the list by line number
   (interactive)
   (let* ((new-directory (file-name-directory (directory-file-name (sidebar-get current-path))))
 	     (new-files (sidebar-load-content new-directory))
-	     (old-files (sidebar-get files))
+	     (old-files (sidebar--list-all))
 	     (history (sidebar-get history))
 	     (old-dir (directory-file-name (sidebar-get current-path))))
     (if (string= old-dir new-directory)
 	    (message "Sidebar: You're at the top")
       (sidebar-init-buffer)
-      (sidebar-set history (add-to-list 'history new-directory nil 's-equals?))
-      (sidebar-set files (sidebar-update-to-opened new-files old-dir))
+      ;; (sidebar-set history (add-to-list 'history new-directory nil 's-equals?))
+      ;;(sidebar-set history (add-to-list 'history new-directory nil 's-equals?))
       (sidebar-set current-path (file-name-as-directory new-directory))
       (setq default-directory (sidebar-get current-path))
       (sidebar-set root-project (sidebar-get-root-project))
-      (sidebar-print-listfiles (sidebar-get files))
-      (let* ((old-dir- (--first (string= (sidebar--getpath it) old-dir) (sidebar-get files)))
-	         (line-to-put-old-files (sidebar--getline old-dir-)))
+      (sidebar--maybe-invalidate-git)
+      (sidebar-print-listfiles (sidebar-update-to-opened new-files old-dir))
+      (let* ((line-to-put-old-files (sidebar--getline (sidebar--find-file old-dir))))
 	    (sidebar-goto-line (+ line-to-put-old-files 1) t)
-	    (sidebar-update-line-number (length old-files) line-to-put-old-files)
 	    (sidebar-print-listfiles old-files)
-	    (sidebar-set files (-concat (sidebar-get files) old-files))
-	    (sidebar-sort-files-by-line)
-	    (sidebar-goto-line line-to-put-old-files)))
-    (sidebar-git-run)))
+	    (sidebar-goto-line line-to-put-old-files)
+        ))
+    ;;(sidebar-git-run)
+    ))
 
 (defun sidebar-open-directory (file)
   "Set the current directory to FILE.
@@ -1113,20 +1104,14 @@ If FILE is opened (expanded), we filter the list of files to get only the ones
 in the new directory.
 If FILE it not opened, we load the dir with `sidebar-content-files'
 ."
-  (let ((files nil)
-	    (history (sidebar-get history)))
-    (if (sidebar--open-p file)
-	    (let ((dirname (file-name-as-directory (sidebar--getpath file))))
-	      (setq files (--filter (s-starts-with? dirname (sidebar--getpath it)) (sidebar-get files))))
-      (setq files (sidebar-load-content (sidebar--getpath file))))
-    (delete-overlay (sidebar-get overlay))
-    (sidebar-set files files)
+  (let ((history (sidebar-get history)))
+    (projectile-reset-cached-project-root)
     (sidebar-set current-path (file-name-as-directory (sidebar--getpath file)))
     (setq default-directory (sidebar-get current-path))
-    (sidebar-set history (add-to-list 'history default-directory nil 's-equals?))
-    (sidebar-set root-project (sidebar-get-root-project))
-    (sidebar-goto-line 1))
-  (sidebar-git-run))
+    ;;(sidebar-set history (add-to-list 'history default-directory nil 's-equals?))
+    (sidebar-set root-project (sidebar-project-root))
+    (sidebar-goto-line 1)
+    (sidebar-git-run)))
 
 (defsubst sidebar-open-file-in-window (window buffer-file)
   "Callback function called when a window has been selected by the user.
@@ -1168,9 +1153,7 @@ Only the windows non dedicated are shown."
   "Return the file on the LINE.
 'sidebar-files' is always sorted, so we just need to access it in the list by
 its index."
-  (if line
-      (nth (- line 2) (sidebar-get files))
-    (nth (- (line-number-at-pos) 2) (sidebar-get files))))
+  (get-text-property (point) 'sidebar-item))
 
 (defun sidebar-open-file (file)
   "Open FILE in the buffer where `sidebar-open' has been called.
@@ -1194,14 +1177,6 @@ If you want to select the window, you should call `sidebar-open-in-window'"
 	    (sidebar-open-directory file)
       (sidebar-open-file file))))
 
-(defun sidebar-update-line-number (num line)
-  "Add NUM to every file where line value is > than LINE."
-  (let ((list (sidebar-get files)))
-    (--each list
-      (let ((line-for-this-file (sidebar--getline it)))
-	    (when (> line-for-this-file line)
-	      (setf (sidebar--getline it) (+ line-for-this-file num)))))))
-
 (defun sidebar-search-closed-dir (file)
   "Search FILE in the list of previously closed directory.
 If found, it is extracted and remove from the list
@@ -1213,7 +1188,15 @@ Return the found element."
 		        (sidebar-get closed-directories)))
     (cdar found)))
 
-;;(kill-buffer (sidebar-cons-buffer-name))
+(defun sidebar--update-dirline (dir)
+  "DIR."
+  (save-excursion
+    (beginning-of-line)
+    (sidebar-writable
+     (delete-region (line-beginning-position) (line-end-position))
+     (sidebar-print-file dir nil)
+     (kill-line))
+    (sidebar-show-current)))
 
 (defun sidebar-expand-dir (file line)
   "Expand the directory FILE on the LINE.
@@ -1222,19 +1205,10 @@ from the saved list `sidebar-closed-directories'.
 Otherwise it load the dir with `sidebar-content-files'."
   (setf (sidebar--open-p file) t)
   (save-excursion
-    (let ((new-files (or (sidebar-search-closed-dir file)
-			             (sidebar-load-content (sidebar--getpath file)))))
-      (forward-line)
-      (sidebar-update-line-number (length new-files) line)
-      (sidebar-print-listfiles new-files)
-      (sidebar-set files (-concat (sidebar-get files) new-files))
-      (sidebar-sort-files-by-line)))
-  (save-excursion
-    (beginning-of-line)
-    (sidebar-writable
-     (delete-region (line-beginning-position) (line-end-position))
-     (sidebar-print-file file))
-    (sidebar-show-current)))
+    (forward-line)
+    (sidebar-print-listfiles (or (sidebar-search-closed-dir file)
+			                     (sidebar-load-content (sidebar--getpath file)))))
+  (sidebar--update-dirline file))
 
 (defun sidebar-delete-line ()
   "Delete the whole line (including \n)."
@@ -1255,22 +1229,15 @@ list 'sidebar-closed-directories' to reuse them later if
 the directory is re-opened"
   (setf (sidebar--open-p file) nil)
   (save-excursion
-    (let* ((dir-to-close (sidebar--getpath (nth (- (line-number-at-pos) 2) (sidebar-get files))))
-	       (dir-to-close (file-name-as-directory dir-to-close))
-	       (files-to-remove (--filter (s-starts-with? dir-to-close (sidebar--getpath it)) (sidebar-get files)))
-	       (new-sidebar-files (--remove (s-starts-with? dir-to-close (sidebar--getpath it)) (sidebar-get files))))
+    (let* ((dir-to-close (-> (sidebar--getpath (sidebar--get-file))
+	                         (file-name-as-directory)))
+	       (files-to-remove (--filter (s-starts-with? dir-to-close (sidebar--getpath it))
+                                      (sidebar--list-all))))
       (sidebar-update-closed-dirs dir-to-close files-to-remove)
-      (sidebar-set files new-sidebar-files)
       (forward-line)
-      (sidebar-update-line-number (- (length files-to-remove)) line)
       (--dotimes (length files-to-remove)
 	    (sidebar-delete-line))))
-  (save-excursion
-    (beginning-of-line)
-    (sidebar-writable
-     (delete-region (line-beginning-position) (line-end-position))
-     (sidebar-print-file file))
-    (sidebar-show-current)))
+  (sidebar--update-dirline file))
 
 (defun sidebar-expand-or-close-dir ()
   "Expand or close the directory on the current line."
@@ -1280,8 +1247,7 @@ the directory is re-opened"
     (when (sidebar--dir-p file)
       (if (sidebar--open-p file)
 	      (sidebar-close-dir file line)
-	    (sidebar-expand-dir file line))))
-  (sidebar-update-files-number))
+	    (sidebar-expand-dir file line)))))
 
 (defun sidebar-goto-line (line &optional force)
   "Go to LINE.
@@ -1289,12 +1255,7 @@ The function checks to not go at the last line (there is no
 filename on this line) or at the first line.
 if FORCE is non-nil, there is no check."
   (when (integerp line)
-    (if force
-	    (forward-line (- line (line-number-at-pos)))
-      (let ((max (or (sidebar--getline (car (last (sidebar-get files)))) 2)))
-	    (if (> line max) (setq line max)
-	      (when (< line 2) (setq line 2)))
-	    (forward-line (- line (line-number-at-pos)))))))
+	(forward-line (- line (line-number-at-pos)))))
 
 (defun sidebar-update-from-opened-dirs (list opened)
   "Set the associated value `opened' to t for all files of LIST present in the list OPENED."
@@ -1304,12 +1265,57 @@ if FORCE is non-nil, there is no check."
       (setf (sidebar--open-p found) t)))
   list)
 
-(defun sidebar-update-files-number ()
-  "Update the variables `sidebar-files-number' and `sidebar-directories-number'."
-  (let ((total (length (sidebar-get files)))
-	    (ndirs (setq sidebar-files-number (--reduce-from (+ acc (if (sidebar--dir-p it) 1 0)) 0 (sidebar-get files)))))
-    (setq sidebar-files-number (- total ndirs)
-	      sidebar-directories-number ndirs)))
+(defun sidebar--find-file-point (path)
+  "PATH."
+  (save-excursion
+    (goto-char 1)
+    (let ((item (get-text-property (point) 'sidebar-item))
+          point)
+      (while (and item (not point))
+        (if (string= path (sidebar--getpath item))
+            (setq point (point))
+          (forward-line)
+          (setq item (get-text-property (point) 'sidebar-item))))
+      point)))
+
+(defun sidebar--find-file (path)
+  "PATH."
+  (-when-let* ((point (sidebar--find-file-point path))
+               (file (get-text-property point 'sidebar-item)))
+    (setf (sidebar--getline file) (line-number-at-pos point))
+    file))
+
+(defun sidebar--get-file ()
+  "PATH."
+  (get-text-property (point) 'sidebar-item))
+
+(defun sidebar-list-opened ()
+  (save-excursion
+    (goto-char 1)
+    (let ((prop (get-text-property (point) 'sidebar-item))
+          list)
+      (while prop
+        (when (sidebar--open-p prop)
+          (push prop list))
+        (forward-line 1)
+        (setq prop (get-text-property (point) 'sidebar-item)))
+      (nreverse list))))
+
+(defun sidebar--list-all ()
+  (save-excursion
+    (goto-char 1)
+    (let ((prop (get-text-property (point) 'sidebar-item))
+          list)
+      (while prop
+        (push prop list)
+        (forward-line 1)
+        (setq prop (get-text-property (point) 'sidebar-item)))
+      (nreverse list))))
+
+(defun sidebar--maybe-invalidate-git ()
+  (unless (equal (sidebar-get root-project) (sidebar-get git-dir))
+    (sidebar-set git-dir nil)
+    (sidebar-set git-hashtable nil)))
 
 (defun sidebar-refresh (&optional to-expand silent)
   "Update the content of the sidebar.
@@ -1326,31 +1332,27 @@ files/directories to expand.
 SILENT."
   (interactive)
   (with-current-buffer (sidebar-get-buffer)
-    (let ((current-line (or (sidebar-get line-on-refresh) (line-number-at-pos)))
-	      (opened-dirs (or to-expand (--filter (sidebar--open-p it) (sidebar-get files)))))
+    (let* ((current-line (or (sidebar-get line-on-refresh) (line-number-at-pos)))
+	       (opened-dirs (or (sidebar-get opened) to-expand (sidebar-list-opened)))
+           (files (-> (sidebar-load-content (sidebar-get current-path))
+			          (sidebar-update-from-opened-dirs opened-dirs))))
       (sidebar-set line-on-refresh current-line)
-      (sidebar-set files (-> (sidebar-load-content (sidebar-get current-path))
-			                 (sidebar-update-from-opened-dirs opened-dirs)))
+      (sidebar-set opened nil)
+      (sidebar--maybe-invalidate-git)
       (sidebar-init-buffer)
-      (sidebar-print-listfiles (sidebar-get files))
-      (sidebar-sort-files-by-line)
+      (sidebar-print-listfiles files)
       (--each opened-dirs
 	    (-when-let* ((path (sidebar--getpath it))
-		             (found (--first (string= (sidebar--getpath it) path) (sidebar-get files))))
-	      (setf (sidebar--open-p found) t)
+	                 (found (sidebar--find-file path)))
 	      (sidebar-goto-line (+ (sidebar--getline found) 1) t)
-	      (let ((new-files (-> (sidebar-load-content (sidebar--getpath found))
-			                   (sidebar-update-from-opened-dirs opened-dirs))))
-	        (sidebar-print-listfiles new-files)
-	        (sidebar-update-line-number (length new-files) (sidebar--getline found))
-	        (sidebar-set files (-concat (sidebar-get files) new-files))
-	        (sidebar-sort-files-by-line))))
+	      (sidebar-print-listfiles (-> (sidebar-load-content (sidebar--getpath found))
+	    	                           (sidebar-update-from-opened-dirs opened-dirs)))))
       (sidebar-goto-line current-line)
       (sidebar-set line-on-refresh nil)
       (sidebar-show-current))
-    (sidebar-update-files-number)
     (unless silent
-      (message "Sidebar refreshed"))))
+      ;;(message "Sidebar refreshed")
+      )))
 
 (defun sidebar-refresh-on-save-after-timer ()
   "Function called when a buffer is saved, it refreshes the sidebar."
@@ -1459,8 +1461,6 @@ The key in the hashtable is the filepath, the value is its status."
 	      (puthash filepath status table)))
       table)))
 
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
-
 (defun sidebar-git-sentinel (process change)
   "Sentinel for the PROCESS running git.  Handle exit.
 Once the output is parsed, it refreshes the sidebar.
@@ -1468,18 +1468,21 @@ CHANGE is unused"
   (when (eq (process-status process) 'exit)
     (let ((start (window-start (sidebar-get-window))))
       (if (/= (process-exit-status process) 0)
-	      (sidebar-refresh)
+          (measure-time
+	       (sidebar-refresh))
+        (sidebar-set git-dir (sidebar-get root-project))
 	    (let ((table (sidebar-git-parse-buffer))
 	          (sidebar-window (sidebar-get-window t)))
 	      (with-current-buffer (sidebar-get-buffer)
 	        (sidebar-set git-hashtable table)
-	        (sidebar-refresh))))
+            (measure-time
+	         (sidebar-refresh)))))
       (set-window-start (sidebar-get-window) start)
       (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
 
 (defun sidebar-tramp-p ()
   "Return non-nil if we're browsing a remote directory."
-  (-let [path (sidebar-get current-path)]
+  (let ((path (sidebar-get current-path)))
     (and (stringp path) (file-remote-p path))))
 
 (defun sidebar-git-run (&optional force)
@@ -1490,17 +1493,13 @@ Once done, it refresh the sidebar.
 if FORCE is non-nil, force to run the process."
   (with-current-buffer (sidebar-get-buffer)
     (sidebar-set saved-line-number (line-number-at-pos)))
-  (if (not (or force
-	           (and (sidebar-get root-project)
-		            (not (s-equals? (sidebar-get root-project) (sidebar-get git-dir))))))
+  (if (and (equal (sidebar-get root-project) (sidebar-get git-dir))
+           (not force))
       (sidebar-refresh)
-    (sidebar-set git-dir (sidebar-get root-project))
     (let ((process (get-buffer-process (sidebar-get-git-buffer))))
-      (when (process-live-p process)
-	    ;; (kill-process process)
-	    (message "PROCESS ALIVE !"))
-      (unless (process-live-p process)
-	    (message "RUN PROCESS")
+      (if (process-live-p process)
+	      ;; (kill-process process)
+	      (message "PROCESS ALIVE !")
 	    (with-current-buffer (sidebar-get-git-buffer)
 	      (erase-buffer))
 	    (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer)
@@ -1513,8 +1512,9 @@ if FORCE is non-nil, force to run the process."
   "Refresh the sidebar content.
 See `sidebar-git-run' and `sidebar-refresh'"
   (interactive)
-  (sidebar-protect-repetition on-refresh 1
-    (sidebar-git-run t)))
+  ;;;(sidebar-protect-repetition on-refresh 1
+  ;;(message "LAAA")
+  (sidebar-git-run t))
 
 (defun sidebar-make-header ()
   "Return the string to insert in the header."
@@ -1627,9 +1627,14 @@ if we're not in a git project."
 					                           :height sidebar-mode-line-height)
 			                right)))
       (concat left
-              (propertize " " 'display `(space :align-to (- right-margin ,align-to)))
+              (propertize " " 'display `(space :align-to (- right-margin ,align-to 2)))
 	          right
               (propertize " " 'face 'sidebar-remote-branch 'display `(space :align-to (right-margin)))))))
+
+(defadvice sidebar-post-command (around intercept activate)
+  (condition-case err
+      ad-do-it
+    ((debug error) (signal (car err) (cdr err)))))
 
 (defun sidebar-post-command()
   "Function called after every command.
@@ -1637,12 +1642,11 @@ This ensure that the overlay is a the cursor place.
 It also make the cursor not being at the first or last point in the buffer
 because there are nothing at those points."
   ;; (message "last command: %s" this-command)
-  (-let [line (or (sidebar-get saved-line-number) (line-number-at-pos))]
-    (sidebar-goto-line line))
+  (sidebar-goto-line (sidebar-get saved-line-number))
   (sidebar-set saved-line-number nil)
+  (when (eobp)
+    (ignore-errors (forward-line -1)))
   (sidebar-show-current))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (defun sidebar-before-make-frame-hook ()
   "This hook run when another frame is created.
@@ -1668,8 +1672,9 @@ If ALL is non-nil, it print everything."
 	      (push `(,(substring var 8) ,(cdr it)) variables))))
     (unless all
       (setq variables (--remove (or (s-equals? "closed-directories" (car it))
-				                    (s-equals? "files" (car it))
-				                    (s-equals? "save-files" (car it)))
+				                    ;; (s-equals? "files" (car it))
+				                    ;; (s-equals? "save-files" (car it))
+                                    )
 				                variables)))
     (-let [buffer (get-buffer-create "sidebar-debug")]
       (with-current-buffer buffer
@@ -1720,17 +1725,18 @@ If ALL is non-nil, it print everything."
   (sidebar-set window-start (window-start (sidebar-get-window)))
   (with-current-buffer (sidebar-get-buffer)
     (sidebar-set save-line-files (line-number-at-pos)))
-  (sidebar-set save-files (sidebar-get files))
+  (sidebar-set opened (sidebar-list-opened))
   (sidebar-set save-default-width (sidebar-get default-width))
   (sidebar-set save-root-project (sidebar-get root-project))
+  (sidebar-set save-cwd default-directory)
   (sidebar-set save-history (sidebar-get history))
   (sidebar-set save-current-path (sidebar-get current-path)))
 
 (defun sidebar-restore-state ()
   "Restore the sidebar state."
   (sidebar-set save-line (sidebar-get save-line-files))
-  (sidebar-set files (sidebar-get save-files))
   (sidebar-set default-width (sidebar-get save-default-width))
+  (setq default-directory (sidebar-get save-cwd))
   (sidebar-set root-project (sidebar-get save-root-project))
   (sidebar-set history (sidebar-get save-history))
   (sidebar-set current-path (sidebar-get save-current-path)))
@@ -1756,10 +1762,10 @@ If ALL is non-nil, it print everything."
   (sidebar-set save-root-project nil)
   (sidebar-set save-history nil)
   (sidebar-set save-current-path nil)
-  (sidebar-set files nil)
   (sidebar-set default-width nil)
   (sidebar-set root-project nil)
   (sidebar-set history nil)
+  (sidebar-set opened nil)
   (sidebar-set current-path nil)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
 
@@ -1797,7 +1803,7 @@ If ALL is non-nil, it print everything."
     (define-key map (kbd "RET") 'sidebar-open-line)
     (define-key map (kbd "M-RET") 'sidebar-open-in-window)
     (define-key map (kbd "g") 'sidebar-refresh-cmd)
-    (define-key map (kbd "C-h") 'sidebar-history)
+    (define-key map (kbd "C-t") 'sidebar-history)
     (define-key map (kbd "n") 'sidebar-create-file)
     (define-key map (kbd "i") 'sidebar-create-directory)
     (define-key map (kbd "C-d") 'sidebar-delete-selected)
@@ -1810,8 +1816,6 @@ If ALL is non-nil, it print everything."
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)
     (setq sidebar-mode-map map)))
-
-;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 
 (define-derived-mode sidebar-mode special-mode "Sidebar"
   "Major mode for Sidebar.
@@ -1830,9 +1834,6 @@ If ALL is non-nil, it print everything."
   (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
 
   )
-
-;; (eval-buffer)
-;;(sidebar-open)
 
 (provide 'sidebar)
 

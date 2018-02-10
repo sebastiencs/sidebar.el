@@ -1,4 +1,4 @@
-;;; sidebar-buffers.el --- sidebar-buffers
+;;; sidebar-buffers.el --- sidebar-buffers  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Sebastien Chapuis
 
@@ -106,10 +106,9 @@ Default: `return-to-files'."
   "Return an association list from ITEM.
 Function similar to `sidebar-file-struct' adapted for buffers data."
   (list (cons 'data item)
-	    (cons 'type (cond ((bufferp item) 'buffer)
-			              (t 'separator)))
-	    (cons 'visiting (and (-> item bufferp) (-> item buffer-file-name)))
-	    (cons 'line 0)))
+	    (cons 'type (if (bufferp item) 'buffer 'separator))
+        (cons 'visiting (and (-> item bufferp) (-> item buffer-file-name)))
+        (cons 'line 0)))
 
 (defsubst sidebar-buffers-hidden-p (buffer)
   "Return non-nil if the BUFFER is hidden (start with a space)."
@@ -162,7 +161,7 @@ easily usable."
     (concat
      (if (not visiting)
 	     (icons-in-terminal 'file_emacs :foreground "#607D8B")
-       (-let (((&plist :icon icon :color color) (sidebar-filemapping-lookup name)))
+       (-let* (((icon . color) (sidebar-filemapping-lookup name)))
 	     (icons-in-terminal icon :foreground color)))
      " "
      (s-trim name)
@@ -178,7 +177,7 @@ easily usable."
              (lsp-ui--workspace-path (buffer-file-name data))))
       (buffer-name data)))
 
-(sidebar-print-function buffers (item _)
+(sidebar-print-function buffers (item)
   "Function call to print a line.
 ITEM is the object to print."
   (-let* (((&alist 'data data 'type type 'visiting visiting) item))
@@ -188,7 +187,8 @@ ITEM is the object to print."
                             'after-string (concat (unless first "\n") data "\n\n"))))
       (concat " " (sidebar-buffers-format-name data
                                                (sidebar-buffers--buffer-name data)
-                                               visiting)))))
+                                               visiting)
+              "\n"))))
 
 (defun sidebar-buffers-open-in-window2 (buffer)
   "Helper function for `sidebar-buffers-open-in-window'.
@@ -235,7 +235,8 @@ Only the windows non dedicated are shown."
       (cond
        ((not buffers-marks) (list (cons buffer (list mark))))
        ((alist-get buffer buffers-marks) (--map-when (equal (car it) buffer) (add-to-list 'it mark t) buffers-marks))
-       (t (-concat buffers-marks (list (cons buffer (list mark)))))))))
+       (t (-concat buffers-marks (list (cons buffer (list mark)))))
+       ))))
 
 (defun sidebar-buffers-mark-execute ()
   "."

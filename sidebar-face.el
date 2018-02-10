@@ -1,4 +1,4 @@
-;;; sidebar-face.el --- sidebar-face
+;;; sidebar-face.el --- sidebar-face  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Sebastien Chapuis
 

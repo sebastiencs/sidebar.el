@@ -1,4 +1,4 @@
-;;; sidebar-mu4e.el --- sidebar-mu4e
+;;; sidebar-mu4e.el --- sidebar-mu4e  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Sebastien Chapuis
 
