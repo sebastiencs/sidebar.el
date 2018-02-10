@@ -298,7 +298,7 @@ Only the windows non dedicated are shown."
 (defun sidebar-buffers-make-modeline-right ()
   "Return the string to insert in the modeline (right side)."
   (concat
-   (number-to-string (length (sidebar-get files)))
+   (number-to-string (length (sidebar--list-all)))
    " Buffers"))
 
 (defun sidebar-buffers-pre-command ()
