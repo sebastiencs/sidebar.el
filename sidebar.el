@@ -1314,8 +1314,17 @@ if FORCE is non-nil, there is no check."
 
 (defun sidebar--maybe-invalidate-git ()
   (unless (equal (sidebar-get root-project) (sidebar-get git-dir))
+    (sidebar-set git-branches nil)
     (sidebar-set git-dir nil)
     (sidebar-set git-hashtable nil)))
+
+(defun sidebar-update-files-number ()
+  "Update the variables `sidebar-files-number' and `sidebar-directories-number'."
+  (let* ((list (sidebar--list-all))
+         (total (length list))
+	     (ndirs (--count (sidebar--dir-p it) list)))
+    (setq sidebar-files-number (- total ndirs)
+	      sidebar-directories-number ndirs)))
 
 (defun sidebar-refresh (&optional to-expand silent)
   "Update the content of the sidebar.
@@ -1350,6 +1359,7 @@ SILENT."
       (sidebar-goto-line current-line)
       (sidebar-set line-on-refresh nil)
       (sidebar-show-current))
+    (sidebar-update-files-number)
     (unless silent
       ;;(message "Sidebar refreshed")
       )))
