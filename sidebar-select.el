@@ -131,33 +131,34 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 
 (defvar-local sidebar-select-last-line 0)
 
-(defun sidebar-select-set-header (string spaces raise height)
-  "STRING SPACES RAISE HEIGHT."
-  (let* ((width (window-width))
-	     (space-to-add (- (/ width 2) spaces))
-	     (space-at-the-end (- (/ width 2) spaces)))
+(defun sidebar-select-set-header (string raise height)
+  "STRING RAISE HEIGHT."
+  (let* ((face (face-background 'sidebar-select-header nil t))
+         (width (window-total-width))
+         (len (length string)))
     (concat
-     (propertize (s-repeat space-to-add " ") 'face `(:overline ,(face-background 'sidebar-select-header nil t)))
-     (icons-in-terminal sidebar-select-icon-left-header :foreground (face-background 'sidebar-select-header nil t)
-			            :overline (face-background 'sidebar-select-header nil t) :raise raise :height height)
+     (propertize " " 'face `(:overline ,face)
+                 'display `(space :align-to (- right-margin ,(/ width 2) ,(/ len 2) 3)))
+     (icons-in-terminal sidebar-select-icon-left-header :foreground face
+	    	            :overline face :raise raise :height height)
      (propertize string 'display '(raise 0.25)
-		         'face '(:inherit sidebar-select-header :height 1.0))
-     (icons-in-terminal sidebar-select-icon-right-header :foreground (face-background 'sidebar-select-header nil t)
-			            :overline (face-background 'sidebar-select-header nil t) :raise raise :height height)
-     (propertize (s-repeat space-at-the-end " ") 'face `(:overline ,(face-background 'sidebar-select-header nil t))))
-    ))
+	             'face `(:inherit sidebar-select-header :height 1.0 :overline ,face))
+     (icons-in-terminal sidebar-select-icon-right-header :foreground face
+	    	            :overline face :raise raise :height height)
+     (propertize " " 'face `(:overline ,face)
+                 'display `(space :align-to (- right-margin 1))))))
 
 (defun sidebar-select-insert-buffername (name icon)
   "NAME ICON."
   (setq sidebar-select-last-line (line-number-at-pos))
   (insert
-   (s-truncate (- sidebar-select-window-width 1)
+   (s-truncate (- sidebar-select-window-width 2)
 	           (concat
 		        " "
 		        (icons-in-terminal icon)
 		        " "
 		        name)))
-  (newline))
+  (insert "\n"))
 
 (defun sidebar-select-insert-list (list func-on-string icon)
   "LIST FUNC-ON-STRING ICON."
@@ -176,24 +177,24 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
                                   '((side . left) (slot . 1))))
   (with-current-buffer sidebar-select-buffer-name
     (sidebar-select-mode)
-    (set (make-local-variable 'scroll-margin) 1)
-    (set (make-local-variable 'sidebar-select-window) (get-buffer-window))
-    (set (make-local-variable 'sidebar-select-mapping) nil)
-    (set (make-local-variable 'sidebar-select-header) header1)
-    (set (make-local-variable 'sidebar-select-window-width) (window-width))
-    (set (make-local-variable 'sidebar-select-callback) callback)
-    (set (make-local-variable 'sidebar-select-args) args)
-    (setq header-line-format (list '(:eval (sidebar-select-set-header sidebar-select-header 10 0.0 2.0))))
-    (set (make-local-variable 'sidebar-select-line-other) nil)
+    (setq-local scroll-margin 1)
+    (setq-local sidebar-select-window (get-buffer-window))
+    (setq-local sidebar-select-mapping nil)
+    (setq-local sidebar-select-header header1)
+    (setq-local sidebar-select-window-width (window-width))
+    (setq-local sidebar-select-callback callback)
+    (setq-local sidebar-select-args args)
+    (setq header-line-format (list '(:eval (sidebar-select-set-header sidebar-select-header 0.0 2.0))))
+    (setq-local sidebar-select-line-other nil)
     (sidebar-select-insert-list (car list) func-on-string icon)
     (when (car (cdr list))
-      (newline)
-      (insert (sidebar-select-set-header header2 9 0.12 1.7))
-      (newline)
-      (set (make-local-variable 'sidebar-select-line-other) (line-number-at-pos))
+      (insert "\n")
+      (insert (sidebar-select-set-header header2 0.12 1.7))
+      (insert "\n")
+      (setq-local sidebar-select-line-other (line-number-at-pos))
       (sidebar-select-insert-list (car (cdr list)) func-on-string icon))
-    (set (make-local-variable 'sidebar-select-windows-count) (+ (length (car list)) (length (car (cdr list)))))
-    (shrink-window-if-larger-than-buffer)
+    (setq-local sidebar-select-windows-count (+ (length (car list)) (length (car (cdr list)))))
+    (fit-window-to-buffer nil 1000 7)
     (window-resize nil 1 nil)
     (setq buffer-read-only t)
     (sidebar-goto-line 2)))
@@ -214,7 +215,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 		        (= previous sidebar-select-line-other))
 	       (sidebar-goto-line (- previous 3) t))
 	      (t (sidebar-goto-line previous t))))
-  (set-window-start nil 0))
+  (set-window-start nil 1))
 
 (defun sidebar-select-next ()
   "."
@@ -226,7 +227,8 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 	      ((and sidebar-select-line-other
 		        (= next (- sidebar-select-line-other 2)))
 	       (sidebar-goto-line (+ next 3) t))
-	      (t (sidebar-goto-line next t)))))
+	      (t (sidebar-goto-line next t))))
+  (set-window-start nil 1))
 
 (defun sidebar-select-select ()
   "."
@@ -294,15 +296,12 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (sidebar-set select-active t)
   (internal-show-cursor nil nil)
   (face-remap-add-relative 'hl-line 'sidebar-select-line)
+  (setq truncate-partial-width-windows nil)
+  (setq truncate-lines t)
   (add-hook 'kill-buffer-hook 'sidebar-select-killed-hook)
   (add-hook 'buffer-list-update-hook 'sidebar-select-on-change)
   (add-hook 'pre-command-hook 'sidebar-select-pre-command)
   (add-hook 'focus-out-hook 'sidebar-select-focus-out)
-  (set (make-local-variable 'face-remapping-alist)
-       '((header-line sidebar-empty-face)
-	     (header-line-inactive sidebar-empty-face)
-	     (mode-line sidebar-empty-face)
-	     (mode-line-inactive sidebar-empty-face)))
   (hl-line-mode))
 
 (provide 'sidebar-select)
