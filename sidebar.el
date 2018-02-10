@@ -1564,6 +1564,14 @@ See `sidebar-git-run' and `sidebar-refresh'"
       (concat (substring string 0 (- len 2)) "..")
     string))
 
+(defvar sidebar-header-keymap
+  (let ((map (make-sparse-keymap)))
+    (define-key map [header-line mouse-1] 'sidebar-up-directory)
+    (define-key map [header-line mouse-2] 'sidebar-up-directory)
+    (define-key map [header-line mouse-3] 'sidebar-up-directory)
+    map)
+  "Keymap for the header line.")
+
 (defun sidebar-set-header ()
   "Format the header with the string from `sidebar-make-header-function'."
   (let* ((window-width (sidebar-window-width))
@@ -1571,6 +1579,8 @@ See `sidebar-git-run' and `sidebar-refresh'"
 			              (sidebar-truncate (1- window-width))))
          (len-icon (if (sidebar-gui-p) (cadr sidebar-icon-header-end) 1)))
     (add-face-text-property 0 (length string) 'sidebar-header-line t string)
+    (add-text-properties 0 (length string) '(mouse-face sidebar-header-line) string)
+    (add-text-properties 0 (length string) `(keymap ,sidebar-header-keymap) string)
     (concat
      string
      (propertize " " 'face 'sidebar-header-line 'display `(space :align-to (- right-fringe 1 ,len-icon)))
