@@ -1,0 +1,12 @@
+[package]
+name = "sidebar-git"
+version = "0.1.0"
+authors = ["Sebastien Chapuis <sebastien@chapu.is>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+emacs = "0.3.0"
+libc = "0.2.34"
+git2 = "0.6"

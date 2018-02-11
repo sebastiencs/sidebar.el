@@ -584,6 +584,7 @@ STATUS is its git status.
 PATH is the file path."
   (let* ((color (sidebar-get-color file path status t))
          (file-color (or color
+                         (and (eq 'untracked status) 'sidebar-untracked)
                          (and sidebar-filename-colored
                               (sidebar-color-from-status status 'sidebar-file))
                          'sidebar-file)))
@@ -1510,20 +1511,24 @@ The output is parsed to print information of each file in the sidebar.
 The process is run only once per project.
 Once done, it refresh the sidebar.
 if FORCE is non-nil, force to run the process."
-  (if (and (equal (sidebar-get root-project) (sidebar-get git-dir))
-           (not force))
-      (sidebar-refresh)
-    (let ((process (get-buffer-process (sidebar-get-git-buffer))))
-      (if (process-live-p process)
-	      ;; (kill-process process)
-	      (message "PROCESS ALIVE !")
-	    (with-current-buffer (sidebar-get-git-buffer)
-	      (erase-buffer))
-	    (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer)
-				                      "git" "status" "--porcelain" "--ignored" "-z" "-b")))
-	      (set-process-query-on-exit-flag process nil)
-	      (set-process-sentinel process 'sidebar-git-sentinel)))
-      )))
+  (measure-time
+   (cond
+    ((and (equal (sidebar-get root-project) (sidebar-get git-dir)))
+     (sidebar-refresh))
+    ((fboundp 'sidebar-git-status)
+     (sidebar-set git-hashtable (sidebar-git-status default-directory))
+     (sidebar-set git-dir (sidebar-get root-project))
+     (sidebar-refresh))
+    (t (let ((process (get-buffer-process (sidebar-get-git-buffer))))
+         (if (process-live-p process)
+             ;; (kill-process process)
+             (message "PROCESS ALIVE !")
+           (with-current-buffer (sidebar-get-git-buffer)
+             (erase-buffer))
+           (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer)
+  			                             "git" "status" "--porcelain" "--ignored" "-z" "-b")))
+             (set-process-query-on-exit-flag process nil)
+             (set-process-sentinel process 'sidebar-git-sentinel))))))))
 
 (defun sidebar-refresh-cmd ()
   "Refresh the sidebar content.
