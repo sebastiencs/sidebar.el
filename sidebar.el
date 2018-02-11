@@ -1476,18 +1476,19 @@ The key in the hashtable is the filepath, the value is its status."
 Once the output is parsed, it refreshes the sidebar.
 CHANGE is unused"
   (when (eq (process-status process) 'exit)
-    (let ((start (window-start (sidebar-get-window))))
+    (let ((start (unless (sidebar-get line-on-refresh)
+                   (window-start (sidebar-get-window)))))
       (if (/= (process-exit-status process) 0)
           (measure-time
 	       (sidebar-refresh))
         (sidebar-set git-dir (sidebar-get root-project))
 	    (let ((table (sidebar-git-parse-buffer))
 	          (sidebar-window (sidebar-get-window t)))
-	      (with-current-buffer (sidebar-get-buffer)
-	        (sidebar-set git-hashtable table)
-            (measure-time
-	         (sidebar-refresh)))))
-      (set-window-start (sidebar-get-window) start)
+	      (sidebar-set git-hashtable table)
+          (measure-time
+	       (sidebar-refresh))))
+      (when start
+        (set-window-start (sidebar-get-window) start))
       (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
 
 (defun sidebar-tramp-p ()
