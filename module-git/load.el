@@ -12,6 +12,8 @@
 ;; (my-module-open-dir "coucou" "toi")
 ;; (my-module-open-dir)
 
-(sidebar-git-test)
+(measure-time (sidebar-git-test "/home/sebastien/github/servo"))
+(sidebar-git-head-upstream "/home/sebastien/github/servo")
+(sidebar-git-head-upstream "/home/sebastien/github/rls")
 
 default-directory
