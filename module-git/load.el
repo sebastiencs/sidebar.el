@@ -11,3 +11,7 @@
 
 ;; (my-module-open-dir "coucou" "toi")
 ;; (my-module-open-dir)
+
+(sidebar-git-test)
+
+default-directory

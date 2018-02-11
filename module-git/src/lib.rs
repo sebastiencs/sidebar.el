@@ -4,6 +4,7 @@ extern crate git2;
 extern crate libc;
 
 use emacs::ToLisp;
+use emacs::FromLisp;
 use emacs::HandleFunc;
 use emacs::{Env, Result, Value};
 use git2::Repository;
@@ -11,8 +12,28 @@ use git2::Repository;
 emacs_plugin_is_GPL_compatible!();
 emacs_module_init!(init);
 
+fn test(env: &mut Env, args: &[Value], _data: *mut libc::c_void) -> Result<Value> {
+    let sym = env.intern("default-directory")?;
+
+    let val = env.call("symbol-value", &[sym])?;
+
+    let val = String::from_lisp(env, val)?;
+
+    env.message(&format!("VARIABLE: {}", val))?;
+
+    let val = env.clone_to_lisp(100)?;
+    Ok(val)
+}
+
 fn repository_status(env: &mut Env, args: &[Value], _data: *mut libc::c_void) -> Result<Value> {
-    let path: String = args[0].to_owned(env)?;
+    let path: String = if args.len() == 1 {
+        args[0].to_owned(env)?
+    } else {
+        String::from_lisp(
+            env,
+            env.call("symbol-value", &[env.intern("default-directory")?])?
+        )?
+    };
 
     let repo = match Repository::discover(&path) {
         Ok(repo) => repo,
@@ -64,14 +85,25 @@ pub fn init(env: &mut Env) -> Result<Value> {
     env.message("Loading sidebar-git module")?;
 
     emacs_subrs!{
+        test -> _test;
         repository_status -> _repository_status;
     }
 
     env.register(
         "sidebar-git-status",
         _repository_status,
-        1..1,
-        "Read files status from rust",
+        0..1,
+        "Read files status from rust.\n
+         Take an optional parameter to indicate the repository's path. \n
+         If nil, `default-directory' is used.",
+        std::ptr::null_mut(),
+    )?;
+
+    env.register(
+        "sidebar-git-test",
+        _test,
+        0..0,
+        "Function test",
         std::ptr::null_mut(),
     )?;
 
