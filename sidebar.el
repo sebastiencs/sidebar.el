@@ -1094,6 +1094,7 @@ Sort the list by line number
 	    (sidebar-print-listfiles old-files)
 	    (sidebar-goto-line line-to-put-old-files)
         ))
+    (recenter)
     ;;(sidebar-git-run)
     ))
 
@@ -1356,13 +1357,20 @@ SILENT."
 	      (sidebar-goto-line (+ (sidebar--getline found) 1) t)
 	      (sidebar-print-listfiles (-> (sidebar-load-content (sidebar--getpath found))
 	    	                           (sidebar-update-from-opened-dirs opened-dirs)))))
-      (sidebar-goto-line current-line)
+      (sidebar--restore-point current-line)
       (sidebar-set line-on-refresh nil)
       (sidebar-show-current))
     (sidebar-update-files-number)
     (unless silent
-      ;;(message "Sidebar refreshed")
+      ;; (message "Sidebar refreshed")
       )))
+
+(defun sidebar--restore-point (line)
+  "Restore the current LINE."
+  (-if-let (win (sidebar-get-window t))
+      (with-selected-window win
+        (sidebar-goto-line line))
+    (sidebar-goto-line line)))
 
 (defun sidebar-refresh-on-save-after-timer ()
   "Function called when a buffer is saved, it refreshes the sidebar."
@@ -1388,8 +1396,8 @@ file in the current directory (I don't know why) and it appears in the sidebar.
 So I'm just waiting for it to be delete :/
 It doesn't refresh the sidebar when using the sidebar over tramp."
   (unless (sidebar-tramp-p)
-    (sidebar-protect-repetition on-save 2
-      (run-with-timer 2 nil 'sidebar-refresh-on-save-after-timer))))
+    ;; (sidebar-protect-repetition on-save 2
+    (run-with-timer 2 nil 'sidebar-refresh-on-save-after-timer)))
 
 (defun sidebar-delete-buffer-on-kill (frame)
   "When the FRAME is deleted, this function kill the Sidebar buffer associated to it."
@@ -1502,8 +1510,6 @@ The output is parsed to print information of each file in the sidebar.
 The process is run only once per project.
 Once done, it refresh the sidebar.
 if FORCE is non-nil, force to run the process."
-  (with-current-buffer (sidebar-get-buffer)
-    (sidebar-set saved-line-number (line-number-at-pos)))
   (if (and (equal (sidebar-get root-project) (sidebar-get git-dir))
            (not force))
       (sidebar-refresh)
@@ -1664,8 +1670,6 @@ This ensure that the overlay is a the cursor place.
 It also make the cursor not being at the first or last point in the buffer
 because there are nothing at those points."
   ;; (message "last command: %s" this-command)
-  (sidebar-goto-line (sidebar-get saved-line-number))
-  (sidebar-set saved-line-number nil)
   (when (eobp)
     (ignore-errors (forward-line -1)))
   (sidebar-show-current))
