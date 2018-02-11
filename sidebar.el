@@ -1110,7 +1110,7 @@ If FILE it not opened, we load the dir with `sidebar-content-files'
     (setq default-directory (sidebar-get current-path))
     ;;(sidebar-set history (add-to-list 'history default-directory nil 's-equals?))
     (sidebar-set root-project (sidebar-project-root))
-    (sidebar-goto-line 1)
+    (sidebar-set line-on-refresh 1)
     (sidebar-git-run)))
 
 (defsubst sidebar-open-file-in-window (window buffer-file)
