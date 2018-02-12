@@ -1821,9 +1821,10 @@ If ALL is non-nil, it print everything."
 
   (setq cursor-type nil
         tab-width 1
+        truncate-lines t
 	    buffer-read-only t
-	    mode-line-format (list '(:eval (sidebar-set-modeline)))
-	    header-line-format (list '(:eval (sidebar-set-header))))
+	    mode-line-format '(:eval (sidebar-set-modeline))
+	    header-line-format '(:eval (sidebar-set-header)))
 
   (remove-hook 'post-command-hook 'global-hl-line-highlight))
 
