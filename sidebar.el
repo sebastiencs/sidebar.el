@@ -1445,7 +1445,7 @@ The format is `## branchname tracking info'"
   (let* ((str (substring line 3 nil))
 	     (str (s-split "\\.\\.\\." str t)))
     (with-current-buffer (sidebar-get-buffer)
-      (sidebar-set git-branches str))))
+      (sidebar-set git-branches (cons (car str) (cadr str))))))
 
 (defun sidebar-git-match-status (status)
   "Return the status from the string STATUS according to the man-page git-status."
@@ -1518,9 +1518,11 @@ if FORCE is non-nil, force to run the process."
          (not force))
     (sidebar-refresh))
    ((fboundp 'sidebar-git-status)
-    (let ((hashtable (sidebar-git-status default-directory)))
+    (let ((hashtable (sidebar-git-status default-directory))
+          (branches (sidebar-git-head-upstream default-directory)))
       (sidebar-set git-hashtable hashtable)
-      (sidebar-set git-dir (and hashtable (sidebar-get root-project))))
+      (sidebar-set git-branches branches)
+      (sidebar-set git-dir (and (or hashtable branches) (sidebar-get root-project))))
     (sidebar-refresh))
    (t (let ((process (get-buffer-process (sidebar-get-git-buffer))))
         (if (process-live-p process)
@@ -1628,7 +1630,7 @@ not in a git project."
 It returns the git remote branch or the number of directories in the sidebar
 if we're not in a git project."
   (let* ((branches (sidebar-get git-branches))
-         (distant (cadr branches)))
+         (distant (cdr branches)))
     (if (and (sidebar-get root-project) branches)
         (let ((str-branch-distant (and distant (s-split " \\[\\|\\]" distant))))
 	      (concat
