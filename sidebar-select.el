@@ -103,33 +103,11 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
   :group 'sidebar)
 
-(defvar sidebar-select-buffer-name " SIDEBAR-SELECT")
-
-(defvar sidebar-select-line-other
-  nil)
-
-(defvar sidebar-select-windows-count
-  0)
-
-(defvar sidebar-select-header
-  "")
-
-(defvar sidebar-select-callback
-  nil)
-
-(defvar sidebar-select-args
-  nil)
-
-(defvar sidebar-select-mapping
-  nil)
-
-(defvar sidebar-select-window
-  nil)
-
-(defvar sidebar-select-window-width
-  "")
-
-(defvar-local sidebar-select-last-line 0)
+(defconst sidebar-select-buffer-name " SIDEBAR-SELECT")
+(defvar sidebar-select-header "")
+(defvar sidebar-select-args nil)
+(defvar sidebar-select-mapping nil)
+(defvar sidebar-select-window nil)
 
 (defun sidebar-select-set-header (string raise height)
   "STRING RAISE HEIGHT."
@@ -148,27 +126,34 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
      (propertize " " 'face `(:overline ,face)
                  'display `(space :align-to (- right-margin 1))))))
 
-(defun sidebar-select-insert-buffername (name icon)
-  "NAME ICON."
-  (setq sidebar-select-last-line (line-number-at-pos))
-  (insert
-   (s-truncate (- sidebar-select-window-width 2)
-	           (concat
-		        " "
-		        (icons-in-terminal icon)
-		        " "
-		        name)))
-  (insert "\n"))
+(defun sidebar-select-insert-item (name icon item callback)
+  "NAME ICON ITEM CALLBACK."
+  (let ((string (concat (s-truncate (- (window-width) 2)
+	                                (concat " "
+		                                    (icons-in-terminal icon)
+		                                    " "
+		                                    name))
+                        "\n")))
+    (add-text-properties 0 (length string)
+                         `(select-callback ,callback select-item ,item)
+                         string)
+    (insert string)))
 
-(defun sidebar-select-insert-list (list func-on-string icon)
-  "LIST FUNC-ON-STRING ICON."
-  (newline)
+(defun sidebar-select-insert-list (list func-on-string icon callback)
+  "LIST FUNC-ON-STRING ICON CALLBACK."
   (--each list
     (let ((string (funcall func-on-string it)))
-      (setq sidebar-select-mapping
-	        (append sidebar-select-mapping
-		            (list `(:line ,(line-number-at-pos) :window ,it))))
-      (sidebar-select-insert-buffername string icon))))
+      (sidebar-select-insert-item string icon it callback))))
+
+(defun sidebar-select-new-window (&rest _)
+  "."
+  (-when-let (buffer (car sidebar-select-args))
+    (display-buffer-pop-up-window buffer nil)))
+
+(defun sidebar-select-new-frame (&rest _)
+  "."
+  (-when-let (buffer (car sidebar-select-args))
+    (display-buffer-pop-up-frame buffer nil)))
 
 (defun sidebar-select-make-buffer (list header1 header2 func-on-string icon callback &rest args)
   "LIST HEADER1 HEADER2 FUNC-ON-STRING ICON CALLBACK ARGS."
@@ -179,76 +164,51 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
     (sidebar-select-mode)
     (setq-local scroll-margin 1)
     (setq-local sidebar-select-window (get-buffer-window))
-    (setq-local sidebar-select-mapping nil)
     (setq-local sidebar-select-header header1)
-    (setq-local sidebar-select-window-width (window-width))
-    (setq-local sidebar-select-callback callback)
     (setq-local sidebar-select-args args)
     (setq header-line-format (list '(:eval (sidebar-select-set-header sidebar-select-header 0.0 2.0))))
-    (setq-local sidebar-select-line-other nil)
-    (sidebar-select-insert-list (car list) func-on-string icon)
+    (overlay-put (make-overlay (point) (point)) 'after-string "\n")
+    (sidebar-select-insert-list (car list) func-on-string icon callback)
     (when (car (cdr list))
-      (insert "\n")
-      (insert (sidebar-select-set-header header2 0.12 1.7))
-      (insert "\n")
-      (setq-local sidebar-select-line-other (line-number-at-pos))
-      (sidebar-select-insert-list (car (cdr list)) func-on-string icon))
-    (setq-local sidebar-select-windows-count (+ (length (car list)) (length (car (cdr list)))))
+      (overlay-put (make-overlay (point) (point))
+                   'after-string (concat "\n" (sidebar-select-set-header header2 0.12 1.7) "\n\n"))
+      (sidebar-select-insert-list (cadr list) func-on-string icon callback))
+
+    (overlay-put (make-overlay (point) (point)) 'after-string "\n")
+    (sidebar-select-insert-item "Create window" icon t 'sidebar-select-new-window)
+    (sidebar-select-insert-item "Create frame" icon t 'sidebar-select-new-frame)
+
+    (set-window-margins nil 0 0)
     (fit-window-to-buffer nil 1000 7)
     (window-resize nil 1 nil)
     (setq buffer-read-only t)
-    (sidebar-goto-line 2)))
+    (goto-char 1)))
 
 (defun sidebar-select-killed-hook ()
   "."
   (when (s-equals? sidebar-select-buffer-name (buffer-name))
     (sidebar-set select-active nil)))
 
-(defun sidebar-select-previous ()
-  "."
-  (interactive)
-  (let* ((current-line (line-number-at-pos))
-	     (previous (- current-line 1)))
-    (cond ((= previous 1)
-	       (sidebar-goto-line sidebar-select-last-line t))
-	      ((and sidebar-select-line-other
-		        (= previous sidebar-select-line-other))
-	       (sidebar-goto-line (- previous 3) t))
-	      (t (sidebar-goto-line previous t))))
-  (set-window-start nil 1))
-
-(defun sidebar-select-next ()
-  "."
-  (interactive)
-  (let* ((current-line (line-number-at-pos))
-	     (next (+ current-line 1)))
-    (cond ((= next (+ sidebar-select-windows-count (if sidebar-select-line-other 5 2)))
-	       (sidebar-goto-line 2 t))
-	      ((and sidebar-select-line-other
-		        (= next (- sidebar-select-line-other 2)))
-	       (sidebar-goto-line (+ next 3) t))
-	      (t (sidebar-goto-line next t))))
-  (set-window-start nil 1))
-
 (defun sidebar-select-select ()
   "."
   (interactive)
-  (let ((window (--first (equal (line-number-at-pos) (plist-get it :line)) sidebar-select-mapping)))
-    (when window
-      (if (car sidebar-select-args)
-	      (apply sidebar-select-callback (plist-get window :window) sidebar-select-args)
-	    (funcall sidebar-select-callback (plist-get window :window)))
-      (sidebar-select-cancel))))
+  (-when-let* ((callback (get-text-property (point) 'select-callback))
+               (item (get-text-property (point) 'select-item)))
+    (if (car sidebar-select-args)
+        (apply callback item sidebar-select-args)
+      (funcall callback item))
+    (sidebar-select-cancel)))
 
 (defun sidebar-select-cancel ()
   "."
   (interactive)
   (ignore-errors (kill-buffer sidebar-select-buffer-name))
-  (remove-hook 'kill-buffer-hook 'sidebar-select-killed-hook)
+  (advice-remove 'select-window 'sidebar-select-window-changed)
+  (remove-hook 'kill-buffer-hook 'sidebar-select-killed-hook t)
   (remove-hook 'buffer-list-update-hook 'sidebar-select-on-change)
-  (remove-hook 'pre-command-hook 'sidebar-select-pre-command)
-  (remove-hook 'focus-out-hook 'sidebar-select-focus-out)
-  (select-window (sidebar-get-window)))
+  (remove-hook 'pre-command-hook 'sidebar-select-pre-command t)
+  (remove-hook 'focus-out-hook 'sidebar-select-focus-out t)
+  (-some-> (sidebar-get-window t) select-window))
 
 (defvar sidebar-select-mode-map nil
   "Keymap use with ‘sidebar-select-mode’.")
@@ -257,10 +217,6 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
     (suppress-keymap map t)
 ;;;    (define-key map [t] 'ignore)
 
-    (define-key map (kbd "<up>") 'sidebar-select-previous)
-    (define-key map (kbd "C-p") 'sidebar-select-previous)
-    (define-key map (kbd "<down>") 'sidebar-select-next)
-    (define-key map (kbd "C-n") 'sidebar-select-next)
     (define-key map (kbd "RET") 'sidebar-select-select)
     (define-key map (kbd "<return>") 'sidebar-select-select)
     (define-key map "<return>" 'sidebar-select-select)
@@ -271,7 +227,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 
 (defun sidebar-select-on-change ()
   "."
-  (when (and (not (equal 'sidebar-open-in-window this-command))
+  (when (and (not (memq this-command '(sidebar-open-in-window)))
 	         (not sidebar-select-window)
 	         this-command)
     (sidebar-select-cancel)))
@@ -284,6 +240,13 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   "."
   (when (equal this-command 'handle-switch-frame)
     (sidebar-select-cancel)))
+
+(defun sidebar-select-post-command ()
+  "."
+  (set-window-margins nil 0 0)
+  (when (eobp)
+    (ignore-errors (forward-line -1)))
+  (set-window-start nil 1))
 
 (define-derived-mode sidebar-select-mode special-mode "Sidebar"
   "Major mode for Sidebar select.
@@ -298,10 +261,11 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (face-remap-add-relative 'hl-line 'sidebar-select-line)
   (setq truncate-partial-width-windows nil)
   (setq truncate-lines t)
-  (add-hook 'kill-buffer-hook 'sidebar-select-killed-hook)
+  (add-hook 'kill-buffer-hook 'sidebar-select-killed-hook nil t)
   (add-hook 'buffer-list-update-hook 'sidebar-select-on-change)
-  (add-hook 'pre-command-hook 'sidebar-select-pre-command)
-  (add-hook 'focus-out-hook 'sidebar-select-focus-out)
+  (add-hook 'pre-command-hook 'sidebar-select-pre-command nil t)
+  (add-hook 'post-command-hook 'sidebar-select-post-command nil t)
+  (add-hook 'focus-out-hook 'sidebar-select-focus-out nil t)
   (hl-line-mode))
 
 (provide 'sidebar-select)
