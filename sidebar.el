@@ -765,9 +765,10 @@ PROJECT-PATH-ROOT."
       (sidebar-set1 (car it) (cdr it))))
   (if (and (sidebar-get restore-function) (sidebar-get saved-state-files))
       (funcall (sidebar-get restore-function))
-    (sidebar-set root-project (sidebar-get-root-project))
+    (sidebar-set root-project (sidebar-project-root))
     (sidebar-set history (list project-path-root))
     (sidebar-set current-path project-path-root)
+    (sidebar-set window-start nil)
     (setq default-directory project-path-root)
     (sidebar-set default-width sidebar-width)
     ;; (sidebar-set files (sidebar-load-content project-path-root))
@@ -1087,7 +1088,8 @@ Sort the list by line number
       ;;(sidebar-set history (add-to-list 'history new-directory nil 's-equals?))
       (sidebar-set current-path (file-name-as-directory new-directory))
       (setq default-directory (sidebar-get current-path))
-      (sidebar-set root-project (sidebar-get-root-project))
+      (projectile-reset-cached-project-root)
+      (sidebar-set root-project (sidebar-project-root))
       (sidebar--maybe-invalidate-git)
       (sidebar-print-listfiles (sidebar-update-to-opened new-files old-dir))
       (let* ((line-to-put-old-files (sidebar--getline (sidebar--find-file old-dir))))
@@ -1113,6 +1115,7 @@ If FILE it not opened, we load the dir with `sidebar-content-files'
     ;;(sidebar-set history (add-to-list 'history default-directory nil 's-equals?))
     (sidebar-set root-project (sidebar-project-root))
     (sidebar-set line-on-refresh 1)
+    (sidebar-set window-start 1)
     (sidebar-git-run)))
 
 (defsubst sidebar-open-file-in-window (window buffer-file)
@@ -1369,8 +1372,12 @@ SILENT."
 (defun sidebar--restore-point (line)
   "Restore the current LINE."
   (-if-let (win (sidebar-get-window t))
-      (with-selected-window win
-        (sidebar-goto-line line))
+      (progn
+        (with-selected-window win
+          (sidebar-goto-line line))
+        (-when-let (start (sidebar-get window-start))
+          (set-window-start win start)
+          (sidebar-set window-start nil)))
     (sidebar-goto-line line)))
 
 (defun sidebar-refresh-on-save-after-timer ()
@@ -1485,19 +1492,11 @@ The key in the hashtable is the filepath, the value is its status."
 Once the output is parsed, it refreshes the sidebar.
 CHANGE is unused"
   (when (eq (process-status process) 'exit)
-    (let ((start (unless (sidebar-get line-on-refresh)
-                   (window-start (sidebar-get-window)))))
-      (if (/= (process-exit-status process) 0)
-          (measure-time
-	       (sidebar-refresh))
-        (sidebar-set git-dir (sidebar-get root-project))
-	    (let ((table (sidebar-git-parse-buffer))
-	          (sidebar-window (sidebar-get-window t)))
-	      (sidebar-set git-hashtable table)
-          (measure-time
-	       (sidebar-refresh))))
-      (when start
-        (set-window-start (sidebar-get-window) start))
+    (let ((hashtable (and (= (process-exit-status process) 0)
+                          (sidebar-git-parse-buffer))))
+      (sidebar-set git-hashtable hashtable)
+      (sidebar-set git-dir (and hashtable (sidebar-get root-project)))
+      (sidebar-refresh)
       (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
 
 (defun sidebar-tramp-p ()
@@ -1511,24 +1510,28 @@ The output is parsed to print information of each file in the sidebar.
 The process is run only once per project.
 Once done, it refresh the sidebar.
 if FORCE is non-nil, force to run the process."
-  (measure-time
-   (cond
-    ((and (equal (sidebar-get root-project) (sidebar-get git-dir)))
-     (sidebar-refresh))
-    ((fboundp 'sidebar-git-status)
-     (sidebar-set git-hashtable (sidebar-git-status default-directory))
-     (sidebar-set git-dir (sidebar-get root-project))
-     (sidebar-refresh))
-    (t (let ((process (get-buffer-process (sidebar-get-git-buffer))))
-         (if (process-live-p process)
-             ;; (kill-process process)
-             (message "PROCESS ALIVE !")
-           (with-current-buffer (sidebar-get-git-buffer)
-             (erase-buffer))
-           (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer)
-  			                             "git" "status" "--porcelain" "--ignored" "-z" "-b")))
-             (set-process-query-on-exit-flag process nil)
-             (set-process-sentinel process 'sidebar-git-sentinel))))))))
+  (-when-let (win (sidebar-get-window t))
+    (unless (sidebar-get window-start)
+      (sidebar-set window-start (window-start win))))
+  (cond
+   ((and (equal (sidebar-get root-project) (sidebar-get git-dir))
+         (not force))
+    (sidebar-refresh))
+   ((fboundp 'sidebar-git-status)
+    (let ((hashtable (sidebar-git-status default-directory)))
+      (sidebar-set git-hashtable hashtable)
+      (sidebar-set git-dir (and hashtable (sidebar-get root-project))))
+    (sidebar-refresh))
+   (t (let ((process (get-buffer-process (sidebar-get-git-buffer))))
+        (if (process-live-p process)
+            ;; (kill-process process)
+            (message "PROCESS ALIVE !")
+          (with-current-buffer (sidebar-get-git-buffer)
+            (erase-buffer))
+          (let ((process (start-process "sidebar-git" (sidebar-get-git-buffer)
+  			                            "git" "status" "--porcelain" "--ignored" "-z" "-b")))
+            (set-process-query-on-exit-flag process nil)
+            (set-process-sentinel process 'sidebar-git-sentinel)))))))
 
 (defun sidebar-refresh-cmd ()
   "Refresh the sidebar content.
