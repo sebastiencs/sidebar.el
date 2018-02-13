@@ -452,7 +452,8 @@ STATUS is the status of the FILE."
   "Measure the time it takes to evaluate BODY."
   `(let ((time (current-time)))
      ,@body
-     (message "%.06f" (float-time (time-since time)))))
+     ;;(message "%.06f" (float-time (time-since time)))
+     ))
 
 (defvar-local sidebar--root-project nil)
 (defvar-local sidebar--git-hashtable nil)
@@ -794,7 +795,7 @@ PROJECT-PATH-ROOT."
       (sidebar-check-setup)
       (sidebar-init-vars project-path-root)
       (funcall (sidebar-get mode-to-use))
-      (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
+      ;; (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-curl-run)
       (unless (sidebar-get saved-state-files)
@@ -1494,6 +1495,7 @@ CHANGE is unused"
   (when (eq (process-status process) 'exit)
     (let ((hashtable (and (= (process-exit-status process) 0)
                           (sidebar-git-parse-buffer))))
+      ;; (message "HASH: %s" hashtable)
       (sidebar-set git-hashtable hashtable)
       (sidebar-set git-dir (and hashtable (sidebar-get root-project)))
       (sidebar-refresh)
@@ -1503,6 +1505,16 @@ CHANGE is unused"
   "Return non-nil if we're browsing a remote directory."
   (let ((path (sidebar-get current-path)))
     (and (stringp path) (file-remote-p path))))
+
+(defun sidebar-my-thread-fn (fn &optional refresh)
+  "FN REFRESH."
+  (let ((hashtable (funcall fn))
+        (branches (sidebar-git-head-upstream)))
+    (sidebar-set git-branches branches)
+    (sidebar-set git-dir (and (or hashtable branches) (sidebar-get root-project)))
+    (sidebar-set git-hashtable hashtable)
+    (when (or hashtable refresh)
+      (sidebar-refresh))))
 
 (defun sidebar-git-run (&optional force first-run)
   "Run git status in the current directory.
@@ -1519,13 +1531,11 @@ FIRST-RUN."
    ((and (equal (sidebar-get root-project) (sidebar-get git-dir))
          (not force))
     (sidebar-refresh))
-   ((fboundp 'sidebar-git-status)
-    (let ((hashtable (sidebar-git-status default-directory))
-          (branches (sidebar-git-head-upstream default-directory)))
-      (sidebar-set git-hashtable hashtable)
-      (sidebar-set git-branches branches)
-      (sidebar-set git-dir (and (or hashtable branches) (sidebar-get root-project))))
+   ((and (fboundp 'make-thread) (fboundp 'sidebar-git-status))
+    (make-thread (lambda nil (sidebar-my-thread-fn 'sidebar-git-status-thread)))
     (sidebar-refresh))
+   ((fboundp 'sidebar-git-status)
+    (sidebar-my-thread-fn 'sidebar-git-status t))
    (t (let ((process (get-buffer-process (sidebar-get-git-buffer))))
         (if (process-live-p process)
             ;; (kill-process process)
