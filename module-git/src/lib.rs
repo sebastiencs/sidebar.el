@@ -17,31 +17,33 @@ fn test(env: &mut Env, args: &[Value], _data: *mut libc::c_void) -> Result<Value
 }
 
 fn string_to_lisp(env: &Env, string: Option<String>) -> Result<Value> {
-    if let Some(string) = string {
-        Ok(string.to_lisp(env)?)
-    } else {
-        Ok(env.intern("nil")?)
+    match string {
+        Some(string) => string.to_lisp(env),
+        _ => env.intern("nil")
+    }
+}
+
+fn get_repository(env: &Env, path: Option<&Value>) -> Result<Option<Repository>> {
+    let path: String = match path {
+        Some(path) => path.to_owned(env)?,
+        _ => String::from_lisp(env, env.call("symbol-value", &[env.intern("default-directory")?])?)?
+    };
+
+    match Repository::discover(path) {
+        Ok(repo) => Ok(Some(repo)),
+        _ => Ok(None)
     }
 }
 
 fn head_upstream(env: &mut Env, args: &[Value], _data: *mut libc::c_void) -> Result<Value> {
-    let path: String = if args.len() == 1 {
-        args[0].to_owned(env)?
-    } else {
-        String::from_lisp(
-            env,
-            env.call("symbol-value", &[env.intern("default-directory")?])?
-        )?
-    };
-
-    let repo = match Repository::discover(&path) {
-        Ok(repo) => repo,
-        _ => return Ok(env.intern("nil")?),
+    let repo = match get_repository(env, args.first())? {
+        Some(repo) => repo,
+        _ => return env.intern("nil")
     };
 
     let head = match repo.head() {
         Ok(head) => head,
-        _ => return Ok(env.intern("nil")?)
+        _ => return env.intern("nil")
     };
 
     let head_name = head.shorthand().map(|name| {
@@ -63,27 +65,18 @@ fn head_upstream(env: &mut Env, args: &[Value], _data: *mut libc::c_void) -> Res
 }
 
 fn repository_status(env: &mut Env, args: &[Value], _data: *mut libc::c_void) -> Result<Value> {
-    let path: String = if args.len() == 1 {
-        args[0].to_owned(env)?
-    } else {
-        String::from_lisp(
-            env,
-            env.call("symbol-value", &[env.intern("default-directory")?])?
-        )?
-    };
-
-    let repo = match Repository::discover(&path) {
-        Ok(repo) => repo,
-        _ => return Ok(env.intern("nil")?),
+    let repo = match get_repository(env, args.first())? {
+        Some(repo) => repo,
+        _ => return env.intern("nil")
     };
 
     let statuses = match repo.statuses(None) {
         Ok(statuses) => statuses,
-        _ => return Ok(env.intern("nil")?),
+        _ => return env.intern("nil"),
     };
 
     if statuses.is_empty() {
-        return Ok(env.intern("nil")?);
+        return env.intern("nil");
     }
 
     let hashtable = env.call(
