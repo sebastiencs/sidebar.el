@@ -798,7 +798,7 @@ PROJECT-PATH-ROOT."
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-curl-run)
       (unless (sidebar-get saved-state-files)
-	    (sidebar-git-run)))))
+	    (sidebar-git-run nil t)))))
 
 (defun sidebar-close ()
   "Close the sidebar for the current frame.
@@ -1504,14 +1504,16 @@ CHANGE is unused"
   (let ((path (sidebar-get current-path)))
     (and (stringp path) (file-remote-p path))))
 
-(defun sidebar-git-run (&optional force)
+(defun sidebar-git-run (&optional force first-run)
   "Run git status in the current directory.
 The output is parsed to print information of each file in the sidebar.
 The process is run only once per project.
 Once done, it refresh the sidebar.
-if FORCE is non-nil, force to run the process."
+if FORCE is non-nil, force to run the process.
+FIRST-RUN."
   (-when-let (win (sidebar-get-window t))
-    (unless (sidebar-get window-start)
+    (unless (or (sidebar-get window-start)
+                first-run)
       (sidebar-set window-start (window-start win))))
   (cond
    ((and (equal (sidebar-get root-project) (sidebar-get git-dir))
