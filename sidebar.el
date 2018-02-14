@@ -1499,8 +1499,8 @@ CHANGE is unused"
   (let ((path (sidebar-get current-path)))
     (and (stringp path) (file-remote-p path))))
 
-(defun sidebar--update-git-status (fn &optional refresh)
-  "FN REFRESH."
+(defun sidebar--update-git-status (fn &optional refresh win-start)
+  "FN REFRESH WIN-START."
   (let ((hashtable (and fn (funcall fn)))
         (branches (and (fboundp 'sidebar-git-head-upstream)
                        (sidebar-git-head-upstream))))
@@ -1513,6 +1513,8 @@ CHANGE is unused"
     (sidebar-set git-branches (and (fboundp 'sidebar-git-head-upstream) branches))
     (sidebar-set git-dir (and (or hashtable branches) (sidebar-get root-project)))
     (sidebar-set git-hashtable hashtable)
+    (when win-start
+      (sidebar-set window-start win-start))
     (when (or hashtable refresh)
       (sidebar-refresh))))
 
@@ -1532,7 +1534,8 @@ FIRST-RUN."
          (not force))
     (sidebar-refresh))
    ((and (fboundp 'make-thread) (fboundp 'sidebar-git-status))
-    (make-thread (lambda nil (sidebar--update-git-status 'sidebar-git-status-thread)))
+    (let ((win-start (sidebar-get window-start)))
+      (make-thread (lambda nil (sidebar--update-git-status 'sidebar-git-status-thread nil win-start))))
     (sidebar-refresh))
    ((fboundp 'sidebar-git-status)
     (sidebar--update-git-status 'sidebar-git-status t))
