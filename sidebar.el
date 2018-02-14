@@ -482,19 +482,6 @@ If there is no status, return DEFAULT."
     ('match 'sidebar-match)
     (_ default)))
 
-(defsubst sidebar-get-color (file path status icon)
-  "Return the face to use for FILE.
-PATH is the path of the file relative to the project root directory
-STATUS is the status from git.
-ICON is non-nil."
-  (let ((status (or (sidebar-status-from-parent path) status))
-        (dir-p (sidebar--dir-p file)))
-    (cond ((eq 'ignored status)
-           (if dir-p 'sidebar-ignored-dir 'sidebar-ignored-file))
-          ((and (eq 'untracked status) (not icon))
-           'sidebar-untracked)
-          (dir-p 'sidebar-dir))))
-
 (defun sidebar-insert-status-subfiles-helper (status number file path)
   "Insert the icon and numbers after a directory.
 STATUS is use to know which icon to insert
@@ -584,14 +571,20 @@ FACE is the face to use for the icons."
   "Insert the icon associated to FILE followed by its FILENAME.
 STATUS is its git status.
 PATH is the file path."
-  (let* ((color (sidebar-get-color file path status t))
-         (file-color (or color
+  (let* ((status (or (sidebar-status-from-parent path) status))
+         (dir-p (sidebar--dir-p file))
+         (icon-color (or (and (eq 'ignored status)
+                              (if dir-p 'sidebar-ignored-dir 'sidebar-ignored-file))
+                         (and dir-p 'sidebar-dir)))
+         (file-color (or (and (eq 'ignored status)
+                              (if dir-p 'sidebar-ignored-dir 'sidebar-ignored-file))
                          (and (eq 'untracked status) 'sidebar-untracked)
+                         (and dir-p 'sidebar-dir)
                          (and sidebar-filename-colored
                               (sidebar-color-from-status status 'sidebar-file))
                          'sidebar-file)))
     (concat
-     (funcall sidebar-insert-fileicon-function file filename status path color)
+     (funcall sidebar-insert-fileicon-function file filename status path icon-color)
      ;; Tabulations are stretched characters
      ;; this fix the alignement, tab-width needs to be 1
      "\t"
