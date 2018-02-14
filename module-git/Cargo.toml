@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 emacs = "0.3.0"
 libc = "0.2.34"
 git2 = "0.6"
+lazy_static = "1.0"
