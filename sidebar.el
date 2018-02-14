@@ -586,7 +586,7 @@ PATH is the file path."
     (concat
      (funcall sidebar-insert-fileicon-function file filename status path icon-color)
      ;; Tabulations are stretched characters
-     ;; this fix the alignement, tab-width needs to be 1
+     ;; this fix the alignement, tab-width needs to be 1 (set in sidebar-mode)
      "\t"
      (sidebar-insert-filename filename file-color))))
 
@@ -621,11 +621,11 @@ If FILE is a directory and closed (not expanded), it inserts the icons of
 
 FILE is an alist created from `sidebar-file-struct'."
   (let* ((path (sidebar--getpath file))
-         (filename (when path (file-name-nondirectory path)))
+         (filename (and path (file-name-nondirectory path)))
 	     (path-in-project (s-chop-prefix sidebar--root-project path))
 	     (path-fixed-dirname (if (sidebar--dir-p file) (file-name-as-directory path-in-project) path-in-project))
-	     (git-hashtable sidebar--git-hashtable)
-	     (status (when git-hashtable (gethash path-fixed-dirname git-hashtable)))
+	     (status (and sidebar--git-hashtable
+                      (gethash path-fixed-dirname sidebar--git-hashtable)))
 	     (depth (sidebar-calc-depth path status)))
     (concat
      (make-string depth ?\s)
@@ -1194,8 +1194,9 @@ Return the found element."
     (beginning-of-line)
     (sidebar-writable
      (delete-region (line-beginning-position) (line-end-position))
-     (sidebar-print-file dir nil)
-     (kill-line))
+     (let ((sidebar--git-hashtable (sidebar-get git-hashtable))
+           (sidebar--root-project (sidebar-get root-project)))
+       (sidebar-print-file dir t)))
     (sidebar-show-current)))
 
 (defun sidebar-expand-dir (file line)
@@ -1501,14 +1502,15 @@ CHANGE is unused"
 (defun sidebar--update-git-status (fn &optional refresh)
   "FN REFRESH."
   (let ((hashtable (and fn (funcall fn)))
-        (branches (and (fboundp 'sidebar-git-head-upstream) (sidebar-git-head-upstream))))
+        (branches (and (fboundp 'sidebar-git-head-upstream)
+                       (sidebar-git-head-upstream))))
     (setq sidebar--git-directories nil)
     (when hashtable
       (maphash (lambda (key val)
                  (when (directory-name-p key)
                    (push (cons key val) sidebar--git-directories)))
                hashtable))
-    (sidebar-set git-branches branches)
+    (sidebar-set git-branches (and (fboundp 'sidebar-git-head-upstream) branches))
     (sidebar-set git-dir (and (or hashtable branches) (sidebar-get root-project)))
     (sidebar-set git-hashtable hashtable)
     (when (or hashtable refresh)
