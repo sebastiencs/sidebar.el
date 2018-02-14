@@ -1494,23 +1494,27 @@ The key in the hashtable is the filepath, the value is its status."
 Once the output is parsed, it refreshes the sidebar.
 CHANGE is unused"
   (when (eq (process-status process) 'exit)
-    (let ((hashtable (and (= (process-exit-status process) 0)
-                          (sidebar-git-parse-buffer))))
-      ;; (message "HASH: %s" hashtable)
-      (sidebar-set git-hashtable hashtable)
-      (sidebar-set git-dir (and hashtable (sidebar-get root-project)))
-      (sidebar-refresh)
-      (ignore-errors (kill-buffer (sidebar-get-git-buffer))))))
+
+    (sidebar--update-git-status (and (= (process-exit-status process) 0)
+                                     'sidebar-git-parse-buffer)
+                                t)
+    (ignore-errors (kill-buffer (sidebar-get-git-buffer)))))
 
 (defun sidebar-tramp-p ()
   "Return non-nil if we're browsing a remote directory."
   (let ((path (sidebar-get current-path)))
     (and (stringp path) (file-remote-p path))))
 
-(defun sidebar-my-thread-fn (fn &optional refresh)
+(defun sidebar--update-git-status (fn &optional refresh)
   "FN REFRESH."
-  (let ((hashtable (funcall fn))
-        (branches (sidebar-git-head-upstream)))
+  (let ((hashtable (and fn (funcall fn)))
+        (branches (and (fboundp 'sidebar-git-head-upstream) (sidebar-git-head-upstream))))
+    (setq sidebar--git-directories nil)
+    (when hashtable
+      (maphash (lambda (key val)
+                 (when (directory-name-p key)
+                   (push (cons key val) sidebar--git-directories)))
+               hashtable))
     (sidebar-set git-branches branches)
     (sidebar-set git-dir (and (or hashtable branches) (sidebar-get root-project)))
     (sidebar-set git-hashtable hashtable)
@@ -1533,10 +1537,10 @@ FIRST-RUN."
          (not force))
     (sidebar-refresh))
    ((and (fboundp 'make-thread) (fboundp 'sidebar-git-status))
-    (make-thread (lambda nil (sidebar-my-thread-fn 'sidebar-git-status-thread)))
+    (make-thread (lambda nil (sidebar--update-git-status 'sidebar-git-status-thread)))
     (sidebar-refresh))
    ((fboundp 'sidebar-git-status)
-    (sidebar-my-thread-fn 'sidebar-git-status t))
+    (sidebar--update-git-status 'sidebar-git-status t))
    (t (let ((process (get-buffer-process (sidebar-get-git-buffer))))
         (if (process-live-p process)
             ;; (kill-process process)

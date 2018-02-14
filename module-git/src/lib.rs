@@ -73,8 +73,14 @@ fn repository_status(env: &mut Env, args: &[Value], _data: *mut libc::c_void) ->
         _ => return env.intern("nil")
     };
 
+    let mut options = git2::StatusOptions::new();
 
-    let statuses = match repo.statuses(None) {
+    options.include_ignored(true)
+           .include_untracked(true)
+           .recurse_untracked_dirs(false)
+           .recurse_ignored_dirs(false);
+
+    let statuses = match repo.statuses(Some(&mut options)) {
         Ok(statuses) => statuses,
         _ => return env.intern("nil"),
     };
