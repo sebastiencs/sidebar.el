@@ -457,18 +457,18 @@ STATUS is the status of the FILE."
 
 (defvar-local sidebar--root-project nil)
 (defvar-local sidebar--git-hashtable nil)
+(defvar-local sidebar--git-directories nil)
 
-(defun sidebar-child-of-status-p (file-path status)
-  "Return non-nil if FILE-PATH is a child of a STATUS directory.
-This is used to know if a file is a subfile of an untracked/ignored directory."
-  ;;(when (sidebar-get git-hashtable)
-  (when sidebar--git-hashtable
-    (catch 'stop-map
-      (maphash (lambda (key value)
-		         (when (equal value status)
-		           (when (and (s-starts-with? key file-path) (not (string= key file-path)))
-		             (throw 'stop-map t))))
-	           sidebar--git-hashtable))))
+(defun sidebar-status-from-parent (file-path)
+  "If FILE-PATH is in a untracked or ignored directory, return its status."
+  (when sidebar--git-directories
+    (let ((list sidebar--git-directories)
+          found)
+      (while (and list (not found))
+        (when (string-prefix-p (caar list) file-path)
+          (setq found (cdar list)))
+        (setq list (cdr list)))
+      found)))
 
 (defsubst sidebar-color-from-status (status &optional default)
   "Return the face associated to the git STATUS.
@@ -482,17 +482,18 @@ If there is no status, return DEFAULT."
     ('match 'sidebar-match)
     (_ default)))
 
-(defsubst sidebar-get-color (file path status &optional icon no-color)
+(defsubst sidebar-get-color (file path status icon)
   "Return the face to use for FILE.
 PATH is the path of the file relative to the project root directory
-STATUS is the status from git
-non-nil ICON means we're getting the color for an icon.
-NO-COLOR non-nil means don't use a color."
-  (cond ((or (eq 'ignored status) (sidebar-child-of-status-p path 'ignored))
-	     (if (sidebar--dir-p file) 'sidebar-ignored-dir 'sidebar-ignored-file))
-	    ((and (or (eq 'untracked status) (sidebar-child-of-status-p path 'untracked)) (not icon))
-	     'sidebar-untracked)
-	    ((sidebar--dir-p file) 'sidebar-dir)))
+STATUS is the status from git.
+ICON is non-nil."
+  (let ((status (or (sidebar-status-from-parent path) status))
+        (dir-p (sidebar--dir-p file)))
+    (cond ((eq 'ignored status)
+           (if dir-p 'sidebar-ignored-dir 'sidebar-ignored-file))
+          ((and (eq 'untracked status) (not icon))
+           'sidebar-untracked)
+          (dir-p 'sidebar-dir))))
 
 (defun sidebar-insert-status-subfiles-helper (status number file path)
   "Insert the icon and numbers after a directory.
