@@ -735,7 +735,7 @@ returns an error on terminals."
      (sidebar-make-modeline-right-function . sidebar-mu4e-make-modeline-right)
      (sidebar-item-builder-function        . sidebar-mu4e-item-builder)
      (sidebar-restore-function             . nil)
-     (sidebar-print-item                   . sidebar-mu4e-print-item)
+     (sidebar-print-item                   . sidebar-print-mu4e)
      (sidebar-line-to-start                . 2))
     :sidebar-buffers-mode
     ((sidebar-load-content-function        . sidebar-content-buffers)

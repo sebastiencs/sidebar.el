@@ -118,20 +118,21 @@ easily usable."
     (sidebar-set mu4e-maildirs-count (length maildirs))
     (-concat maildirs '(separator) bookmarks)))
 
-(defun sidebar-mu4e-print-item (item _)
-  "Function to print ITEM in sidebar.
-It doesn't print anything if ITEM is a separator.
-ITEM is an object created with `sidebar-mu4e-item-builder'."
+(sidebar-print-function mu4e (item)
+  "ITEM."
   (-let* (((&alist 'data data 'type type) item))
-    (unless (equal type 'separator)
-      (insert " ")
-      (pcase type
-	    ('bookmark (insert (icons-in-terminal sidebar-mu4e-bookmark-icon :height 1.1)))
-	    ('maildir  (insert (icons-in-terminal sidebar-mu4e-maildir-icon :height 1.1))))
-      (insert " ")
-      (pcase type
-	    ('bookmark (insert (car data)))
-	    ('maildir  (insert data))))))
+    (if (eq type 'separator)
+        (ignore (overlay-put (make-overlay (point) (point)) 'after-string "\n"))
+      (concat
+       " "
+       (pcase type
+	     ('bookmark (icons-in-terminal sidebar-mu4e-bookmark-icon :height 1.1))
+	     ('maildir  (icons-in-terminal sidebar-mu4e-maildir-icon :height 1.1)))
+       " "
+       (pcase type
+	     ('bookmark (car data))
+	     ('maildir  data))
+       "\n"))))
 
 (defun sidebar-mu4e-open-maildir (maildir)
   "Open MAILDIR.
@@ -219,19 +220,6 @@ automatically with mu4e."
     (run-with-timer 0.1 nil #'sidebar-open)))
 ;;    (sidebar-open)))
 
-(defun sidebar-mu4e-pre-command ()
-  "See `sidebar-mu4e-post-command'."
-  (sidebar-set mu4e-pre-line (line-number-at-pos)))
-
-(defun sidebar-mu4e-post-command ()
-  "Function to ensure that the cursor is never on a separator."
-  (-when-let* ((pre-line (sidebar-get mu4e-pre-line))
-	           (line (line-number-at-pos))
-	           ((&alist 'type type) (sidebar-find-file-from-line)))
-    (when (equal type 'separator)
-      (cond ((< pre-line line) (forward-line 1))
-	        ((> line 1) (forward-line -1))))))
-
 (defvar sidebar-mu4e-mode-map nil
   "Keymap used with ‘sidebar-mu4e-mode’.")
 (unless sidebar-mu4e-mode-map
@@ -263,8 +251,6 @@ automatically with mu4e."
 
   (sidebar-init-mode)
 
-  (add-hook 'pre-command-hook 'sidebar-mu4e-pre-command nil)
-  (add-hook 'post-command-hook 'sidebar-mu4e-post-command nil)
   (add-hook 'post-command-hook 'sidebar-post-command t)
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
