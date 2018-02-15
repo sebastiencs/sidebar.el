@@ -789,7 +789,7 @@ PROJECT-PATH-ROOT."
       (sidebar-check-setup)
       (sidebar-init-vars project-path-root)
       (funcall (sidebar-get mode-to-use))
-      ;; (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
+      (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
       (sidebar-goto-buffername buffer-name-current)
       (sidebar-curl-run)
       (unless (sidebar-get saved-state-files)
@@ -1093,6 +1093,7 @@ Sort the list by line number
 	    (sidebar-goto-line line-to-put-old-files)
         ))
     (recenter)
+    (sidebar-update-files-number)
     ;;(sidebar-git-run)
     ))
 
