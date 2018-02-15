@@ -333,6 +333,7 @@ Only the windows non dedicated are shown."
   (sidebar-set buffers-hide nil)
   (sidebar-set buffers-return-to-files nil)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+  (sidebar-set mode-to-use 'sidebar-mode)
   (sidebar-open))
 
 (defun sidebar-buffers-open ()
