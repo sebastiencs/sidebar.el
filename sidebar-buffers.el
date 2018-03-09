@@ -349,10 +349,11 @@ Only the windows non dedicated are shown."
   (setq sidebar-buffers-show-hidden (not sidebar-buffers-show-hidden))
   (sidebar-refresh))
 
-(defun sidebar-buffers-switch-to-files ()
-  "."
+(defun sidebar-buffers-switch-to-files (&optional no-save-line)
+  "NO-SAVE-LINE."
   (interactive)
-  (sidebar-set buffers-line (line-number-at-pos))
+  (unless no-save-line
+    (sidebar-set buffers-line (line-number-at-pos)))
   (sidebar-set buffers-hide nil)
   (sidebar-set buffers-return-to-files nil)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
@@ -370,7 +371,6 @@ followed by `sidebar-buffers-open-line'."
     ('close (sidebar-set buffers-hide t)))
   (cond ((and (get-buffer (sidebar-cons-buffer-name)) (not (sidebar-get-window t)))
 	     (progn (sidebar-set buffers-hide t)
-		        (sidebar-open)
 		        (sidebar-switch-to-buffers)))
 	    ((not (sidebar-get-window t))
 	     (progn (sidebar-set buffers-force t)
@@ -385,6 +385,7 @@ followed by `sidebar-buffers-open-line'."
 (defun sidebar-buffers-close ()
   "."
   (interactive)
+  (sidebar-set buffers-line (line-number-at-pos))
   (sidebar-set buffers-hide nil)
   (sidebar-set buffers-return-to-files nil)
   (sidebar-close))
