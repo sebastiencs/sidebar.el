@@ -1887,6 +1887,7 @@ If ALL is non-nil, it print everything."
     (define-key map (kbd "h") 'sidebar-toggle-hidden-files)
     (define-key map (kbd "R") 'sidebar-rename-selected)
     (define-key map (kbd "<tab>") 'sidebar-switch-to-buffers)
+    (define-key map (kbd "TAB") 'sidebar-switch-to-buffers)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)

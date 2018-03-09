@@ -426,6 +426,7 @@ followed by `sidebar-buffers-open-line'."
     (define-key map (kbd "d") 'sidebar-buffers-mark-delete)
     (define-key map (kbd "s") 'sidebar-buffers-mark-save)
     (define-key map (kbd "<tab>") 'sidebar-buffers-switch-to-files)
+    (define-key map (kbd "TAB") 'sidebar-buffers-switch-to-files)
     (define-key map (kbd "h") 'sidebar-buffers-toggle-hidden)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
