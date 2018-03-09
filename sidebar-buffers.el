@@ -330,6 +330,7 @@ Only the windows non dedicated are shown."
 (defun sidebar-buffers-switch-to-files ()
   "."
   (interactive)
+  (sidebar-set buffers-line (line-number-at-pos))
   (sidebar-set buffers-hide nil)
   (sidebar-set buffers-return-to-files nil)
   (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
@@ -392,6 +393,7 @@ followed by `sidebar-buffers-open-line'."
 (unless sidebar-buffers-mode-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
+    (define-key map (kbd "C-q") 'sidebar-kill)
     (define-key map (kbd "M-RET") 'sidebar-buffers-open-in-window)
     (define-key map (kbd "RET") 'sidebar-buffers-open-line)
     (define-key map (kbd "q") 'sidebar-buffers-close)

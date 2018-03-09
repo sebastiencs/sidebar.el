@@ -736,7 +736,7 @@ returns an error on terminals."
      (sidebar-item-builder-function        . sidebar-mu4e-item-builder)
      (sidebar-restore-function             . nil)
      (sidebar-print-item                   . sidebar-print-mu4e)
-     (sidebar-line-to-start                . 2))
+     (sidebar-line-to-start                . 1))
     :sidebar-buffers-mode
     ((sidebar-load-content-function        . sidebar-content-buffers)
      (sidebar-mode-to-use                  . sidebar-buffers-mode)
@@ -746,7 +746,7 @@ returns an error on terminals."
      (sidebar-item-builder-function        . sidebar-buffers-item-builder)
      (sidebar-restore-function             . nil)
      (sidebar-print-item                   . sidebar-print-buffers)
-     (sidebar-line-to-start                . 4))
+     (sidebar-line-to-start                . 1))
     )
   "Variable storing the functions to call according to the mode used.")
 
@@ -792,7 +792,8 @@ PROJECT-PATH-ROOT."
         (sidebar-init-vars project-path-root)
         (funcall (sidebar-get mode-to-use))
         (sidebar-refresh (sidebar-expand-path project-path-root buffer-name-current))
-        (sidebar-goto-buffername buffer-name-current)
+        (sidebar-goto-buffername (and (eq (sidebar-get mode-to-use) 'sidebar-mode)
+                                      buffer-name-current))
         (sidebar-curl-run)
         (unless (sidebar-get saved-state-files)
 	      (sidebar-git-run nil t))))))
@@ -1801,7 +1802,8 @@ If ALL is non-nil, it print everything."
   (sidebar-set buffers-force t)
   (sidebar-set saved-state-files t)
   (sidebar-set save-line nil)
-  (sidebar-open))
+  (sidebar-open)
+  (sidebar-goto-line (sidebar-get buffers-line)))
 
 (defun sidebar-kill ()
   "Close the sidebar and its buffer."
