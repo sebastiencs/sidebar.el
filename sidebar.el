@@ -106,6 +106,11 @@ or typing `<right>'."
   :type 'boolean
   :group 'sidebar)
 
+(defcustom sidebar-show-hidden-files t
+  "If non-nil, hidden files are listed."
+  :type 'boolean
+  :group 'sidebar)
+
 (defcustom sidebar-width 40
   "Default window width of `sidebar'."
   :type 'integer
@@ -644,10 +649,19 @@ keep track of which file is on which line."
          (sidebar--git-hashtable (sidebar-get git-hashtable)))
      (mapc fn list))))
 
+(defun sidebar-toggle-hidden-files ()
+  "Toggle listing of hidden files."
+  (interactive)
+  (setq sidebar-show-hidden-files (not sidebar-show-hidden-files))
+  (sidebar-refresh))
+
 (defun sidebar-dots-file (file)
   "Return t if FILE is '.' or '..'."
   (let ((file (file-name-nondirectory file)))
-    (or (string= "." file) (string= ".." file))))
+    (or (string= "." file)
+        (string= ".." file)
+        (and (not sidebar-show-hidden-files)
+             (string= "." (substring file 0 1))))))
 
 (sidebar-content-provider files (path)
   "Return a list of files/directories in PATH.
@@ -1869,6 +1883,7 @@ If ALL is non-nil, it print everything."
     (define-key map (kbd "C") 'sidebar-copy-selected)
     (define-key map (kbd "M-C") 'sidebar-cut-selected)
     (define-key map (kbd "P") 'sidebar-paste)
+    (define-key map (kbd "h") 'sidebar-toggle-hidden-files)
     (define-key map (kbd "R") 'sidebar-rename-selected)
     (define-key map (kbd "<tab>") 'sidebar-switch-to-buffers)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
