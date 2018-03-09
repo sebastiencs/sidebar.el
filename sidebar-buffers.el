@@ -204,9 +204,9 @@ ITEM is the object to print."
     (if (eq type 'separator)
         (let ((first (get-text-property 0 'first data)))
           (not (overlay-put (make-overlay (point) (point))
-                            'after-string (concat (unless first (propertize "\n" 'face '(:height 0.4)))
+                            'after-string (concat (unless first (propertize "\n" 'face '(:height 0.8)))
                                                   data
-                                                  (propertize "\n\n" 'face '(:height 0.4))))))
+                                                  (propertize "\n" 'face '(:height 1.0))))))
       (concat " " (sidebar-buffers-format-name data
                                                (sidebar-buffers--buffer-name data)
                                                visiting)
