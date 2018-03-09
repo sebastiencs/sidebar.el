@@ -1778,7 +1778,7 @@ If ALL is non-nil, it print everything."
   (sidebar-set window-start (window-start (sidebar-get-window)))
   (with-current-buffer (sidebar-get-buffer)
     (sidebar-set save-line-files (line-number-at-pos)))
-  (sidebar-set opened (sidebar-list-opened))
+  (sidebar-set files-opened (sidebar-list-opened))
   (sidebar-set save-default-width (sidebar-get default-width))
   (sidebar-set save-root-project (sidebar-get root-project))
   (sidebar-set save-cwd default-directory)
@@ -1792,6 +1792,7 @@ If ALL is non-nil, it print everything."
   (setq default-directory (sidebar-get save-cwd))
   (sidebar-set root-project (sidebar-get save-root-project))
   (sidebar-set history (sidebar-get save-history))
+  (sidebar-set opened (sidebar-get files-opened))
   (sidebar-set current-path (sidebar-get save-current-path)))
 
 (defun sidebar-switch-to-buffers ()
