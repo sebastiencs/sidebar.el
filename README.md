@@ -75,7 +75,7 @@ You can install them through melpa.
 | `x`       | `sidebar-buffers-mark-execute`   | Execute the action(s) on marked buffer(s)               |
 | `q`       | `sidebar-buffers-close`          | Close sidebar                                           |
 | `g`       | `sidebar-refresh`                | Refresh the content of the sidebar                      |
-| `<tab>`   | `sidebar-switch-to-files         | Switch to the list of files                             |
+| `<tab>`   | `sidebar-switch-to-files`         | Switch to the list of files                             |
 | `h`       | `sidebar-buffers-toggle-hidden`  | Show/hide the hidden buffers (starting with a space)    |
 | `<right>` | `sidebar-adjust-window-width`    | Adjust the window width if the filename is too long     |
 | `<left>`  | `sidebar-reset-window-width`     | Reset the window width to the default value             |
