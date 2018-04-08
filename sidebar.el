@@ -405,6 +405,11 @@ Default: non-nil."
     map)
   "Keymap for file button.")
 
+(defvar sidebar--streched-spaces-p (intern-soft ":re-align")
+  "Non-nil if streched spaces are supported.
+Apply this patch to support it:
+https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d")
+
 (defsubst sidebar-get-root-project ()
   "Return the project directory, nil if there is no project."
   (ignore-errors (projectile-project-root)))
@@ -594,7 +599,8 @@ PATH is the file path."
      ;; Use a streched space, so filenames are always aligned no matter the icon's width
      ;; Apply this patch to emacs source:
      ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
-     (propertize " " 'display '(space :re-align t))
+     (when sidebar--streched-spaces-p
+       (propertize " " 'display '(space :re-align t)))
      (propertize " " 'display `(space :width 0.6))
      (sidebar-insert-filename filename file-color))))
 
@@ -608,7 +614,9 @@ DIR is non-nil if it's a directory."
 	       (func (lambda (name)
 		           (concat
                     ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
-                    (propertize " " 'display '(space :re-align t))
+                    (when sidebar--streched-spaces-p
+                      (propertize " " 'display '(space :re-align t)))
+                    (propertize " " 'display '(space :width 0.5))
  		            (funcall 'sidebar-insert-icon name face)))))
       (pcase status
 	    ('not-updated (funcall func sidebar-icon-git-not-updated))
