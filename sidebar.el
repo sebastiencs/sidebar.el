@@ -550,7 +550,7 @@ PATH is the path of FILE."
 
 (defun sidebar-insert-icon (icon face)
   "Insert ICON with FACE if non-nil."
-  (icons-in-terminal icon :face face :height 1.15))
+  (icons-in-terminal icon :face face :height 1.12))
 
 (defun sidebar-insert-fileicon (file filename status path face)
   "Insert the icon associated to FILE.
@@ -564,7 +564,7 @@ FACE is the face to use for the icons."
       (let ((icon (if (sidebar--open-p file) sidebar-icon-dir-opened sidebar-icon-dir-closed)))
 	    (sidebar-insert-icon icon face))
     (-let* (((icon . color) (sidebar-filemapping-lookup filename))
-	        (partial (-partial 'icons-in-terminal icon :height 1.1)))
+	        (partial (-partial 'icons-in-terminal icon :height 1.12)))
       (cond (face (funcall partial :face face))
 	        (color (funcall partial :foreground color))
 	        (t (funcall partial))))))
@@ -595,6 +595,7 @@ PATH is the file path."
      ;; Apply this patch to emacs source:
      ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
      (propertize " " 'display '(space :re-align t))
+     (propertize " " 'display `(space :width 0.6))
      (sidebar-insert-filename filename file-color))))
 
 (defun sidebar-insert-status (file path status &optional dir)
