@@ -1788,6 +1788,10 @@ If ALL is non-nil, it print everything."
     (save-excursion
       (sidebar-set-window (sidebar-get default-width)))))
 
+(defun sidebar-config-change-hook-local ()
+  (-some-> (sidebar-get-window t)
+           (set-window-margins 0 0)))
+
 (defun sidebar-save-state ()
   "Save the sidebar state."
   (sidebar-set window-start (window-start (sidebar-get-window)))
@@ -1908,6 +1912,7 @@ If ALL is non-nil, it print everything."
   (add-hook 'delete-frame-functions 'sidebar-delete-buffer-on-kill)
   (add-hook 'before-make-frame-hook 'sidebar-before-make-frame-hook)
   (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook)
+  (add-hook 'window-configuration-change-hook 'sidebar-config-change-hook-local nil t)
 
   )
 
