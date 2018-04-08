@@ -494,7 +494,8 @@ NUMBER is the number to insert
 FILE PATH"
   (concat
    (sidebar-insert-status file path status t)
-   "\t"
+   ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
+   (propertize " " 'display '(space :re-align t))
    (number-to-string number)))
 
 (defun sidebar-status-subfiles (path)
@@ -590,9 +591,10 @@ PATH is the file path."
                          'sidebar-file)))
     (concat
      (funcall sidebar-insert-fileicon-function file filename status path icon-color)
-     ;; Tabulations are stretched characters
-     ;; this fix the alignement, tab-width needs to be 1 (set in sidebar-mode)
-     "\t"
+     ;; Use a streched space, so filenames are always aligned no matter the icon's width
+     ;; Apply this patch to emacs source:
+     ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
+     (propertize " " 'display '(space :re-align t))
      (sidebar-insert-filename filename file-color))))
 
 (defun sidebar-insert-status (file path status &optional dir)
@@ -603,8 +605,10 @@ DIR is non-nil if it's a directory."
   (when (or sidebar-status-on-file dir)
     (let* ((face (sidebar-color-from-status status nil))
 	       (func (lambda (name)
-		           (concat "\t"
-		                   (funcall 'sidebar-insert-icon name face)))))
+		           (concat
+                    ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
+                    (propertize " " 'display '(space :re-align t))
+ 		            (funcall 'sidebar-insert-icon name face)))))
       (pcase status
 	    ('not-updated (funcall func sidebar-icon-git-not-updated))
 	    ('updated (funcall func sidebar-icon-git-updated))
