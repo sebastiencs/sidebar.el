@@ -32,55 +32,28 @@
 
 ;;; Code:
 
+(require 'frame-local)
+
 (defvar sidebar-width)
-
-;; (defmacro sidebar-get (var)
-;;   "Get VAR in the current frame."
-;;   (let ((var-name (intern (format "sidebar-%s" var))))
-;;     `(or
-;;       (bound-and-true-p ,var-name)
-;;       (setq-local ,var-name
-;;                   (frame-parameter nil ',var-name)))))
-
-;; (defmacro sidebar-set (var val)
-;;   "Set VAR to VAL in the current frame.
-;; Return VAL."
-;;   (declare (indent 1))
-;;   (let ((var-name (intern (format "sidebar-%s" var))))
-;;     `(let ((value ,val))
-;;        (set-frame-parameter nil ',var-name value)
-;;        ;; value
-;;        (set (make-local-variable ',var-name) value)
-;;        ;;(setq-local ,var-name value)
-;;        )))
-
-;; (defmacro sidebar-set1 (var val)
-;;   "Set VAR to VAL in the current frame.
-;; The difference with `sidebar-set' is that the var parameter is
-;; evaluated.
-;; VAR need to be prefixed with 'sidebar-'."
-;;   `(set-frame-parameter nil ,var ,val))
 
 (defmacro sidebar-get (var)
   "Get VAR in the current frame."
   (let ((var-name (intern (format "sidebar-%s" var))))
-    `(frame-parameter nil ',var-name)))
+    `(frame-local-get ',var-name (selected-frame))))
 
 (defmacro sidebar-set (var val)
   "Set VAR to VAL in the current frame.
 Return VAL."
   (declare (indent 1))
   (let ((var-name (intern (format "sidebar-%s" var))))
-    `(let ((value ,val))
-       (set-frame-parameter nil ',var-name value)
-       value)))
+    `(frame-local-set ',var-name ,val (selected-frame))))
 
 (defmacro sidebar-set1 (var val)
   "Set VAR to VAL in the current frame.
 The difference with `sidebar-set' is that the var parameter is
 evaluated.
 VAR need to be prefixed with 'sidebar-'."
-  `(set-frame-parameter nil ,var ,val))
+  `(frame-local-set ,var ,val (selected-frame)))
 
 (defmacro sidebar-content-provider (name arglist &rest args)
   "Make a content provider NAME with arguments ARGLIST.

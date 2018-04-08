@@ -38,7 +38,7 @@ Add those lines in your emacs init file:
 (global-set-key (kbd "C-x C-a") 'sidebar-buffers-open)
 ```
 
-`sidebar` require some packages: `dash`, `dash-functional`, `s`, `ov` and `projectile`.  
+`sidebar` require some packages: `dash`, `dash-functional`, `s`, `ov`, `projectile` and [frame-local](https://github.com/sebastiencs/frame-local).  
 You can install them through melpa.  
 
 ## Default commands

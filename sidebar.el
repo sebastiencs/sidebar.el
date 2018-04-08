@@ -6,7 +6,7 @@
 ;; URL: https://github.com/sebastiencs/sidebar.el
 ;; Keywords: files, convenience, frames
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "25") (dash "2.11.0") (projectile "0.10.0") (s "1.10.0") (dash-functional "1.2.0") (ov "1.0.6"))
+;; Package-Requires: ((emacs "25") (dash "2.11.0") (projectile "0.10.0") (s "1.10.0") (dash-functional "1.2.0") (ov "1.0.6") (frame-local "0.0.1"))
 
 ;;; License
 ;;
