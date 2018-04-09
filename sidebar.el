@@ -659,7 +659,8 @@ keep track of which file is on which line."
   (sidebar-writable
    (let ((fn (sidebar-get print-item))
          (sidebar--root-project (sidebar-get root-project))
-         (sidebar--git-hashtable (sidebar-get git-hashtable)))
+         (sidebar--git-hashtable (sidebar-get git-hashtable))
+         (default-directory (sidebar-get current-path)))
      (mapc fn list))))
 
 (defun sidebar-toggle-hidden-files ()
@@ -887,7 +888,7 @@ The suffix represents the path of the file pointed by the
 cursor (current line).
 The header is asked to be update only when the suffix change."
   (-when-let* ((path-file (-some-> (sidebar--getpath (sidebar-find-file-from-line)) file-name-directory))
-	           (current-path default-directory)
+	           (current-path (sidebar-get current-path))
 	           (suffix-path (when (>= (length path-file) (length current-path))
                               (substring path-file (1- (length current-path))))))
     (-let [suffix-header (sidebar-get suffix-header)]
