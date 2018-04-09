@@ -1075,8 +1075,9 @@ If the file is cut, you'll be ask to rename the buffers visiting it."
   (sidebar-writable
    (erase-buffer)
    (remove-overlays)
-   (overlay-put (make-overlay (point) (point))
-                'after-string "\n")))
+   (unless (eq major-mode 'sidebar-buffers-mode)
+     (overlay-put (make-overlay (point) (point))
+                  'after-string "\n"))))
 
 (defun sidebar-up-directory ()
   "Go to the parent directory.
