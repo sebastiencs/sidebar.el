@@ -114,18 +114,16 @@ Function similar to `sidebar-file-struct' adapted for buffers data."
   "Return non-nil if the BUFFER is hidden (start with a space)."
   (-> buffer buffer-name string-to-char (equal (elt " " 0))))
 
-(defsubst sidebar-buffers-separator (name &optional first project)
+(defsubst sidebar-buffers-separator (name &optional project)
   "Return the header NAME between two separators.
 if FIRST is non-nil, do not insert a separator before the header.
 PROJECT non nil means to add an icon."
   (list
    (if project
-       (let ((name (concat (icons-in-terminal 'oct_repo :face 'sidebar-buffers-headers-face :height 0.9)
-                           (unless (display-graphic-p) " ")
-                           (propertize name 'face 'sidebar-buffers-headers-face))))
-         (add-text-properties 0 (length name) `(first ,first) name)
-         name)
-     (propertize name 'face 'sidebar-buffers-headers-face 'first first))))
+       (concat (icons-in-terminal 'oct_repo :face 'sidebar-buffers-headers-face :height 0.9)
+               (unless (display-graphic-p) " ")
+               (propertize name 'face 'sidebar-buffers-headers-face))
+     (propertize name 'face 'sidebar-buffers-headers-face))))
 
 (defun sidebar-buffers-root-project (buffer)
   "BUFFER."
@@ -144,16 +142,15 @@ easily usable."
 	     (others (->> buffers (-remove 'buffer-file-name) (-remove 'sidebar-buffers-hidden-p)))
 	     (hidden (-filter 'sidebar-buffers-hidden-p buffers))
          (by-projects (-group-by 'sidebar-buffers-root-project visiting))
-         (visiting (alist-get nil by-projects))
-         (first t))
+         (visiting (alist-get nil by-projects)))
     (-concat
-     (-flatten (--map (and (setcar it (sidebar-buffers-separator (car it) (prog1 first (setq first nil)) t)) it)
+     (-flatten (--map (and (setcar it (sidebar-buffers-separator (car it) t)) it)
                       (sort (--filter (car it) by-projects) (lambda (a b) (string< (car a) (car b))))))
      (when (> (length visiting) 0)
-       (-concat (sidebar-buffers-separator "Visiting buffers" (prog1 first (setq first nil)))
+       (-concat (sidebar-buffers-separator "Visiting buffers")
 		        visiting))
      (when (> (length others) 0)
-       (-concat (sidebar-buffers-separator "Others buffers" (prog1 first (setq first nil)))
+       (-concat (sidebar-buffers-separator "Others buffers")
 		        others))
      (when (and sidebar-buffers-show-hidden
 		        (> (length hidden) 0))
@@ -202,11 +199,10 @@ easily usable."
 ITEM is the object to print."
   (-let* (((&alist 'data data 'type type 'visiting visiting) item))
     (if (eq type 'separator)
-        (let ((first (get-text-property 0 'first data)))
-          (not (overlay-put (make-overlay (point) (point))
-                            'after-string (concat (unless first (propertize "\n" 'face '(:height 0.8)))
-                                                  data
-                                                  (propertize "\n" 'face '(:height 1.0))))))
+        (not (overlay-put (make-overlay (point) (point))
+                          'after-string (concat (propertize "\n" 'face '(:height 0.8))
+                                                data
+                                                (propertize "\n" 'face '(:height 1.0)))))
       (concat " " (sidebar-buffers-format-name data
                                                (sidebar-buffers--buffer-name data)
                                                visiting)
