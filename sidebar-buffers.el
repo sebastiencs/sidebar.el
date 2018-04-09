@@ -133,6 +133,11 @@ PROJECT non nil means to add an icon."
               directory-file-name
               file-name-nondirectory)))
 
+(defun sidebar-buffers--sort-buffers-in-project (buffers)
+  (--> (--map (cons it (sidebar-buffers--buffer-name it)) (cdr buffers))
+       (--sort (string< (cdr it) (cdr other)) it)
+       (cons (car buffers) (--map (car it) it))))
+
 (sidebar-content-provider buffers (&rest _)
   "Return a list of buffers to print in the sidebar.
 The list will be mapped with `sidebar-buffers-item-builder' to make them
@@ -142,6 +147,7 @@ easily usable."
 	     (others (->> buffers (-remove 'buffer-file-name) (-remove 'sidebar-buffers-hidden-p)))
 	     (hidden (-filter 'sidebar-buffers-hidden-p buffers))
          (by-projects (-group-by 'sidebar-buffers-root-project visiting))
+         (by-projects (-map 'sidebar-buffers--sort-buffers-in-project by-projects))
          (visiting (alist-get nil by-projects)))
     (-concat
      (-flatten (--map (and (setcar it (sidebar-buffers-separator (car it) t)) it)
