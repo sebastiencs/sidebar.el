@@ -51,6 +51,7 @@
 (declare-function sidebar--getline 'sidebar)
 
 (defvar sidebar-select-icon-before-window)
+(defvar sidebar--streched-spaces-p)
 
 (defgroup sidebar-buffers nil
   "Sidebar mode to view a list of buffers."
@@ -186,7 +187,10 @@ easily usable."
 	     (icons-in-terminal 'file_emacs :foreground "#607D8B")
        (-let* (((icon . color) (sidebar-filemapping-lookup name)))
 	     (icons-in-terminal icon :foreground color)))
-     " "
+     ;; https://gist.github.com/sebastiencs/2f066f8d12b71f40fda9bdb979fe971d
+     (propertize " " 'display '(space :re-align t))
+     (when sidebar--streched-spaces-p
+       (propertize " " 'display '(space :width 0.6)))
      (s-trim name)
      (when read-only (sidebar-buffers-insert-icon 'md_lock))
      (when modified (sidebar-buffers-insert-icon 'md_whatshot))
