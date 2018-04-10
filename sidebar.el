@@ -1439,7 +1439,7 @@ It doesn't refresh the sidebar when using the sidebar over tramp."
 
 (defun sidebar-delete-buffer-on-kill (frame)
   "When the FRAME is deleted, this function kill the Sidebar buffer associated to it."
-  (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
+  (ignore-errors (kill-buffer (sidebar-get buffer-name frame))))
 
 ;;(ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
 

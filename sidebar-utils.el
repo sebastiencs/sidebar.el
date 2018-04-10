@@ -36,17 +36,17 @@
 
 (defvar sidebar-width)
 
-(defmacro sidebar-get (var)
+(defmacro sidebar-get (var &optional frame)
   "Get VAR in the current frame."
   (let ((var-name (intern (format "sidebar-%s" var))))
-    `(frame-local-get ',var-name (selected-frame))))
+    `(frame-local-get ',var-name (or ,frame (selected-frame)))))
 
-(defmacro sidebar-set (var val)
+(defmacro sidebar-set (var val &optional frame)
   "Set VAR to VAL in the current frame.
 Return VAL."
   (declare (indent 1))
   (let ((var-name (intern (format "sidebar-%s" var))))
-    `(frame-local-set ',var-name ,val (selected-frame))))
+    `(frame-local-set ',var-name ,val (or ,frame (selected-frame)))))
 
 (defmacro sidebar-set1 (var val)
   "Set VAR to VAL in the current frame.
