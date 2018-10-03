@@ -1116,7 +1116,6 @@ Sort the list by line number
       ;;(sidebar-set history (add-to-list 'history new-directory nil 's-equals?))
       (sidebar-set current-path (file-name-as-directory new-directory))
       (setq default-directory (sidebar-get current-path))
-      (projectile-reset-cached-project-root)
       (sidebar-set root-project (sidebar-project-root))
       (sidebar--maybe-invalidate-git)
       (sidebar-print-listfiles (sidebar-update-to-opened new-files old-dir))
@@ -1138,7 +1137,6 @@ in the new directory.
 If FILE it not opened, we load the dir with `sidebar-content-files'
 ."
   (let ((history (sidebar-get history)))
-    (projectile-reset-cached-project-root)
     (sidebar-set current-path (file-name-as-directory (sidebar--getpath file)))
     (setq default-directory (sidebar-get current-path))
     ;;(sidebar-set history (add-to-list 'history default-directory nil 's-equals?))
