@@ -1185,7 +1185,7 @@ Only the windows non dedicated are shown."
   "Return the file on the LINE.
 'sidebar-files' is always sorted, so we just need to access it in the list by
 its index."
-  (get-text-property (point) 'sidebar-item))
+  (get-text-property (+ 1 (point)) 'sidebar-item))
 
 (defun sidebar-open-file (file)
   "Open FILE in the buffer where `sidebar-open' has been called.
@@ -1302,25 +1302,25 @@ if FORCE is non-nil, there is no check."
   "PATH."
   (save-excursion
     (goto-char 1)
-    (let ((item (get-text-property (point) 'sidebar-item))
+    (let ((item (get-text-property (+ 1 (point)) 'sidebar-item))
           point)
       (while (and item (not point))
         (if (string= path (sidebar--getpath item))
             (setq point (point))
           (forward-line)
-          (setq item (get-text-property (point) 'sidebar-item))))
+          (setq item (get-text-property (+ 1 (point)) 'sidebar-item))))
       point)))
 
 (defun sidebar--find-file (path)
   "PATH."
   (-when-let* ((point (sidebar--find-file-point path))
-               (file (get-text-property point 'sidebar-item)))
+               (file (get-text-property (+ 1 (point)) 'sidebar-item)))
     (setf (sidebar--getline file) (line-number-at-pos point))
     file))
 
 (defun sidebar--get-file ()
   "PATH."
-  (get-text-property (point) 'sidebar-item))
+  (get-text-property (+ 1 (point)) 'sidebar-item))
 
 (defun sidebar-list-opened ()
   (save-excursion
@@ -1331,18 +1331,18 @@ if FORCE is non-nil, there is no check."
         (when (sidebar--open-p prop)
           (push prop list))
         (forward-line 1)
-        (setq prop (get-text-property (point) 'sidebar-item)))
+        (setq prop (get-text-property  (min (+ 1 (point)) (point-max) ) 'sidebar-item)))
       (nreverse list))))
 
 (defun sidebar--list-all ()
   (save-excursion
     (goto-char 1)
-    (let ((prop (get-text-property (point) 'sidebar-item))
+    (let ((prop (get-text-property  (+ 1 (point)) 'sidebar-item))
           list)
       (while prop
         (push prop list)
         (forward-line 1)
-        (setq prop (get-text-property (point) 'sidebar-item)))
+         (setq prop (get-text-property  (min (+ 1 (point)) (point-max) ) 'sidebar-item)))
       (nreverse list))))
 
 (defun sidebar--maybe-invalidate-git ()
